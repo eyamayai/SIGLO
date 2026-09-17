@@ -8,17 +8,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="assets/icono-siglo.svg">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260917-3">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/login-overrides.css?v=20260917-3">
 </head>
 <body data-page="login">
   <main class="login-shell">
     <section class="brand-panel" aria-label="Identidad SIGLO">
       <div class="brand-content">
         <a class="brand-lockup" href="index.html" aria-label="SIGLO">
-          <object class="brand-logo" data="assets/logo-siglo.png" type="image/png" aria-label="Logo SIGLO">
-            <img src="assets/logo-siglo.svg" alt="Logo SIGLO">
-          </object>
+          <img class="brand-logo" src="assets/logo-siglo.png?v=20260917-3" alt="Logo SIGLO">
         </a>
 
         <div class="accent-line"></div>
@@ -30,15 +29,15 @@
 
         <div class="brand-features" aria-label="Características">
           <div class="feature-item">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+            <img class="feature-image" src="assets/feature-inventario.png?v=20260917-3" alt="Inventario y almacén">
             <span>Inventario<br>y almacén</span>
           </div>
           <div class="feature-item">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+            <img class="feature-image" src="assets/feature-distribucion.png?v=20260917-3" alt="Distribución y transporte">
             <span>Distribución<br>y transporte</span>
           </div>
           <div class="feature-item">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>
+            <img class="feature-image" src="assets/feature-operaciones.png?v=20260917-3" alt="Operaciones más eficientes">
             <span>Operaciones<br>más eficientes</span>
           </div>
         </div>
@@ -84,14 +83,7 @@
           <p id="loginError" class="form-error" role="alert"></p>
         </form>
 
-        <div class="divider"><span></span><b>o</b><span></span></div>
-
-        <button id="quickAccess" class="secondary-button" type="button">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7"/><path d="m21 3-9 9"/><path d="M17 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h6"/></svg>
-          Acceso a Material Libre
-        </button>
-
-        <footer class="card-footer">
+        <footer class="card-footer card-footer-login">
           <p>SIGLO&nbsp; | &nbsp;Sistema Integrado de Gestión de Logística y Operaciones</p>
           <p>© 2026. Todos los derechos reservados.</p>
         </footer>
