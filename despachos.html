@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Despachos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260917-4">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/despachos.css?v=20260917-4">
+</head>
+<body class="dashboard-body">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="assets/icono-siglo.png?v=20260917-4" alt="Icono SIGLO">
+        <strong>SIGLO</strong>
+      </div>
+
+      <div class="nav-title">MATERIAL LIBRE</div>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="inicio.html">
+          <svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>
+          Inicio
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M3 8v8l9 5 9-5V8"/></svg>
+          Ingresos
+        </a>
+        <a class="nav-link active" href="despachos.html">
+          <svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+          Despachos
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>
+          Devoluciones
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>
+          Informes
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <a class="nav-link" id="logoutBtn" href="index.html">
+          <svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>
+          Cerrar sesión
+        </a>
+      </div>
+    </aside>
+
+    <main class="dashboard-main dispatch-main">
+      <div class="dashboard-top">
+        <div class="dashboard-title">
+          <div class="breadcrumb"><a href="inicio.html">Material Libre</a><span>›</span><strong>Despachos</strong></div>
+          <h1>Despachos</h1>
+          <p>Lee el PDF de asignación y separa automáticamente el material serializado y no serializado.</p>
+        </div>
+        <div class="user-chip">
+          <div class="user-avatar">S</div>
+          <span id="userLabel">Usuario SIGLO</span>
+        </div>
+      </div>
+
+      <section class="dispatch-card uploader-card">
+        <div class="card-heading">
+          <div>
+            <span class="step-badge">1</span>
+            <h2>Cargar despacho</h2>
+            <p>Selecciona el PDF generado por el sistema de asignaciones.</p>
+          </div>
+        </div>
+
+        <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="Seleccionar PDF de despacho">
+          <div class="drop-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14a2 2 0 0 0 2-2v-3"/><path d="M3 15v3a2 2 0 0 0 2 2"/></svg>
+          </div>
+          <h3>Arrastra el PDF aquí</h3>
+          <p>o selecciónalo desde tu computador</p>
+          <button id="selectPdfBtn" class="outline-action" type="button">Seleccionar PDF</button>
+          <input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden>
+          <div id="selectedFile" class="selected-file">Ningún archivo seleccionado</div>
+        </div>
+
+        <div class="process-row">
+          <div id="catalogStatus" class="catalog-status">Cargando catálogo de códigos SAP…</div>
+          <button id="processPdfBtn" class="dispatch-primary" type="button" disabled>
+            Procesar PDF
+            <span>→</span>
+          </button>
+        </div>
+        <div id="processMessage" class="process-message" role="status" aria-live="polite"></div>
+      </section>
+
+      <section id="resultsSection" class="results-section" hidden>
+        <div class="section-title-row">
+          <div>
+            <span class="step-badge">2</span>
+            <h2>Resultado del despacho</h2>
+          </div>
+          <button id="clearBtn" class="ghost-button" type="button">Procesar otro PDF</button>
+        </div>
+
+        <div class="dispatch-info-grid">
+          <div class="info-box"><span>Documento</span><strong id="metaDocumento">—</strong></div>
+          <div class="info-box"><span>Técnico</span><strong id="metaTecnico">—</strong></div>
+          <div class="info-box"><span>Cédula</span><strong id="metaCedula">—</strong></div>
+          <div class="info-box"><span>Bandeja</span><strong id="metaBandeja">—</strong></div>
+          <div class="info-box"><span>Fecha de envío</span><strong id="metaFecha">—</strong></div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-card"><span>Serializados</span><strong id="countSerializados">0</strong><small>seriales detectados</small></div>
+          <div class="summary-card"><span>No serializados</span><strong id="countNoSerializados">0</strong><small>códigos SAP</small></div>
+          <div class="summary-card warning-summary"><span>Por revisar</span><strong id="countNoConfigurados">0</strong><small>códigos no configurados</small></div>
+        </div>
+
+        <div class="result-grid">
+          <section class="dispatch-card result-card">
+            <div class="table-heading">
+              <div><h3>Material serializado</h3><p>Salida preparada para registro por serial.</p></div>
+              <button class="copy-button" type="button" data-copy-table="serialTable">Copiar</button>
+            </div>
+            <div class="table-wrap">
+              <table id="serialTable">
+                <thead><tr><th>Serial</th><th>Cédula técnico</th></tr></thead>
+                <tbody id="serialBody"><tr class="empty-row"><td colspan="2">Sin registros</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dispatch-card result-card">
+            <div class="table-heading">
+              <div><h3>Material no serializado</h3><p>Salida preparada por código SAP y cantidad.</p></div>
+              <button class="copy-button" type="button" data-copy-table="noSerialTable">Copiar</button>
+            </div>
+            <div class="table-wrap">
+              <table id="noSerialTable">
+                <thead><tr><th>Código SAP</th><th>Cantidad</th><th>Cédula técnico</th></tr></thead>
+                <tbody id="noSerialBody"><tr class="empty-row"><td colspan="3">Sin registros</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <section id="reviewCard" class="dispatch-card review-card" hidden>
+          <div class="table-heading">
+            <div><h3>Códigos por revisar</h3><p>Estos materiales no tienen una topología reconocida en <b>CodigosSAP.json</b>.</p></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Código SAP</th><th>Dominion</th><th>Detalle</th><th>Cantidad</th><th>Estado</th></tr></thead>
+              <tbody id="reviewBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <footer class="dashboard-footer">SIGLO v0.1 · Material Libre · Despachos</footer>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="js/app.js?v=20260917-4"></script>
+  <script src="js/despachos.js?v=20260917-4"></script>
+</body>
+</html>
