@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Inicio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="assets/icono-siglo.svg">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dashboard-body">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="assets/icono-siglo.svg" alt="Icono SIGLO">
+        <strong>SIGLO</strong>
+      </div>
+
+      <div class="nav-title">MATERIAL LIBRE</div>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link active" href="inicio.html">
+          <svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>
+          Inicio
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M3 8v8l9 5 9-5V8"/></svg>
+          Ingresos
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+          Despachos
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>
+          Devoluciones
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>
+          Informes
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <a class="nav-link" id="logoutBtn" href="index.html">
+          <svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>
+          Cerrar sesión
+        </a>
+      </div>
+    </aside>
+
+    <main class="dashboard-main">
+      <div class="dashboard-top">
+        <div class="dashboard-title">
+          <h1>Bienvenido a SIGLO</h1>
+          <p>Gestión, control y trazabilidad en cada operación.</p>
+        </div>
+        <div class="user-chip">
+          <div class="user-avatar">S</div>
+          <span id="userLabel">Usuario SIGLO</span>
+        </div>
+      </div>
+
+      <div class="section-kicker">Material Libre</div>
+      <section class="module-grid" aria-label="Módulos Material Libre">
+        <a class="module-card" href="#" data-coming-soon>
+          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M3 8v8l9 5 9-5V8"/></svg></div>
+          <h3>Ingresos</h3>
+          <p>Registro y control de entrada de material.</p>
+          <span class="card-arrow">→</span>
+        </a>
+
+        <a class="module-card" href="#" data-coming-soon>
+          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></div>
+          <h3>Despachos</h3>
+          <p>Procesamiento y control de salidas de material.</p>
+          <span class="card-arrow">→</span>
+        </a>
+
+        <a class="module-card" href="#" data-coming-soon>
+          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg></div>
+          <h3>Devoluciones</h3>
+          <p>Registro y seguimiento del material devuelto.</p>
+          <span class="card-arrow">→</span>
+        </a>
+
+        <a class="module-card" href="#" data-coming-soon>
+          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg></div>
+          <h3>Informes</h3>
+          <p>Consultas, indicadores y reportes operativos.</p>
+          <span class="card-arrow">→</span>
+        </a>
+      </section>
+
+      <section class="future-block">
+        <strong>Material Inversa</strong><br>
+        Preparado para una futura etapa del proyecto.
+      </section>
+
+      <footer class="dashboard-footer">SIGLO v0.1 · Sistema Integrado de Gestión de Logística y Operaciones</footer>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="js/app.js"></script>
+</body>
+</html>

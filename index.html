@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Iniciar sesión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/webp" href="assets/icono-siglo.webp">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="login">
+  <main class="login-shell">
+    <section class="brand-panel" aria-label="Identidad SIGLO">
+      <div class="brand-content">
+        <a class="brand-lockup" href="index.html" aria-label="SIGLO">
+          <img class="brand-icon" src="assets/icono-siglo.webp" alt="Icono SIGLO">
+          <div>
+            <div class="brand-name">SIGLO</div>
+            <p class="brand-subtitle">Sistema Integrado de<br>Gestión de Logística y Operaciones</p>
+          </div>
+        </a>
+
+        <div class="accent-line"></div>
+
+        <h1 class="brand-headline">
+          Controla tus procesos<br>
+          <span>logísticos</span> en un solo lugar
+        </h1>
+
+        <div class="brand-features" aria-label="Características">
+          <div class="feature-item">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+            <span>Inventario<br>y almacén</span>
+          </div>
+          <div class="feature-item">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+            <span>Distribución<br>y transporte</span>
+          </div>
+          <div class="feature-item">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>
+            <span>Operaciones<br>más eficientes</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="warehouse-scene" aria-hidden="true">
+        <div class="mountains"></div>
+        <div class="warehouse-building">
+          <div class="warehouse-copy">LOGÍSTICA<br>OPERACIONES<br>UN FUTURO<br>MÁS EFICIENTE</div>
+          <div class="dock dock-1"><span>01</span></div>
+          <div class="dock dock-2"><span>02</span></div>
+          <div class="dock dock-3"><span>03</span></div>
+        </div>
+        <div class="truck">
+          <div class="truck-box"></div>
+          <div class="truck-cab"><div class="truck-window"></div></div>
+          <div class="wheel wheel-a"></div>
+          <div class="wheel wheel-b"></div>
+        </div>
+        <div class="pallets"><i></i><i></i><i></i><i></i></div>
+      </div>
+
+      <div class="corner-words corner-left">PERSONAS<br>PROCESOS<br>RESULTADOS<span></span></div>
+    </section>
+
+    <section class="login-panel">
+      <div class="top-meta">
+        <span>SIGLO&nbsp;&nbsp;v0.1</span>
+        <span class="language"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg> ES <span class="chevron">⌄</span></span>
+      </div>
+
+      <div class="login-card">
+        <header class="login-card-header">
+          <h2>Bienvenido a SIGLO</h2>
+          <p>Inicia sesión para continuar</p>
+        </header>
+
+        <form id="loginForm" class="login-form" novalidate>
+          <label for="email">Correo corporativo</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="tu.correo@empresa.com" required>
+          </div>
+
+          <label for="password">Contraseña</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Ingresa tu contraseña" required>
+            <button class="icon-button" id="togglePassword" type="button" aria-label="Mostrar contraseña">
+              <svg class="eye-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+            </button>
+          </div>
+
+          <div class="form-options">
+            <label class="remember"><input id="remember" type="checkbox"><span></span>Recordarme</label>
+            <button class="text-link" id="forgotPassword" type="button">¿Olvidaste tu contraseña?</button>
+          </div>
+
+          <button class="primary-button" type="submit">Ingresar <span>→</span></button>
+          <p id="loginError" class="form-error" role="alert"></p>
+        </form>
+
+        <div class="divider"><span></span><b>o</b><span></span></div>
+
+        <button id="quickAccess" class="secondary-button" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7"/><path d="m21 3-9 9"/><path d="M17 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h6"/></svg>
+          Acceso a Material Libre
+        </button>
+
+        <footer class="card-footer">
+          <p>SIGLO&nbsp; | &nbsp;Sistema Integrado de Gestión de Logística y Operaciones</p>
+          <p>© 2026. Todos los derechos reservados.</p>
+        </footer>
+      </div>
+
+      <div class="right-words right-upper">PLANEAR<br>GESTIONAR<br>AUMENTAR<br>CRECER<span></span></div>
+      <div class="right-words right-lower">MOVEMOS<br>OPERACIONES<br>IMPULSAMOS<br>RESULTADOS<span></span></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="js/app.js"></script>
+</body>
+</html>
