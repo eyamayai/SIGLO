@@ -1,0 +1,31 @@
+/* Ajustes visuales del login SIGLO */
+.brand-features{
+  align-items:stretch;
+  gap:0;
+}
+
+.feature-item{
+  min-height:152px;
+  justify-content:flex-start;
+}
+
+.feature-image{
+  display:block;
+  width:72px;
+  height:72px;
+  object-fit:contain;
+  object-position:center;
+  margin-bottom:4px;
+  filter:drop-shadow(0 5px 10px rgba(19,55,91,.08));
+}
+
+.card-footer-login{
+  margin-top:44px;
+}
+
+@media (max-width:1100px){
+  .feature-image{
+    width:64px;
+    height:64px;
+  }
+}
