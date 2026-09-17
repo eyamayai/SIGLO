@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Wallpaper temporal SIGLO</title>
+  <desc id="desc">Fondo temporal de logística. Reemplazar por assets/login-wallpaper.jpg.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f8fcff"/>
+      <stop offset="0.58" stop-color="#eef6fc"/>
+      <stop offset="1" stop-color="#dceaf5"/>
+    </linearGradient>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#dce7ef"/>
+      <stop offset="1" stop-color="#9eb3c3"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <path d="M0 715 170 595 260 650 395 530 530 625 650 565 780 690v210H0Z" fill="#c5d9e8" opacity=".55"/>
+  <path d="M620 465 1600 230v670H520V590Z" fill="url(#wall)"/>
+  <g fill="#435b6c">
+    <rect x="885" y="650" width="170" height="250"/>
+    <rect x="1080" y="610" width="170" height="290"/>
+    <rect x="1275" y="570" width="170" height="330"/>
+  </g>
+  <g fill="#edf3f7" font-family="Inter,Arial,sans-serif" font-size="42">
+    <text x="910" y="705">01</text><text x="1105" y="665">02</text><text x="1300" y="625">03</text>
+  </g>
+  <g transform="translate(335 700)">
+    <rect x="118" y="0" width="390" height="105" rx="8" fill="#d8e1e8"/>
+    <path d="M0 38 26 0h110v105H0Z" fill="#e8eff4"/>
+    <path d="M36 15h62l23 34H22Z" fill="#587a94"/>
+    <circle cx="75" cy="105" r="34" fill="#667987"/><circle cx="75" cy="105" r="17" fill="#27333d"/>
+    <circle cx="425" cy="105" r="34" fill="#667987"/><circle cx="425" cy="105" r="17" fill="#27333d"/>
+  </g>
+  <g transform="translate(1420 720)" fill="#b89a78">
+    <rect width="72" height="68"/><rect x="78" width="72" height="68"/><rect y="74" width="72" height="68"/><rect x="78" y="74" width="72" height="68"/>
+  </g>
+</svg>
