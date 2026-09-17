@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" role="img" aria-labelledby="title desc">
+  <title id="title">SIGLO</title>
+  <desc id="desc">Logo temporal de SIGLO. Reemplazar por assets/logo-siglo.png.</desc>
+  <rect width="900" height="320" fill="none"/>
+  <g transform="translate(18 40)">
+    <circle cx="105" cy="105" r="82" fill="#2f78b8"/>
+    <circle cx="105" cy="105" r="56" fill="#ffffff"/>
+    <path d="M105 62 151 87 105 112 59 87Z" fill="#374151"/>
+    <path d="M59 96 99 118v52L59 148Z" fill="#374151"/>
+    <path d="M151 96 111 118v52l40-22Z" fill="#374151"/>
+    <g stroke="#2f78b8" stroke-width="16" stroke-linecap="round">
+      <path d="M105 3v23M105 184v23M3 105h23M184 105h23M33 33l16 16M161 161l16 16M177 33l-16 16M49 161l-16 16"/>
+    </g>
+  </g>
+  <text x="255" y="160" font-family="Inter,Arial,sans-serif" font-size="118" font-weight="800" fill="#1f2b34">SIGLO</text>
+  <text x="258" y="216" font-family="Inter,Arial,sans-serif" font-size="33" font-weight="500" fill="#1f2b34">Sistema Integrado de</text>
+  <text x="258" y="260" font-family="Inter,Arial,sans-serif" font-size="33" font-weight="500" fill="#1f2b34">Gestión de Logística y Operaciones</text>
+</svg>
