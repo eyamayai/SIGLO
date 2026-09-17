@@ -1,4 +1,41 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Recursos visuales oficiales de SIGLO.
+  // Se fuerzan con versionado en la URL para evitar que GitHub Pages o el navegador
+  // sigan mostrando una copia antigua después de reemplazar las imágenes.
+  const assetVersion = '20260917-2';
+
+  const assetStyle = document.createElement('style');
+  assetStyle.textContent = `
+    .brand-panel::before {
+      background-image:
+        linear-gradient(180deg,rgba(249,252,255,.98) 0%,rgba(249,252,255,.95) 31%,rgba(246,251,255,.74) 51%,rgba(231,241,249,.14) 74%,rgba(222,236,247,.05) 100%),
+        url("assets/login-wallpaper.png?v=${assetVersion}") !important;
+      background-position: center, center bottom !important;
+      background-size: cover, cover !important;
+      background-repeat: no-repeat !important;
+    }
+  `;
+  document.head.appendChild(assetStyle);
+
+  const brandLogo = document.querySelector('.brand-logo');
+  if (brandLogo) {
+    if (brandLogo.tagName === 'OBJECT') {
+      brandLogo.setAttribute('data', `assets/logo-siglo.png?v=${assetVersion}`);
+    } else {
+      brandLogo.setAttribute('src', `assets/logo-siglo.png?v=${assetVersion}`);
+    }
+  }
+
+  document.querySelectorAll('img[src*="icono-siglo.svg"]').forEach((img) => {
+    img.src = `assets/icono-siglo.png?v=${assetVersion}`;
+  });
+
+  const favicon = document.querySelector('link[rel="icon"]');
+  if (favicon) {
+    favicon.type = 'image/png';
+    favicon.href = `assets/icono-siglo.png?v=${assetVersion}`;
+  }
+
   const toast = document.getElementById('toast');
   const showToast = (message) => {
     if (!toast) return;
