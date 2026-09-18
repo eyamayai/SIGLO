@@ -85,7 +85,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     body.innerHTML = rows.map(row => {
       const movementClass = row.tipo_movimiento === 'INGRESO'
         ? 'in'
-        : (row.tipo_movimiento === 'DEVOLUCION' ? 'return' : 'out');
+        : (row.tipo_movimiento === 'DEVOLUCION'
+          ? 'return'
+          : (row.tipo_movimiento === 'CARGA INICIAL' ? 'initial' : 'out'));
       const statusClass = row.estado_inventario === 'Disponible'
         ? 'available'
         : (row.estado_inventario === 'Garantía' ? 'guarantee' : 'dispatched');
