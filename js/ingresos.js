@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-10';
+  const VERSION = '20260918-11';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -43,16 +43,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadCatalog() {
     try {
-      const [topologyResponse, locationResponse] = await Promise.all([
-        fetch(`data/CodigosSAP.json?v=${VERSION}`, { cache: 'no-store' }),
-        fetch(`data/Ubicaciones.json?v=${VERSION}`, { cache: 'no-store' })
-      ]);
-
-      if (!topologyResponse.ok) throw new Error(`CodigosSAP.json · HTTP ${topologyResponse.status}`);
+      const locationResponse = await fetch(`data/Ubicaciones.json?v=${VERSION}`, { cache: 'no-store' });
       if (!locationResponse.ok) throw new Error(`Ubicaciones.json · HTTP ${locationResponse.status}`);
-
-      catalog = await topologyResponse.json();
       locations = await locationResponse.json();
+
+      const supabase = window.sigloSupabase;
+      if (supabase) {
+        const { data, error } = await supabase.rpc('consultar_catalogo_codigos');
+        if (!error && Array.isArray(data) && data.length) catalog = data;
+      }
+
+      if (!catalog.length) {
+        const topologyResponse = await fetch(`data/CodigosSAP.json?v=${VERSION}`, { cache: 'no-store' });
+        if (!topologyResponse.ok) throw new Error(`CodigosSAP.json · HTTP ${topologyResponse.status}`);
+        catalog = await topologyResponse.json();
+      }
 
       catalogMap = new Map(catalog.map(item => [normalizeCode(item.codigo_sap), item]));
       locationMap = new Map(locations.map(item => [normalizeCode(item.ubicacion), String(item.segmento || '').trim()]));
@@ -63,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       catalogStatus.textContent = 'No fue posible cargar los catálogos de SIGLO';
       catalogStatus.className = 'catalog-status error';
-      processMessage.textContent = 'Verifica data/CodigosSAP.json y data/Ubicaciones.json.';
+      processMessage.textContent = 'No fue posible consultar los catálogos necesarios.';
       processMessage.className = 'process-message error';
       console.error(error);
     }
