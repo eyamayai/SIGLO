@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-7';
+  const VERSION = '20260918-8';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -443,8 +443,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       registerDispatchBtn.innerHTML = oldText;
       despachoRegistrado = false;
-      processMessage.textContent = dbMessage;
-      processMessage.className = 'process-message error';
+      processMessage.textContent = '';
+      processMessage.className = 'process-message';
 
       validateDispatchRegistration();
 
@@ -454,12 +454,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (registerHelp) registerHelp.textContent = dbMessage;
 
       registerBar?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-      if (/ya fue registrado anteriormente/i.test(dbMessage)) {
-        window.alert(`SIGLO · Despacho duplicado\n\n${dbMessage}`);
-      } else {
-        window.alert(`SIGLO · No se pudo registrar\n\n${dbMessage}`);
-      }
       return;
     }
 
