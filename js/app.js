@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Recursos visuales oficiales de SIGLO.
   // Se fuerzan con versionado en la URL para evitar que GitHub Pages o el navegador
   // sigan mostrando una copia antigua después de reemplazar las imágenes.
@@ -54,25 +54,109 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const supabase = window.sigloSupabase;
+  const isLoginPage = document.body.dataset.page === 'login';
   const form = document.getElementById('loginForm');
   const email = document.getElementById('email');
   const error = document.getElementById('loginError');
-  if (form) {
-    form.addEventListener('submit', (e) => {
+
+  const setLoginBusy = (busy) => {
+    const submit = form?.querySelector('button[type="submit"]');
+    const create = document.getElementById('createAccess');
+    if (submit) submit.disabled = busy;
+    if (create) create.disabled = busy;
+  };
+
+  const rememberEmail = () => {
+    const value = email?.value.trim() || '';
+    if (document.getElementById('remember')?.checked && value) {
+      localStorage.setItem('siglo_remember', value);
+    } else {
+      localStorage.removeItem('siglo_remember');
+    }
+  };
+
+  if (!supabase) {
+    if (error) error.textContent = 'No fue posible conectar con el servicio de autenticación.';
+  } else if (!isLoginPage) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      window.location.replace('index.html');
+      return;
+    }
+    localStorage.setItem('siglo_user', session.user.email || 'Usuario SIGLO');
+  }
+
+  if (form && supabase) {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!email.value.trim() || !password.value.trim()) {
+      error.textContent = '';
+
+      const correo = email.value.trim();
+      const clave = password.value.trim();
+      if (!correo || !clave) {
         error.textContent = 'Ingresa tu correo y contraseña.';
         return;
       }
-      localStorage.setItem('siglo_user', email.value.trim());
-      if (document.getElementById('remember')?.checked) {
-        localStorage.setItem('siglo_remember', email.value.trim());
-      } else {
-        localStorage.removeItem('siglo_remember');
+
+      setLoginBusy(true);
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: correo,
+        password: clave
+      });
+      setLoginBusy(false);
+
+      if (authError || !data.session) {
+        error.textContent = authError?.message === 'Invalid login credentials'
+          ? 'Correo o contraseña incorrectos.'
+          : (authError?.message || 'No fue posible iniciar sesión.');
+        return;
       }
+
+      rememberEmail();
+      localStorage.setItem('siglo_user', data.user?.email || correo);
       window.location.href = 'inicio.html';
     });
   }
+
+  document.getElementById('createAccess')?.addEventListener('click', async () => {
+    if (!supabase) return;
+
+    error.textContent = '';
+    const correo = email?.value.trim() || '';
+    const clave = password?.value.trim() || '';
+
+    if (!correo || !clave) {
+      error.textContent = 'Escribe el correo y una contraseña para crear el acceso.';
+      return;
+    }
+    if (clave.length < 6) {
+      error.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+      return;
+    }
+
+    setLoginBusy(true);
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: correo,
+      password: clave
+    });
+    setLoginBusy(false);
+
+    if (signUpError) {
+      error.textContent = signUpError.message || 'No fue posible crear el acceso.';
+      return;
+    }
+
+    rememberEmail();
+
+    if (data.session) {
+      localStorage.setItem('siglo_user', data.user?.email || correo);
+      window.location.href = 'inicio.html';
+      return;
+    }
+
+    error.textContent = 'Acceso creado. Revisa tu correo y confirma la cuenta antes de ingresar.';
+  });
 
   const remembered = localStorage.getItem('siglo_remember');
   if (remembered && email) {
@@ -81,23 +165,35 @@ document.addEventListener('DOMContentLoaded', () => {
     if (remember) remember.checked = true;
   }
 
-  document.getElementById('forgotPassword')?.addEventListener('click', () => {
-    showToast('La recuperación de contraseña se habilitará más adelante.');
-  });
+  document.getElementById('forgotPassword')?.addEventListener('click', async () => {
+    if (!supabase) return;
+    const correo = email?.value.trim() || '';
+    if (!correo) {
+      error.textContent = 'Escribe primero tu correo corporativo.';
+      return;
+    }
 
-  document.getElementById('quickAccess')?.addEventListener('click', () => {
-    localStorage.setItem('siglo_user', 'Acceso Material Libre');
-    window.location.href = 'inicio.html';
+    const redirectTo = new URL('index.html', window.location.href).href;
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(correo, { redirectTo });
+    if (resetError) {
+      error.textContent = resetError.message || 'No fue posible enviar la recuperación.';
+      return;
+    }
+    showToast('Enviamos las instrucciones de recuperación a tu correo.');
   });
 
   const userLabel = document.getElementById('userLabel');
   if (userLabel) {
-    const user = localStorage.getItem('siglo_user') || 'Usuario SIGLO';
+    const { data: { session } } = supabase
+      ? await supabase.auth.getSession()
+      : { data: { session: null } };
+    const user = session?.user?.email || localStorage.getItem('siglo_user') || 'Usuario SIGLO';
     userLabel.textContent = user.includes('@') ? user.split('@')[0] : user;
   }
 
-  document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+  document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
     e.preventDefault();
+    if (supabase) await supabase.auth.signOut();
     localStorage.removeItem('siglo_user');
     window.location.href = 'index.html';
   });
