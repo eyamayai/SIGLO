@@ -8,15 +8,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260917-4">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-5">
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/despachos.css?v=20260917-4">
+  <link rel="stylesheet" href="css/despachos.css?v=20260918-5">
 </head>
 <body class="dashboard-body">
   <div class="app-shell">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <img src="assets/icono-siglo.png?v=20260917-4" alt="Icono SIGLO">
+        <img src="assets/icono-siglo.png?v=20260918-5" alt="Icono SIGLO">
         <strong>SIGLO</strong>
       </div>
 
@@ -99,7 +99,7 @@
         <div class="section-title-row">
           <div>
             <span class="step-badge">2</span>
-            <h2>Resultado del despacho</h2>
+            <h2>Revisar y registrar despacho</h2>
           </div>
           <button id="clearBtn" class="ghost-button" type="button">Procesar otro PDF</button>
         </div>
@@ -115,7 +115,7 @@
         <div class="summary-grid">
           <div class="summary-card"><span>Serializados</span><strong id="countSerializados">0</strong><small>seriales detectados</small></div>
           <div class="summary-card"><span>No serializados</span><strong id="countNoSerializados">0</strong><small>códigos SAP</small></div>
-          <div class="summary-card warning-summary"><span>Por revisar</span><strong id="countNoConfigurados">0</strong><small>códigos no configurados</small></div>
+          <div class="summary-card warning-summary"><span>Por revisar</span><strong id="countNoConfigurados">0</strong><small>bloqueos antes de registrar</small></div>
         </div>
 
         <div class="result-grid">
@@ -148,14 +148,25 @@
 
         <section id="reviewCard" class="dispatch-card review-card" hidden>
           <div class="table-heading">
-            <div><h3>Códigos por revisar</h3><p>Estos materiales no tienen una topología reconocida en <b>CodigosSAP.json</b>.</p></div>
+            <div><h3>Revisión requerida</h3><p>Estos hallazgos deben resolverse antes de registrar el despacho.</p></div>
           </div>
-          <div class="table-wrap">
+          <div id="reviewMessages" class="review-messages"></div>
+          <div id="reviewTableWrap" class="table-wrap" hidden>
             <table>
               <thead><tr><th>Código SAP</th><th>Dominion</th><th>Detalle</th><th>Cantidad</th><th>Estado</th></tr></thead>
               <tbody id="reviewBody"></tbody>
             </table>
           </div>
+        </section>
+
+        <section class="dispatch-register-bar">
+          <div>
+            <strong id="dispatchRegisterTitle">Despacho pendiente de validación</strong>
+            <p id="dispatchRegisterHelp">Procesa el PDF y resuelve cualquier bloqueo antes de registrar.</p>
+          </div>
+          <button id="registerDispatchBtn" class="dispatch-register-button" type="button" disabled>
+            Registrar despacho <span>→</span>
+          </button>
         </section>
       </section>
 
@@ -168,6 +179,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js?v=20260918-1"></script>
   <script src="js/app.js?v=20260918-4"></script>
-  <script src="js/despachos.js?v=20260917-4"></script>
+  <script src="js/despachos.js?v=20260918-5"></script>
 </body>
 </html>
