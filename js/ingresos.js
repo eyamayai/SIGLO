@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-8';
+  const VERSION = '20260918-9';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -18,8 +18,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let locations = [];
   let locationMap = new Map();
   let currentRows = [];
+  let currentMetadata = {};
   let blockingIssues = [];
   let currentAllocations = new Map();
+  let ingresoRegistrado = false;
 
   if (window.pdfjsLib) {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -553,6 +555,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderResults(metadata, parsed) {
+    currentMetadata = { ...metadata };
+    ingresoRegistrado = false;
     document.getElementById('metaDocumento').textContent = metadata.documento || 'No detectado';
     document.getElementById('metaFecha').textContent = metadata.fecha || 'No detectada';
     document.getElementById('metaAlmacenPdf').textContent = metadata.almacenPdf || 'No detectado';
@@ -580,6 +584,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const bar = document.querySelector('.register-bar');
     const title = document.getElementById('registerTitle');
     const help = document.getElementById('registerHelp');
+
+    if (ingresoRegistrado) {
+      registerBtn.disabled = true;
+      bar.classList.add('ready');
+      title.textContent = 'Ingreso registrado';
+      help.textContent = 'La información ya fue almacenada en la base de datos.';
+      return;
+    }
+
 
     let pending = 0;
 
@@ -663,34 +676,89 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  registerBtn?.addEventListener('click', () => {
+  registerBtn?.addEventListener('click', async () => {
     validateRegistration();
     if (registerBtn.disabled) return;
 
-    const payload = currentRows.map(row => {
+    const supabase = window.sigloSupabase;
+    if (!supabase) {
+      processMessage.textContent = 'No fue posible conectar con la base de datos.';
+      processMessage.className = 'process-message error';
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      processMessage.textContent = 'Tu sesión expiró. Inicia sesión nuevamente antes de registrar el ingreso.';
+      processMessage.className = 'process-message error';
+      setTimeout(() => window.location.replace('index.html'), 1400);
+      return;
+    }
+
+    const items = currentRows.map(row => {
       const destino = getAllocation(row.dominio_pdf);
       return {
-        ...row,
+        codigo_sap: row.codigo_sap,
+        dominio_pdf: row.dominio_pdf,
+        descripcion: row.descripcion,
+        topologia: row.topologia,
+        serial: row.serial || null,
+        cantidad: Number(row.cantidad || 0),
+        lote: row.lote,
         centro: 'C903',
         almacen: destino.almacen,
         ubicacion: destino.ubicacion,
-        segmento: destino.segmento
+        segmento: destino.segmento,
+        stock: 1,
+        tipo: 'LIBRE',
+        estado: 'Bueno'
       };
     });
-    console.log('SIGLO · Ingreso validado (sin persistencia BD)', payload);
 
-    processMessage.textContent = `Ingreso validado: ${payload.length} registro(s) listos. En esta etapa de SIGLO todavía no se almacena información en una BD.`;
-    processMessage.className = 'process-message success';
+    const payload = {
+      documento: currentMetadata.documento || '',
+      fecha: currentMetadata.fecha || null,
+      almacen_pdf: currentMetadata.almacenPdf || null,
+      responsable_almacen: currentMetadata.responsable || null,
+      observacion: currentMetadata.observacion || null,
+      items
+    };
 
     const oldText = registerBtn.innerHTML;
-    registerBtn.innerHTML = 'Validado ✓';
-    setTimeout(() => { registerBtn.innerHTML = oldText; }, 1800);
+    registerBtn.disabled = true;
+    registerBtn.innerHTML = 'Registrando…';
+    processMessage.textContent = 'Guardando ingreso en la base de datos de SIGLO…';
+    processMessage.className = 'process-message';
+
+    const { data, error } = await supabase.rpc('registrar_ingreso', {
+      p_payload: payload
+    });
+
+    if (error) {
+      console.error('Error registrando ingreso', error);
+      registerBtn.innerHTML = oldText;
+      ingresoRegistrado = false;
+      processMessage.textContent = error.message || 'No fue posible registrar el ingreso.';
+      processMessage.className = 'process-message error';
+      validateRegistration();
+      return;
+    }
+
+    ingresoRegistrado = true;
+    registerBtn.innerHTML = 'Registrado ✓';
+    processMessage.textContent =
+      `Ingreso ${data?.documento || payload.documento} registrado correctamente · ` +
+      `${data?.movimientos ?? items.length} movimiento(s) guardado(s).`;
+    processMessage.className = 'process-message success';
+    validateRegistration();
   });
 
   clearBtn?.addEventListener('click', () => {
     currentFile = null;
     currentRows = [];
+    currentMetadata = {};
     blockingIssues = [];
+    ingresoRegistrado = false;
     pdfInput.value = '';
     selectedFile.textContent = 'Ningún archivo seleccionado';
     processMessage.textContent = '';
