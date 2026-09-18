@@ -20,3 +20,20 @@
   .result-grid{gap:12px;margin-top:12px}
   .result-card,.review-card{padding:16px}
 }
+
+
+/* Registro real de despachos */
+.review-messages{display:grid;gap:8px;margin-bottom:12px}
+.review-message{background:#fff8ec;border:1px solid #f0dfc3;border-radius:10px;padding:11px 13px;color:#7d571e;font-size:12px;line-height:1.45}
+.dispatch-register-bar{margin-top:16px;background:#17334d;color:#fff;border-radius:16px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:18px;box-shadow:0 10px 30px rgba(23,51,77,.13)}
+.dispatch-register-bar strong{font-size:15px}
+.dispatch-register-bar p{margin:5px 0 0;color:#c0d0de;font-size:12px}
+.dispatch-register-bar.ready{background:#174934}
+.dispatch-register-bar.ready p{color:#c6e5d6}
+.dispatch-register-button{border:0;border-radius:10px;background:linear-gradient(90deg,#1b7bc7,#1590d8);color:#fff;height:48px;min-width:190px;padding:0 22px;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(25,118,201,.16)}
+.dispatch-register-button span{margin-left:18px}
+.dispatch-register-button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+@media(max-width:800px){
+  .dispatch-register-bar{align-items:stretch;flex-direction:column}
+  .dispatch-register-button{width:100%}
+}
