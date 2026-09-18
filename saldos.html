@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-11">
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/saldos.css?v=20260918-1">
+  <link rel="stylesheet" href="css/saldos.css?v=20260918-2">
 </head>
 <body class="dashboard-body">
   <div class="app-shell">
@@ -98,7 +98,10 @@
             <h2>Consultar inventario</h2>
             <p>Busca por serial, Código SAP, Dominion, descripción, ubicación o segmento.</p>
           </div>
-          <button id="refreshBalancesBtn" class="refresh-button" type="button">Actualizar</button>
+          <div class="filter-actions">
+            <button id="resetBalancesBtn" class="reset-button" type="button">Restablecer</button>
+            <button id="refreshBalancesBtn" class="refresh-button" type="button">Actualizar</button>
+          </div>
         </div>
         <div class="filters-grid">
           <label class="search-field">
@@ -197,6 +200,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js?v=20260918-1"></script>
   <script src="js/app.js?v=20260918-4"></script>
-  <script src="js/saldos.js?v=20260918-1"></script>
+  <script src="js/saldos.js?v=20260918-2"></script>
 </body>
 </html>
