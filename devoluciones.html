@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Devoluciones</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-13">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/devoluciones.css?v=20260918-1">
+</head>
+<body class="dashboard-body">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="assets/icono-siglo.png?v=20260918-13" alt="Icono SIGLO">
+        <strong>SIGLO</strong>
+      </div>
+      <div class="nav-title">MATERIAL LIBRE</div>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="inicio.html"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
+        <a class="nav-link" href="ingresos.html"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Ingresos</a>
+        <a class="nav-link" href="despachos.html"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Despachos</a>
+        <a class="nav-link" href="saldos.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Saldos</a>
+        <a class="nav-link" href="movimientos.html"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg>Movimientos</a>
+        <a class="nav-link active" href="devoluciones.html"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>Devoluciones</a>
+        <a class="nav-link" href="#" data-coming-soon><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>Informes</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <a class="nav-link" id="logoutBtn" href="index.html"><svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>Cerrar sesión</a>
+      </div>
+    </aside>
+
+    <main class="dashboard-main return-main">
+      <div class="dashboard-top">
+        <div class="dashboard-title">
+          <div class="breadcrumb"><a href="inicio.html">Material Libre</a><span>›</span><strong>Devoluciones</strong></div>
+          <h1>Devoluciones</h1>
+          <p>Procesa el PDF, selecciona un único destino y devuelve el material con trazabilidad completa.</p>
+        </div>
+        <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div>
+      </div>
+
+      <section class="return-card uploader-card">
+        <div class="card-heading">
+          <div><span class="step-badge">1</span><h2>Cargar devolución</h2><p>Procesar el PDF no modifica el inventario.</p></div>
+        </div>
+        <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="Seleccionar PDF de devolución">
+          <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14a2 2 0 0 0 2-2v-3"/><path d="M3 15v3a2 2 0 0 0 2 2"/></svg></div>
+          <h3>Arrastra el PDF aquí</h3>
+          <p>o selecciónalo desde tu computador</p>
+          <button id="selectPdfBtn" class="outline-action" type="button">Seleccionar PDF</button>
+          <input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden>
+          <div id="selectedFile" class="selected-file">Ningún archivo seleccionado</div>
+        </div>
+        <div class="process-row">
+          <div id="catalogStatus" class="catalog-status">Cargando catálogo de códigos SAP…</div>
+          <button id="processPdfBtn" class="return-primary" type="button" disabled>Procesar PDF <span>→</span></button>
+        </div>
+        <div id="processMessage" class="process-message" role="status" aria-live="polite"></div>
+      </section>
+
+      <section id="resultsSection" class="results-section" hidden>
+        <div class="section-title-row">
+          <div><span class="step-badge">2</span><h2>Revisar devolución</h2></div>
+          <button id="clearBtn" class="ghost-button" type="button">Procesar otro PDF</button>
+        </div>
+
+        <div class="return-info-grid">
+          <div class="info-box"><span>Documento</span><strong id="metaDocumento">—</strong></div>
+          <div class="info-box"><span>Técnico</span><strong id="metaTecnico">—</strong></div>
+          <div class="info-box"><span>Cédula</span><strong id="metaCedula">—</strong></div>
+          <div class="info-box"><span>Fecha</span><strong id="metaFecha">—</strong></div>
+        </div>
+
+        <section class="return-card destination-card">
+          <div>
+            <h3>Destino de la devolución *</h3>
+            <p>El destino aplica a todo el PDF. Sin selección, SIGLO no permite registrar.</p>
+          </div>
+          <label>
+            <span>Destino</span>
+            <select id="returnDestination">
+              <option value="">Seleccionar…</option>
+              <option value="LIBRE">Libre</option>
+              <option value="DESMONTE">Desmonte</option>
+            </select>
+          </label>
+          <div id="destinationEffect" class="destination-effect">Selecciona Libre o Desmonte para ver el resultado.</div>
+        </section>
+
+        <div class="summary-grid">
+          <div class="summary-card"><span>Serializados</span><strong id="countSerializados">0</strong><small>seriales detectados</small></div>
+          <div class="summary-card"><span>No serializados</span><strong id="countNoSerializados">0</strong><small>códigos SAP / Dominion</small></div>
+          <div class="summary-card warning-summary"><span>Por revisar</span><strong id="countReview">0</strong><small>bloqueos antes de registrar</small></div>
+        </div>
+
+        <div class="result-grid">
+          <section class="return-card result-card">
+            <div class="table-heading"><div><h3>Material serializado</h3><p>Debe existir y estar actualmente Despachado.</p></div></div>
+            <div class="table-wrap"><table><thead><tr><th>Serial</th><th>Código SAP</th><th>Dominion</th></tr></thead>
+              <tbody id="serialBody"><tr class="empty-row"><td colspan="3">Sin registros</td></tr></tbody></table></div>
+          </section>
+          <section class="return-card result-card">
+            <div class="table-heading"><div><h3>Material no serializado</h3><p>La cantidad no puede superar lo pendiente por devolver.</p></div></div>
+            <div class="table-wrap"><table><thead><tr><th>Código SAP</th><th>Dominion</th><th>Cantidad</th></tr></thead>
+              <tbody id="noSerialBody"><tr class="empty-row"><td colspan="3">Sin registros</td></tr></tbody></table></div>
+          </section>
+        </div>
+
+        <section id="reviewCard" class="return-card review-card" hidden>
+          <div class="table-heading"><div><h3>Revisión requerida</h3><p>Corrige estos hallazgos antes de registrar.</p></div></div>
+          <div id="reviewMessages" class="review-messages"></div>
+        </section>
+
+        <section class="return-register-bar">
+          <div><strong id="returnRegisterTitle">Devolución pendiente de validación</strong><p id="returnRegisterHelp">Procesa el PDF y selecciona el destino.</p></div>
+          <button id="registerReturnBtn" class="return-register-button" type="button" disabled>Registrar devolución <span>→</span></button>
+        </section>
+      </section>
+
+      <footer class="dashboard-footer">SIGLO v0.1 · Devoluciones</footer>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js?v=20260918-1"></script>
+  <script src="js/app.js?v=20260918-4"></script>
+  <script src="js/devoluciones.js?v=20260918-1"></script>
+</body>
+</html>
