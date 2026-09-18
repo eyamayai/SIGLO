@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-8';
+  const VERSION = '20260918-9';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -218,14 +218,25 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach(item => {
       const topologia = normalizeTopology(item.topologia);
       if (topologia.includes('SIN PERFIL DE SERIE')) {
-        const current = noSerialMap.get(item.codigo_sap) || { codigo_sap: item.codigo_sap, cantidad: 0, cedula };
+        const key = `${item.codigo_sap}|${item.dominio}`;
+        const current = noSerialMap.get(key) || {
+          codigo_sap: item.codigo_sap,
+          dominio: item.dominio,
+          cantidad: 0,
+          cedula
+        };
         current.cantidad += item.cantidad;
-        noSerialMap.set(item.codigo_sap, current);
+        noSerialMap.set(key, current);
         return;
       }
 
       if (topologia.includes('CON PERFIL DE SERIE')) {
-        item.serials.forEach(serial => serializados.push({ serial, cedula }));
+        item.serials.forEach(serial => serializados.push({
+          serial,
+          codigo_sap: item.codigo_sap,
+          dominio: item.dominio,
+          cedula
+        }));
         if (item.serials.length !== Math.round(item.cantidad)) {
           serialWarnings.push(`${item.codigo_sap}: se esperaban ${Math.round(item.cantidad)} seriales y se detectaron ${item.serials.length}.`);
         }
@@ -417,9 +428,14 @@ document.addEventListener('DOMContentLoaded', () => {
       fecha: currentMetadata.fecha || null,
       tecnico: currentMetadata.nombre || null,
       cedula: currentMetadata.cedula || '',
-      seriales: currentClassification.serializados.map(row => row.serial),
+      seriales: currentClassification.serializados.map(row => ({
+        serial: row.serial,
+        codigo_sap: row.codigo_sap,
+        dominio: row.dominio
+      })),
       no_serializados: currentClassification.noSerializados.map(row => ({
         codigo_sap: row.codigo_sap,
+        dominio: row.dominio,
         cantidad: Number(row.cantidad || 0)
       }))
     };
