@@ -62,3 +62,30 @@
 @media(max-width:800px){
   .app-shell{grid-template-columns:1fr}
 }
+
+
+/* Corrección manual de seriales no detectados */
+.serial-corrections{margin-top:10px;border-top:1px solid #ecd7b6;padding-top:12px}
+.serial-corrections-title{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:10px}
+.serial-corrections-title strong{color:#704913;font-size:13px}
+.serial-corrections-title span{color:#8b6a3b;font-size:11px}
+.serial-correction-row{display:grid;grid-template-columns:130px 120px minmax(240px,1fr) 190px;gap:10px;align-items:end;background:#fff;border:1px solid #efddc1;border-radius:10px;padding:10px 12px;margin-top:8px}
+.serial-correction-row>div span,.serial-correction-row label>span{display:block;color:#8a7252;font-size:10px;margin-bottom:4px}
+.serial-correction-row>div strong{display:block;color:#3b4856;font-size:12px;line-height:1.35}
+.serial-correction-description strong{font-weight:600}
+.serial-fix-input{width:100%;height:36px;border:1px solid #d5c3a7;border-radius:8px;padding:0 10px;font:inherit;font-size:12px;color:#21384c;outline:none;background:#fff}
+.serial-fix-input:focus{border-color:#1781d3;box-shadow:0 0 0 3px rgba(23,129,211,.08)}
+.serial-fix-input.invalid{border-color:#d28a3a;background:#fffaf3}
+.serial-fix-input.corrected{border-color:#66aa82;background:#f4fbf7}
+@media(max-width:1050px){
+  .serial-correction-row{grid-template-columns:120px 110px 1fr 180px}
+}
+@media(max-width:800px){
+  .serial-corrections-title{align-items:flex-start;flex-direction:column}
+  .serial-correction-row{grid-template-columns:1fr 1fr}
+  .serial-correction-description{grid-column:1/-1}
+}
+@media(max-width:520px){
+  .serial-correction-row{grid-template-columns:1fr}
+  .serial-correction-description{grid-column:auto}
+}
