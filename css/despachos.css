@@ -37,3 +37,7 @@
   .dispatch-register-bar{align-items:stretch;flex-direction:column}
   .dispatch-register-button{width:100%}
 }
+
+
+.dispatch-register-bar.error{background:#6b2727}
+.dispatch-register-bar.error p{color:#f2d2d2}
