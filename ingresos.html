@@ -8,15 +8,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-2">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-4">
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/ingresos.css?v=20260918-2">
+  <link rel="stylesheet" href="css/ingresos.css?v=20260918-4">
 </head>
 <body class="dashboard-body">
   <div class="app-shell">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <img src="assets/icono-siglo.png?v=20260918-2" alt="Icono SIGLO">
+        <img src="assets/icono-siglo.png?v=20260918-4" alt="Icono SIGLO">
         <strong>SIGLO</strong>
       </div>
 
@@ -120,35 +120,49 @@
         <section class="ingreso-card manual-card">
           <div class="table-heading">
             <div>
-              <h3>Datos obligatorios del ingreso</h3>
-              <p>Estos cuatro datos se aplicarán a todos los materiales detectados en este PDF.</p>
+              <h3>Datos generales del ingreso</h3>
+              <p>Centro, Stock, Tipo y Estado son automáticos. El Segmento se aplica a todos los materiales del PDF.</p>
             </div>
-            <span id="manualStatus" class="status-chip pending">4 pendientes</span>
+            <span id="manualStatus" class="status-chip pending">Pendiente</span>
           </div>
 
-          <div class="manual-grid">
-            <label>
-              <span>Centro *</span>
-              <input id="centroInput" type="text" autocomplete="off" placeholder="Ej. C903">
-            </label>
-            <label>
-              <span>Almacén *</span>
-              <input id="almacenInput" type="text" autocomplete="off" placeholder="Ej. A221">
-            </label>
-            <label>
-              <span>Ubicación *</span>
-              <input id="ubicacionInput" type="text" autocomplete="off" placeholder="Ubicación">
-            </label>
-            <label>
+          <div class="general-entry-grid">
+            <div class="fixed-field">
+              <span>Centro</span>
+              <strong>C903</strong>
+              <small>Automático</small>
+            </div>
+            <label class="segment-field">
               <span>Segmento *</span>
               <input id="segmentoInput" type="text" autocomplete="off" placeholder="Segmento">
             </label>
+            <div class="fixed-field"><span>Stock</span><strong>1</strong><small>Automático</small></div>
+            <div class="fixed-field"><span>Tipo</span><strong>LIBRE</strong><small>Automático</small></div>
+            <div class="fixed-field"><span>Estado</span><strong>Bueno</strong><small>Automático</small></div>
           </div>
+        </section>
 
-          <div class="auto-values">
-            <div><span>Stock</span><strong>1</strong></div>
-            <div><span>Tipo</span><strong>LIBRE</strong></div>
-            <div><span>Estado</span><strong>Bueno</strong></div>
+        <section class="ingreso-card allocation-card">
+          <div class="table-heading">
+            <div>
+              <h3>Destino por Código Dominion</h3>
+              <p>Selecciona el Almacén y registra la Ubicación de cada Código Dominion detectado en el PDF.</p>
+            </div>
+          </div>
+          <div class="table-wrap allocation-wrap">
+            <table class="allocation-table">
+              <thead>
+                <tr>
+                  <th>Código Dominion</th>
+                  <th>Código SAP</th>
+                  <th>Descripción</th>
+                  <th>Lote</th>
+                  <th>Almacén *</th>
+                  <th>Ubicación *</th>
+                </tr>
+              </thead>
+              <tbody id="allocationBody"></tbody>
+            </table>
           </div>
         </section>
 
@@ -163,6 +177,7 @@
             <table>
               <thead>
                 <tr>
+                  <th>Dominion</th>
                   <th>Código SAP</th>
                   <th>Descripción</th>
                   <th>Topología</th>
@@ -172,6 +187,10 @@
                   <th>Stock</th>
                   <th>Tipo</th>
                   <th>Estado</th>
+                  <th>Centro</th>
+                  <th>Almacén</th>
+                  <th>Ubicación</th>
+                  <th>Segmento</th>
                 </tr>
               </thead>
               <tbody id="detailBody"></tbody>
@@ -192,7 +211,7 @@
         <section class="register-bar">
           <div>
             <strong id="registerTitle">Faltan datos obligatorios</strong>
-            <p id="registerHelp">Completa Centro, Almacén, Ubicación y Segmento.</p>
+            <p id="registerHelp">Completa el Segmento y el destino de cada Código Dominion.</p>
           </div>
           <button id="registerBtn" class="register-button" type="button" disabled>
             Registrar ingreso <span>→</span>
@@ -206,7 +225,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="js/app.js?v=20260918-3"></script>
-  <script src="js/ingresos.js?v=20260918-3"></script>
+  <script src="js/app.js?v=20260918-4"></script>
+  <script src="js/ingresos.js?v=20260918-4"></script>
 </body>
 </html>
