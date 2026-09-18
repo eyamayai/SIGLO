@@ -1,0 +1,82 @@
+[
+  {
+    "ubicacion": "AA01A2",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "AA01A1",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "AA02A1",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "AA02A2",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "AA02A3",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "BB10B3",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "BB01B2",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "BB01B1",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "BB02B3",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "BB02B2",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "BB02B1",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "CC01C1",
+    "segmento": "CORPORATIVO"
+  },
+  {
+    "ubicacion": "CC01C2",
+    "segmento": "CORPORATIVO"
+  },
+  {
+    "ubicacion": "CC01C3",
+    "segmento": "CORPORATIVO"
+  },
+  {
+    "ubicacion": "DD01D1",
+    "segmento": "RED EXTERNA"
+  },
+  {
+    "ubicacion": "DD01D2",
+    "segmento": "RED EXTERNA"
+  },
+  {
+    "ubicacion": "DD01D3",
+    "segmento": "RED EXTERNA"
+  },
+  {
+    "ubicacion": "CC01C4",
+    "segmento": "CORPORATIVO"
+  },
+  {
+    "ubicacion": "DD01D4",
+    "segmento": "CORPORATIVO"
+  },
+  {
+    "ubicacion": "MINTIC",
+    "segmento": "MINTIC"
+  }
+]
