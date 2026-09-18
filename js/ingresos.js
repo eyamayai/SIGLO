@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-5';
+  const VERSION = '20260918-7';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -154,12 +154,82 @@ document.addEventListener('DOMContentLoaded', () => {
     return Number.isFinite(number) ? number : 0;
   }
 
-  function splitSerials(value) {
-    return String(value || '')
-      .replace(/[;,]/g, ' ')
-      .split(/\s+/)
-      .map(token => token.trim())
-      .filter(token => token && token !== '-' && (token.match(/[0-9]/g) || []).length >= 5);
+  function cleanSerialValue(value) {
+    return String(value ?? '')
+      .trim()
+      .replace(/\s+/g, '')
+      .replace(/^[,;:]+|[,;:]+$/g, '');
+  }
+
+  function serialCharacterCount(value) {
+    return (cleanSerialValue(value).match(/[A-Za-z0-9]/g) || []).length;
+  }
+
+  function isValidSerial(value) {
+    const serial = cleanSerialValue(value);
+    return serial !== '-' && serialCharacterCount(serial) >= 5;
+  }
+
+  function findColumnLayout(rows, startIndex) {
+    for (let index = startIndex - 1; index >= Math.max(0, startIndex - 45); index -= 1) {
+      const row = rows[index];
+      const material = row.items.find(item => /^Material$/i.test(item.text));
+      const serie = row.items.find(item => /^Serie$/i.test(item.text));
+      const umed = row.items.find(item => /^UMed$/i.test(item.text));
+      const cantidad = row.items.find(item => /^Cantidad$/i.test(item.text));
+
+      if (material && serie && umed && cantidad) {
+        const control = row.items.find(item => /^Control$/i.test(item.text));
+        const valor = row.items.find(item => /^Valor$/i.test(item.text));
+        const materialMax = (material.x + serie.x) / 2;
+        const serieMax = (serie.x + umed.x) / 2;
+        const unitMax = (umed.x + cantidad.x) / 2;
+        const quantityMax = control
+          ? (cantidad.x + control.x) / 2
+          : (valor ? (cantidad.x + valor.x) / 2 : cantidad.x + 95);
+
+        return {
+          materialMax,
+          serieMin: materialMax,
+          serieMax,
+          unitMin: serieMax,
+          unitMax,
+          quantityMin: unitMax,
+          quantityMax
+        };
+      }
+    }
+
+    // Respaldo para PDFs antiguos con el mismo diseño.
+    return {
+      materialMax: 270,
+      serieMin: 270,
+      serieMax: 330,
+      unitMin: 330,
+      unitMax: 405,
+      quantityMin: 405,
+      quantityMax: 510
+    };
+  }
+
+  function extractSerialsByRow(block, layout) {
+    const candidates = [];
+
+    block.forEach(row => {
+      const fragments = row.items
+        .filter(item => item.x >= layout.serieMin && item.x < layout.serieMax)
+        .map(item => item.text)
+        .filter(Boolean);
+
+      if (!fragments.length) return;
+
+      // Un PDF puede fragmentar visualmente un serial en varios trozos de texto.
+      // Los reunimos por fila antes de validarlo.
+      const serial = cleanSerialValue(fragments.join(''));
+      if (isValidSerial(serial)) candidates.push(serial);
+    });
+
+    return candidates;
   }
 
   function extractProducts(rows) {
@@ -191,22 +261,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const topologia = config?.topologia || 'NO CONFIGURADO';
 
       const firstHeaderText = start.match[0];
+      const layout = findColumnLayout(rows, start.index);
       const descriptionParts = [];
-      const seriesParts = [];
       const unitParts = [];
       const quantityParts = [];
 
       block.forEach((row, rowIndex) => {
         row.items.forEach(item => {
-          if (item.x < 270) {
+          if (item.x < layout.materialMax) {
             let part = item.text;
             if (rowIndex === 0) part = part.replace(firstHeaderText, '').trim();
             if (part && !/^(Material|Serie|UMed|Cantidad|Control|Valor)$/i.test(part)) descriptionParts.push(part);
-          } else if (item.x >= 270 && item.x < 330) {
-            seriesParts.push(item.text);
-          } else if (item.x >= 330 && item.x < 405 && rowIndex === 0) {
+          } else if (item.x >= layout.unitMin && item.x < layout.unitMax && rowIndex === 0) {
             unitParts.push(item.text);
-          } else if (item.x >= 405 && item.x < 510 && rowIndex === 0) {
+          } else if (item.x >= layout.quantityMin && item.x < layout.quantityMax && rowIndex === 0) {
             quantityParts.push(item.text);
           }
         });
@@ -226,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const cantidad = parseColombianNumber(quantityParts.join(' '));
       const unidad = unitParts.join(' ').trim();
-      const serials = splitSerials(seriesParts.join(' '));
+      const serials = extractSerialsByRow(block, layout);
 
       if (!config) {
         issues.push(`Código SAP ${codigoSap}: no existe en el catálogo de topologías.`);
@@ -238,25 +306,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (serializado) {
         const expected = Math.max(1, Math.round(cantidad || serials.length || 1));
-        if (serials.length !== expected) {
-          issues.push(`Código SAP ${codigoSap}: se esperaban ${expected} serial(es) y se detectaron ${serials.length}.`);
+
+        if (serials.length > expected) {
+          issues.push(`Código SAP ${codigoSap}: se esperaban ${expected} serial(es) y se detectaron ${serials.length}. Revisa el PDF.`);
         }
-        if (serials.length) {
-          serials.forEach(serial => products.push({
-            codigo_sap: codigoSap,
-            dominio_pdf: dominioPdf,
-            descripcion,
-            topologia,
-            serial,
-            cantidad: 1,
-            lote,
-            unidad,
-            stock: '1',
-            tipo: 'LIBRE',
-            estado: 'Bueno'
-          }));
-        } else {
+
+        serials.slice(0, expected).forEach((serial, serialIndex) => products.push({
+          _rowId: `serial-${position}-${serialIndex}`,
+          codigo_sap: codigoSap,
+          dominio_pdf: dominioPdf,
+          descripcion,
+          topologia,
+          serial,
+          cantidad: 1,
+          lote,
+          unidad,
+          stock: '1',
+          tipo: 'LIBRE',
+          estado: 'Bueno'
+        }));
+
+        const missing = Math.max(0, expected - serials.length);
+        for (let missingIndex = 0; missingIndex < missing; missingIndex += 1) {
           products.push({
+            _rowId: `serial-${position}-missing-${missingIndex}`,
             codigo_sap: codigoSap,
             dominio_pdf: dominioPdf,
             descripcion,
@@ -267,7 +340,8 @@ document.addEventListener('DOMContentLoaded', () => {
             unidad,
             stock: '1',
             tipo: 'LIBRE',
-            estado: 'Bueno'
+            estado: 'Bueno',
+            serial_manual: true
           });
         }
       } else {
