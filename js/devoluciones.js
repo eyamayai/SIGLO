@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-1';
+  const VERSION = '20260918-2';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -104,12 +104,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const candidates=[...text.matchAll(/RHAC1\s*\/\s*([A-ZÁÉÍÓÚÑ]{2,15})\s*\/\s*([A-Z0-9-]+)/gi)];
     const fallback=candidates.find(m=>!['ING','DES'].includes(String(m[1]).toUpperCase()))?.[0]||'';
     const documento=(preferred||fallback).replace(/\s/g,'');
-    const cedula=text.match(/(?:CC|C[eé]dula):\s*(\d+)/i)?.[1]||'';
-    const nombreMatch=text.match(/Nombre:\s*([\s\S]*?)(?=\s*(?:Bandeja:|Fecha\s+(?:env[ií]o|devoluci[oó]n|documento):|RHAC1\s*\/|DOMINION\s+COLOMBIA\s+SAS|$))/i);
-    const nombre=(nombreMatch?.[1]||'').replace(/\s+/g,' ').trim();
+
+    const trabajadorLinea=text.match(/(?:^|\n)\s*Trabajador\s+([^\n]+)/i)?.[1]||'';
+    const trabajador=trabajadorLinea
+      .replace(/\s+C\.\s*Bandeja.*$/i,'')
+      .replace(/\s+/g,' ')
+      .trim();
+
+    const nombreMatch=text.match(
+      /Nombre:\s*([\s\S]*?)(?=\s*(?:Bandeja:|Fecha\s+(?:env[ií]o|devoluci[oó]n|documento):|RHAC1\s*\/|DOMINION\s+COLOMBIA\s+SAS|$))/i
+    );
+    const nombre=trabajador || (nombreMatch?.[1]||'').replace(/\s+/g,' ').trim();
+
+    const cedulaPdf=text.match(/(?:CC|C[eé]dula):\s*(\d+)/i)?.[1]||'';
     const fecha=text.match(/Fecha\s+(?:env[ií]o|devoluci[oó]n|documento):\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/i)?.[1]
       || text.match(/Fecha\s*:?\s*(\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2})/i)?.[1] || '';
-    return {documento,cedula,nombre,fecha};
+
+    return {documento,cedula:'',cedulaPdf,nombre,fecha,cedulaLookupMessage:''};
+  }
+
+  async function resolveCedula(metadata){
+    if(!metadata.nombre){
+      metadata.cedula='';
+      metadata.cedulaLookupMessage='No se detectó el nombre del técnico en el PDF.';
+      return metadata;
+    }
+
+    const supabase=window.sigloSupabase;
+    if(!supabase){
+      metadata.cedula='';
+      metadata.cedulaLookupMessage='No fue posible consultar la cédula del técnico en SIGLO.';
+      return metadata;
+    }
+
+    const {data:{session}}=await supabase.auth.getSession();
+    if(!session){
+      window.location.replace('index.html');
+      return metadata;
+    }
+
+    const {data,error}=await supabase.rpc('buscar_cedula_tecnico',{p_nombre:metadata.nombre});
+    if(error){
+      console.error('Error buscando cédula del técnico',error);
+      metadata.cedula='';
+      metadata.cedulaLookupMessage=error.message||'No fue posible consultar la cédula del técnico.';
+      return metadata;
+    }
+
+    if(data?.encontrado && data?.cedula){
+      metadata.cedula=String(data.cedula);
+      metadata.cedulaLookupMessage='';
+      return metadata;
+    }
+
+    metadata.cedula='';
+    metadata.cedulaLookupMessage=data?.mensaje||`No se encontró cédula en SIGLO para el técnico ${metadata.nombre}.`;
+    return metadata;
   }
 
   function parseNumber(raw){
@@ -221,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('metaDocumento').textContent=metadata.documento||'No detectado';
     document.getElementById('metaTecnico').textContent=metadata.nombre||'No detectado';
-    document.getElementById('metaCedula').textContent=metadata.cedula||'No detectada';
+    document.getElementById('metaCedula').textContent=metadata.cedula||'No encontrada en BD';
     document.getElementById('metaFecha').textContent=metadata.fecha||'No detectada';
     document.getElementById('countSerializados').textContent=classification.serializados.length;
     document.getElementById('countNoSerializados').textContent=classification.noSerializados.length;
@@ -231,7 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const messages=[];
     if(!metadata.documento) messages.push('No se detectó el número de documento de devolución.');
-    if(!metadata.cedula) messages.push('No se detectó la cédula del técnico.');
+    if(!metadata.nombre) messages.push('No se detectó el nombre del técnico en el PDF.');
+    if(!metadata.cedula) messages.push(metadata.cedulaLookupMessage||'No se encontró la cédula del técnico en la base de datos.');
     messages.push(...classification.serialWarnings);
     classification.revisar.forEach(item=>messages.push(`${item.codigo_sap}/${item.dominio}: Código SAP sin topología configurada.`));
 
@@ -273,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const material=(currentClassification?.serializados?.length||0)+(currentClassification?.noSerializados?.length||0);
-    const blockers=(currentMetadata.documento?0:1)+(currentMetadata.cedula?0:1)
+    const blockers=(currentMetadata.documento?0:1)+(currentMetadata.nombre?0:1)+(currentMetadata.cedula?0:1)
       +(currentClassification?.serialWarnings?.length||0)+(currentClassification?.revisar?.length||0);
     const destino=destinationSelect.value;
 
@@ -303,14 +354,15 @@ document.addEventListener('DOMContentLoaded', () => {
     processMessage.textContent='Leyendo PDF y clasificando materiales…';processMessage.className='process-message';
     try{
       const text=await extractText(currentFile);
-      const metadata=extractMetadata(text);
+      const metadata=await resolveCedula(extractMetadata(text));
       const items=extractItems(text);
       if(!items.length) throw new Error('No se detectaron materiales en el PDF.');
       const classification=classify(items);
       renderResults(metadata,classification);
       const warnings=[];
       if(!metadata.documento) warnings.push('documento no detectado');
-      if(!metadata.cedula) warnings.push('cédula no detectada');
+      if(!metadata.nombre) warnings.push('técnico no detectado');
+      if(!metadata.cedula) warnings.push(metadata.cedulaLookupMessage||'cédula no encontrada en BD');
       warnings.push(...classification.serialWarnings);
       if(warnings.length){
         processMessage.textContent=`PDF procesado con observaciones: ${warnings.join(' · ')}`;
