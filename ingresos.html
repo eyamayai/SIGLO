@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Ingresos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-2">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/ingresos.css?v=20260918-2">
+</head>
+<body class="dashboard-body">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="assets/icono-siglo.png?v=20260918-2" alt="Icono SIGLO">
+        <strong>SIGLO</strong>
+      </div>
+
+      <div class="nav-title">MATERIAL LIBRE</div>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="inicio.html">
+          <svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>
+          Inicio
+        </a>
+        <a class="nav-link active" href="ingresos.html">
+          <svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M3 8v8l9 5 9-5V8"/></svg>
+          Ingresos
+        </a>
+        <a class="nav-link" href="despachos.html">
+          <svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+          Despachos
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>
+          Devoluciones
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>
+          Informes
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <a class="nav-link" id="logoutBtn" href="index.html">
+          <svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>
+          Cerrar sesión
+        </a>
+      </div>
+    </aside>
+
+    <main class="dashboard-main ingreso-main">
+      <div class="dashboard-top">
+        <div class="dashboard-title">
+          <div class="breadcrumb"><a href="inicio.html">Material Libre</a><span>›</span><strong>Ingresos</strong></div>
+          <h1>Ingresos</h1>
+          <p>Procesa el PDF de ingreso, completa los datos obligatorios y prepara el registro de inventario.</p>
+        </div>
+        <div class="user-chip">
+          <div class="user-avatar">S</div>
+          <span id="userLabel">Usuario SIGLO</span>
+        </div>
+      </div>
+
+      <section class="ingreso-card uploader-card">
+        <div class="card-heading">
+          <div>
+            <span class="step-badge">1</span>
+            <h2>Cargar ingreso</h2>
+            <p>El PDF se analiza primero. Procesarlo no guarda información en la base de datos.</p>
+          </div>
+        </div>
+
+        <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="Seleccionar PDF de ingreso">
+          <div class="drop-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14a2 2 0 0 0 2-2v-3"/><path d="M3 15v3a2 2 0 0 0 2 2"/></svg>
+          </div>
+          <h3>Arrastra el PDF aquí</h3>
+          <p>o selecciónalo desde tu computador</p>
+          <button id="selectPdfBtn" class="outline-action" type="button">Seleccionar PDF</button>
+          <input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden>
+          <div id="selectedFile" class="selected-file">Ningún archivo seleccionado</div>
+        </div>
+
+        <div class="process-row">
+          <div id="catalogStatus" class="catalog-status">Cargando catálogo de códigos SAP…</div>
+          <button id="processPdfBtn" class="ingreso-primary" type="button" disabled>
+            Procesar PDF <span>→</span>
+          </button>
+        </div>
+        <div id="processMessage" class="process-message" role="status" aria-live="polite"></div>
+      </section>
+
+      <section id="resultsSection" class="results-section" hidden>
+        <div class="section-title-row">
+          <div>
+            <span class="step-badge">2</span>
+            <h2>Completar ingreso</h2>
+          </div>
+          <button id="clearBtn" class="ghost-button" type="button">Procesar otro PDF</button>
+        </div>
+
+        <div class="pdf-info-grid">
+          <div class="info-box"><span>Documento</span><strong id="metaDocumento">—</strong></div>
+          <div class="info-box"><span>Fecha</span><strong id="metaFecha">—</strong></div>
+          <div class="info-box"><span>Almacén del PDF</span><strong id="metaAlmacenPdf">—</strong></div>
+          <div class="info-box"><span>Responsable almacén</span><strong id="metaResponsable">—</strong></div>
+          <div class="info-box"><span>Observación</span><strong id="metaObservacion">—</strong></div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-card"><span>CON PERFIL DE SERIE</span><strong id="countSerializados">0</strong><small>registros por serial</small></div>
+          <div class="summary-card"><span>SIN PERFIL DE SERIE</span><strong id="countNoSerializados">0</strong><small>registros por cantidad</small></div>
+          <div class="summary-card warning-summary"><span>Por revisar</span><strong id="countRevisar">0</strong><small>bloqueos antes de registrar</small></div>
+        </div>
+
+        <section class="ingreso-card manual-card">
+          <div class="table-heading">
+            <div>
+              <h3>Datos obligatorios del ingreso</h3>
+              <p>Estos cuatro datos se aplicarán a todos los materiales detectados en este PDF.</p>
+            </div>
+            <span id="manualStatus" class="status-chip pending">4 pendientes</span>
+          </div>
+
+          <div class="manual-grid">
+            <label>
+              <span>Centro *</span>
+              <input id="centroInput" type="text" autocomplete="off" placeholder="Ej. C903">
+            </label>
+            <label>
+              <span>Almacén *</span>
+              <input id="almacenInput" type="text" autocomplete="off" placeholder="Ej. A221">
+            </label>
+            <label>
+              <span>Ubicación *</span>
+              <input id="ubicacionInput" type="text" autocomplete="off" placeholder="Ubicación">
+            </label>
+            <label>
+              <span>Segmento *</span>
+              <input id="segmentoInput" type="text" autocomplete="off" placeholder="Segmento">
+            </label>
+          </div>
+
+          <div class="auto-values">
+            <div><span>Stock</span><strong>1</strong></div>
+            <div><span>Tipo</span><strong>LIBRE</strong></div>
+            <div><span>Estado</span><strong>Bueno</strong></div>
+          </div>
+        </section>
+
+        <section class="ingreso-card detail-card">
+          <div class="table-heading">
+            <div>
+              <h3>Vista previa del ingreso</h3>
+              <p>Serializados y no serializados se preparan dentro del mismo ingreso.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código SAP</th>
+                  <th>Descripción</th>
+                  <th>Topología</th>
+                  <th>Serial</th>
+                  <th>Cantidad</th>
+                  <th>Lote</th>
+                  <th>Stock</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="detailBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="reviewCard" class="ingreso-card review-card" hidden>
+          <div class="table-heading">
+            <div>
+              <h3>Revisión requerida</h3>
+              <p>Los siguientes hallazgos deben resolverse antes de registrar el ingreso.</p>
+            </div>
+          </div>
+          <div id="reviewList" class="review-list"></div>
+        </section>
+
+        <section class="register-bar">
+          <div>
+            <strong id="registerTitle">Faltan datos obligatorios</strong>
+            <p id="registerHelp">Completa Centro, Almacén, Ubicación y Segmento.</p>
+          </div>
+          <button id="registerBtn" class="register-button" type="button" disabled>
+            Registrar ingreso <span>→</span>
+          </button>
+        </section>
+      </section>
+
+      <footer class="dashboard-footer">SIGLO v0.1 · Material Libre · Ingresos</footer>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="js/app.js?v=20260918-2"></script>
+  <script src="js/ingresos.js?v=20260918-2"></script>
+</body>
+</html>
