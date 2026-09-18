@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-2';
+  const VERSION = '20260918-3';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -217,9 +217,36 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       let descripcionPdf = descriptionParts.join(' ').replace(/\s+/g, ' ').trim();
-      const noValorado = /\(\s*NO\s+VALORADO\s*\)/i.test(descripcionPdf);
-      const lote = noValorado ? 'NOVALORADO' : 'VALORADO';
-      descripcionPdf = descripcionPdf.replace(/\(\s*NO\s+VALORADO\s*\)/ig, '').replace(/\s+/g, ' ').trim();
+
+      // Un mismo Código SAP puede tener dos códigos Dominion:
+      // uno para VALORADO y otro para NOVALORADO.
+      // En los PDF actuales, "(NO VALORADO)" identifica de forma explícita NOVALORADO.
+      // La función también queda preparada para la futura Maestra de Códigos SAP,
+      // donde podremos almacenar ambos Dominion por separado.
+      const dominioValorado = normalizeCode(
+        config?.dominio_valorado ??
+        config?.dominios?.VALORADO ??
+        ''
+      );
+      const dominioNoValorado = normalizeCode(
+        config?.dominio_novalorado ??
+        config?.dominios?.NOVALORADO ??
+        ''
+      );
+      const dominioActual = normalizeCode(dominioPdf);
+      const marcadoNoValorado = /\(\s*NO\s+VALORADO\s*\)/i.test(descripcionPdf);
+
+      let lote = 'VALORADO';
+      if (marcadoNoValorado || (dominioNoValorado && dominioActual === dominioNoValorado)) {
+        lote = 'NOVALORADO';
+      } else if (dominioValorado && dominioActual === dominioValorado) {
+        lote = 'VALORADO';
+      }
+
+      descripcionPdf = descripcionPdf
+        .replace(/\(\s*NO\s+VALORADO\s*\)/ig, '')
+        .replace(/\s+/g, ' ')
+        .trim();
 
       const cantidad = parseColombianNumber(quantityParts.join(' '));
       const unidad = unitParts.join(' ').trim();
@@ -229,10 +256,9 @@ document.addEventListener('DOMContentLoaded', () => {
         issues.push(`Código SAP ${codigoSap}: no existe en la Maestra de Códigos SAP.`);
       }
 
-      if (config?.dominio && normalizeCode(config.dominio) !== normalizeCode(dominioPdf)) {
-        notices.push(`${codigoSap}: dominio PDF ${dominioPdf} distinto al maestro ${config.dominio}.`);
-      }
-
+      // No se marca diferencia de Dominion como error ni aviso.
+      // Es válido que un mismo Código SAP tenga un Dominion para VALORADO
+      // y otro para NOVALORADO.
       const descripcion = String(config?.descripcion || '').trim() || descripcionPdf || 'SIN DESCRIPCIÓN';
       const serializado = isSerialTopology(topologia);
 
