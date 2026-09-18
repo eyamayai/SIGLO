@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="es"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1976c9">
+<title>SIGLO | Auditoría · Maestra Técnicos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-14">
+<link rel="stylesheet" href="css/styles.css"><link rel="stylesheet" href="css/auditoria.css?v=20260918-1">
+</head><body class="dashboard-body"><div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-brand"><img src="assets/icono-siglo.png?v=20260918-14" alt="Icono SIGLO"><strong>SIGLO</strong></div>
+  <div class="nav-title">MATERIAL LIBRE</div>
+  <nav aria-label="Navegación principal">
+    <a class="nav-link" href="inicio.html"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
+    <a class="nav-link" href="ingresos.html"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Ingresos</a>
+    <a class="nav-link" href="despachos.html"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Despachos</a>
+    <a class="nav-link" href="saldos.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Saldos</a>
+    <a class="nav-link" href="movimientos.html"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg>Movimientos</a>
+    <a class="nav-link" href="devoluciones.html"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>Devoluciones</a>
+    <a class="nav-link active" href="auditoria.html"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>Auditoría</a>
+    <a class="nav-link" href="#" data-coming-soon><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>Informes</a>
+  </nav>
+  <div class="sidebar-bottom"><a class="nav-link" id="logoutBtn" href="index.html"><svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>Cerrar sesión</a></div>
+</aside>
+<main class="dashboard-main audit-main">
+<div class="dashboard-top"><div class="dashboard-title"><div class="breadcrumb"><a href="auditoria.html">Auditoría</a><span>›</span><strong>Maestra Técnicos</strong></div>
+<h1>Maestra Técnicos</h1><p>Centraliza nombre, cédula y estado de los técnicos para consultas y devoluciones.</p></div>
+<div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div></div>
+
+<section class="audit-card audit-upload">
+<div class="audit-heading"><div><h2>Actualizar maestra</h2><p>Utiliza siempre la plantilla de SIGLO para conservar la estructura.</p></div>
+<div class="audit-actions"><button id="downloadTemplateBtn" class="audit-button" type="button">Descargar plantilla</button></div></div>
+<div class="audit-file-row"><label class="audit-file-label"><input id="excelInput" type="file" accept=".xlsx,.xls"><div><strong id="fileName">Seleccionar Excel</strong><span>Hoja requerida: TECNICOS</span></div></label>
+<button id="validateBtn" class="audit-button primary" type="button" disabled>Validar archivo</button></div>
+<div id="auditMessage" class="audit-message"></div>
+</section>
+
+<section id="previewSection" hidden>
+<div class="audit-summary"><div class="audit-kpi"><span>Nuevos</span><strong id="kpiNew">0</strong></div><div class="audit-kpi"><span>Actualizar</span><strong id="kpiUpdate">0</strong></div><div class="audit-kpi"><span>Coinciden</span><strong id="kpiSame">0</strong></div><div class="audit-kpi error"><span>Errores</span><strong id="kpiError">0</strong></div></div>
+<section class="audit-card preview-card"><div class="preview-heading"><div><h2>Vista previa</h2><p>La cédula es la llave única. Los técnicos inactivos conservan el historial.</p></div><span id="rowCount" class="count-chip">0 filas</span></div>
+<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Cédula</th><th>Nombre completo</th><th>Estado</th><th>Resultado</th><th>Detalle</th></tr></thead><tbody id="previewBody"></tbody></table></div></section>
+<section class="audit-register-bar"><div><strong id="registerTitle">Maestra pendiente de validación</strong><p id="registerHelp">Valida el archivo antes de registrar.</p></div><button id="registerBtn" class="audit-button" type="button" disabled>Actualizar maestra</button></section>
+</section>
+
+<section class="audit-card master-current"><div class="master-toolbar"><div class="preview-heading"><div><h2>Maestra actual</h2><p id="masterCount">Consultando técnicos…</p></div></div><input id="masterSearch" class="master-search" type="search" placeholder="Buscar nombre o cédula"></div>
+<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Cédula</th><th>Nombre completo</th><th>Estado</th><th>Actualizado</th></tr></thead><tbody id="masterBody"><tr class="empty-row"><td colspan="4">Cargando…</td></tr></tbody></table></div></section>
+<footer class="dashboard-footer">SIGLO v0.1 · Auditoría · Maestra Técnicos</footer>
+</main></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase-client.js?v=20260918-1"></script><script src="js/app.js?v=20260918-4"></script>
+<script src="js/auditoria-common.js?v=20260918-1"></script><script src="js/auditoria-tecnicos.js?v=20260918-1"></script>
+</body></html>
