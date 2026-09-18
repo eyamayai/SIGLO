@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-11">
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/saldos.css?v=20260918-2">
+  <link rel="stylesheet" href="css/saldos.css?v=20260918-3">
 </head>
 <body class="dashboard-body">
   <div class="app-shell">
@@ -85,7 +85,7 @@
           <small>CON PERFIL DE SERIE</small>
         </article>
         <article class="balance-kpi">
-          <span>Unidades disponibles</span>
+          <span>Unidades Libre</span>
           <strong id="kpiUnidades">—</strong>
           <small>SIN PERFIL DE SERIE</small>
         </article>
@@ -118,6 +118,15 @@
               <option value="">Todos</option>
               <option value="Disponible">Disponible</option>
               <option value="Despachado">Despachado</option>
+              <option value="Garantía">Garantía</option>
+            </select>
+          </label>
+          <label>
+            <span>Tipo</span>
+            <select id="typeFilter">
+              <option value="">Todos</option>
+              <option value="LIBRE">LIBRE</option>
+              <option value="DESMONTE">DESMONTE</option>
             </select>
           </label>
           <label>
@@ -154,6 +163,7 @@
                 <th>Código SAP</th>
                 <th>Descripción</th>
                 <th>Lote</th>
+                <th>Tipo</th>
                 <th>Almacén</th>
                 <th>Ubicación</th>
                 <th>Segmento</th>
@@ -162,7 +172,7 @@
               </tr>
             </thead>
             <tbody id="serialBalancesBody">
-              <tr class="empty-row"><td colspan="9">Cargando inventario…</td></tr>
+              <tr class="empty-row"><td colspan="10">Cargando inventario…</td></tr>
             </tbody>
           </table>
         </div>
@@ -183,6 +193,7 @@
                 <th>Código SAP</th>
                 <th>Descripción</th>
                 <th>Lote</th>
+                <th>Tipo</th>
                 <th>Almacén</th>
                 <th>Ubicación</th>
                 <th>Segmento</th>
@@ -190,7 +201,7 @@
               </tr>
             </thead>
             <tbody id="quantityBalancesBody">
-              <tr class="empty-row"><td colspan="7">Cargando saldos…</td></tr>
+              <tr class="empty-row"><td colspan="8">Cargando saldos…</td></tr>
             </tbody>
           </table>
         </div>
@@ -204,6 +215,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js?v=20260918-1"></script>
   <script src="js/app.js?v=20260918-4"></script>
-  <script src="js/saldos.js?v=20260918-2"></script>
+  <script src="js/saldos.js?v=20260918-3"></script>
 </body>
 </html>
