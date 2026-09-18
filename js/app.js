@@ -59,6 +59,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const form = document.getElementById('loginForm');
   const email = document.getElementById('email');
   const error = document.getElementById('loginError');
+  const authParams = new URLSearchParams(window.location.search);
+  const authErrorCode = authParams.get('error_code');
+  if (isLoginPage && error && authErrorCode === 'otp_expired') {
+    error.textContent = 'Ese enlace de confirmación ya fue usado o expiró. Intenta iniciar sesión normalmente.';
+  }
 
   const setLoginBusy = (busy) => {
     const submit = form?.querySelector('button[type="submit"]');
@@ -136,9 +141,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     setLoginBusy(true);
+    const emailRedirectTo = 'https://eyamayai.github.io/SIGLO/index.html';
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: correo,
-      password: clave
+      password: clave,
+      options: { emailRedirectTo }
     });
     setLoginBusy(false);
 
@@ -173,7 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    const redirectTo = new URL('index.html', window.location.href).href;
+    const redirectTo = 'https://eyamayai.github.io/SIGLO/index.html';
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(correo, { redirectTo });
     if (resetError) {
       error.textContent = resetError.message || 'No fue posible enviar la recuperación.';
