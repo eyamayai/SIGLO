@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Saldos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-11">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/saldos.css?v=20260918-1">
+</head>
+<body class="dashboard-body">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="assets/icono-siglo.png?v=20260918-11" alt="Icono SIGLO">
+        <strong>SIGLO</strong>
+      </div>
+
+      <div class="nav-title">MATERIAL LIBRE</div>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="inicio.html">
+          <svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>
+          Inicio
+        </a>
+        <a class="nav-link" href="ingresos.html">
+          <svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M3 8v8l9 5 9-5V8"/></svg>
+          Ingresos
+        </a>
+        <a class="nav-link" href="despachos.html">
+          <svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+          Despachos
+        </a>
+        <a class="nav-link active" href="saldos.html">
+          <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>
+          Saldos
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>
+          Devoluciones
+        </a>
+        <a class="nav-link" href="#" data-coming-soon>
+          <svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>
+          Informes
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <a class="nav-link" id="logoutBtn" href="index.html">
+          <svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>
+          Cerrar sesión
+        </a>
+      </div>
+    </aside>
+
+    <main class="dashboard-main balances-main">
+      <div class="dashboard-top">
+        <div class="dashboard-title">
+          <div class="breadcrumb"><a href="inicio.html">Material Libre</a><span>›</span><strong>Saldos</strong></div>
+          <h1>Saldos</h1>
+          <p>Consulta el inventario actual de equipos serializados y materiales manejados por cantidad.</p>
+        </div>
+        <div class="user-chip">
+          <div class="user-avatar">S</div>
+          <span id="userLabel">Usuario SIGLO</span>
+        </div>
+      </div>
+
+      <section class="balance-kpis" aria-label="Resumen de inventario">
+        <article class="balance-kpi">
+          <span>Equipos disponibles</span>
+          <strong id="kpiDisponibles">—</strong>
+          <small>CON PERFIL DE SERIE</small>
+        </article>
+        <article class="balance-kpi">
+          <span>Equipos despachados</span>
+          <strong id="kpiDespachados">—</strong>
+          <small>CON PERFIL DE SERIE</small>
+        </article>
+        <article class="balance-kpi">
+          <span>Unidades disponibles</span>
+          <strong id="kpiUnidades">—</strong>
+          <small>SIN PERFIL DE SERIE</small>
+        </article>
+        <article class="balance-kpi">
+          <span>Códigos SAP con saldo</span>
+          <strong id="kpiCodigos">—</strong>
+          <small>SIN PERFIL DE SERIE</small>
+        </article>
+      </section>
+
+      <section class="balance-card filters-card">
+        <div class="filters-heading">
+          <div>
+            <h2>Consultar inventario</h2>
+            <p>Busca por serial, Código SAP, Dominion, descripción, ubicación o segmento.</p>
+          </div>
+          <button id="refreshBalancesBtn" class="refresh-button" type="button">Actualizar</button>
+        </div>
+        <div class="filters-grid">
+          <label class="search-field">
+            <span>Buscar</span>
+            <input id="balanceSearch" type="search" autocomplete="off" placeholder="Serial, SAP, descripción...">
+          </label>
+          <label>
+            <span>Estado equipos</span>
+            <select id="stateFilter">
+              <option value="">Todos</option>
+              <option value="Disponible">Disponible</option>
+              <option value="Despachado">Despachado</option>
+            </select>
+          </label>
+          <label>
+            <span>Lote</span>
+            <select id="loteFilter">
+              <option value="">Todos</option>
+              <option value="VALORADO">VALORADO</option>
+              <option value="NOVALORADO">NOVALORADO</option>
+            </select>
+          </label>
+          <label>
+            <span>Segmento</span>
+            <select id="segmentFilter">
+              <option value="">Todos</option>
+            </select>
+          </label>
+        </div>
+        <div id="balanceMessage" class="balance-message" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="balance-card data-card">
+        <div class="table-heading">
+          <div>
+            <h2>Equipos serializados</h2>
+            <p>Estado actual de cada equipo registrado en SIGLO.</p>
+          </div>
+          <span id="serialCount" class="count-chip">0 registros</span>
+        </div>
+        <div class="table-wrap">
+          <table class="balance-table serial-table">
+            <thead>
+              <tr>
+                <th>Serial</th>
+                <th>Código SAP</th>
+                <th>Descripción</th>
+                <th>Lote</th>
+                <th>Almacén</th>
+                <th>Ubicación</th>
+                <th>Segmento</th>
+                <th>Estado físico</th>
+                <th>Estado inventario</th>
+              </tr>
+            </thead>
+            <tbody id="serialBalancesBody">
+              <tr class="empty-row"><td colspan="9">Cargando inventario…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="balance-card data-card">
+        <div class="table-heading">
+          <div>
+            <h2>Material no serializado</h2>
+            <p>Saldos actuales por Código SAP, lote y ubicación.</p>
+          </div>
+          <span id="quantityCount" class="count-chip">0 saldos</span>
+        </div>
+        <div class="table-wrap">
+          <table class="balance-table quantity-table">
+            <thead>
+              <tr>
+                <th>Código SAP</th>
+                <th>Descripción</th>
+                <th>Lote</th>
+                <th>Almacén</th>
+                <th>Ubicación</th>
+                <th>Segmento</th>
+                <th>Cantidad</th>
+              </tr>
+            </thead>
+            <tbody id="quantityBalancesBody">
+              <tr class="empty-row"><td colspan="7">Cargando saldos…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="dashboard-footer">SIGLO v0.1 · Material Libre · Saldos</footer>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js?v=20260918-1"></script>
+  <script src="js/app.js?v=20260918-4"></script>
+  <script src="js/saldos.js?v=20260918-1"></script>
+</body>
+</html>
