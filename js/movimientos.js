@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchInput = document.getElementById('movementSearch');
   const typeFilter = document.getElementById('movementTypeFilter');
   const topologyFilter = document.getElementById('topologyFilter');
+  const stockTypeFilter = document.getElementById('movementStockTypeFilter');
   const loteFilter = document.getElementById('movementLoteFilter');
   const refreshBtn = document.getElementById('refreshMovementsBtn');
   const resetBtn = document.getElementById('resetMovementsBtn');
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       row.almacen,
       row.ubicacion,
       row.segmento,
+      row.tipo,
       row.estado_inventario,
       row.tecnico,
       row.cedula,
@@ -50,12 +52,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const query = normalize(searchInput.value);
     const type = typeFilter.value;
     const topology = topologyFilter.value;
+    const stockType = stockTypeFilter.value;
     const lote = loteFilter.value;
 
     return movimientos.filter(row => {
       if (query && !searchable(row).includes(query)) return false;
       if (type && row.tipo_movimiento !== type) return false;
       if (topology && row.topologia !== topology) return false;
+      if (stockType && row.tipo !== stockType) return false;
       if (lote && row.lote !== lote) return false;
       return true;
     });
@@ -74,13 +78,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('movementCount').textContent = `${rows.length} movimiento${rows.length === 1 ? '' : 's'}`;
 
     if (!rows.length) {
-      body.innerHTML = '<tr class="empty-row"><td colspan="13">No hay movimientos que coincidan con los filtros.</td></tr>';
+      body.innerHTML = '<tr class="empty-row"><td colspan="14">No hay movimientos que coincidan con los filtros.</td></tr>';
       return;
     }
 
     body.innerHTML = rows.map(row => {
-      const movementClass = row.tipo_movimiento === 'INGRESO' ? 'in' : 'out';
-      const statusClass = row.estado_inventario === 'Disponible' ? 'available' : 'dispatched';
+      const movementClass = row.tipo_movimiento === 'INGRESO'
+        ? 'in'
+        : (row.tipo_movimiento === 'DEVOLUCION' ? 'return' : 'out');
+      const statusClass = row.estado_inventario === 'Disponible'
+        ? 'available'
+        : (row.estado_inventario === 'Garantía' ? 'guarantee' : 'dispatched');
       return `<tr>
         <td>${escapeHtml(displayDate(row.fecha_documento || row.fecha_registro))}</td>
         <td class="document-cell">${escapeHtml(row.documento)}</td>
@@ -90,6 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td class="serial-cell">${escapeHtml(row.serial || '—')}</td>
         <td class="quantity-cell">${numberFormat.format(Number(row.cantidad || 0))}</td>
         <td><span class="lote-pill">${escapeHtml(row.lote)}</span></td>
+        <td><span class="type-pill ${row.tipo === 'DESMONTE' ? 'desmonte' : 'libre'}">${escapeHtml(row.tipo || '—')}</span></td>
         <td>${escapeHtml(row.almacen)}</td>
         <td>${escapeHtml(row.ubicacion)}</td>
         <td>${escapeHtml(row.segmento)}</td>
@@ -137,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     message.className = 'movement-message';
   }
 
-  [searchInput, typeFilter, topologyFilter, loteFilter].forEach(control => {
+  [searchInput, typeFilter, topologyFilter, stockTypeFilter, loteFilter].forEach(control => {
     control?.addEventListener(control === searchInput ? 'input' : 'change', renderRows);
   });
 
@@ -145,6 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     searchInput.value = '';
     typeFilter.value = '';
     topologyFilter.value = '';
+    stockTypeFilter.value = '';
     loteFilter.value = '';
     renderRows();
     message.textContent = 'Filtros restablecidos.';
