@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-4';
+  const VERSION = '20260918-5';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -346,7 +346,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const top = normalizeTopology(row.topologia);
       const topClass = top.includes('SIN PERFIL') ? 'saldo' : (top.includes('CON PERFIL') ? 'serial' : 'review');
       const cantidad = Number.isInteger(row.cantidad) ? row.cantidad : Number(row.cantidad || 0).toLocaleString('es-CO');
-      const destino = getAllocation(row.dominio_pdf);
       return `
         <tr>
           <td class="dominion-code">${escapeHtml(row.dominio_pdf)}</td>
@@ -355,14 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <td><span class="topology-pill ${topClass}">${escapeHtml(row.topologia)}</span></td>
           <td>${escapeHtml(row.serial || '—')}</td>
           <td>${escapeHtml(cantidad)}</td>
-          <td><span class="lote-pill">${escapeHtml(row.lote)}</span></td>
-          <td>${escapeHtml(row.stock)}</td>
-          <td>${escapeHtml(row.tipo)}</td>
-          <td>${escapeHtml(row.estado)}</td>
-          <td class="destination-preview">C903</td>
-          <td class="destination-preview">${escapeHtml(destino.almacen || '—')}</td>
-          <td class="destination-preview">${escapeHtml(destino.ubicacion || '—')}</td>
-          <td class="destination-preview">${escapeHtml(segmento || '—')}</td>
         </tr>`;
     }).join('');
   }
