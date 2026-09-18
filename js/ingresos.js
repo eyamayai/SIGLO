@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-7';
+  const VERSION = '20260918-8';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -10,12 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultsSection = document.getElementById('resultsSection');
   const clearBtn = document.getElementById('clearBtn');
   const registerBtn = document.getElementById('registerBtn');
-  const segmentoInput = document.getElementById('segmentoInput');
   const allocationBody = document.getElementById('allocationBody');
 
   let currentFile = null;
   let catalog = [];
   let catalogMap = new Map();
+  let locations = [];
+  let locationMap = new Map();
   let currentRows = [];
   let blockingIssues = [];
   let currentAllocations = new Map();
@@ -40,24 +41,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadCatalog() {
     try {
-      const response = await fetch(`data/CodigosSAP.json?v=${VERSION}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      catalog = await response.json();
+      const [topologyResponse, locationResponse] = await Promise.all([
+        fetch(`data/CodigosSAP.json?v=${VERSION}`, { cache: 'no-store' }),
+        fetch(`data/Ubicaciones.json?v=${VERSION}`, { cache: 'no-store' })
+      ]);
+
+      if (!topologyResponse.ok) throw new Error(`CodigosSAP.json · HTTP ${topologyResponse.status}`);
+      if (!locationResponse.ok) throw new Error(`Ubicaciones.json · HTTP ${locationResponse.status}`);
+
+      catalog = await topologyResponse.json();
+      locations = await locationResponse.json();
+
       catalogMap = new Map(catalog.map(item => [normalizeCode(item.codigo_sap), item]));
-      catalogStatus.textContent = `Catálogo de topologías listo · ${catalog.length} códigos SAP`;
+      locationMap = new Map(locations.map(item => [normalizeCode(item.ubicacion), String(item.segmento || '').trim()]));
+
+      catalogStatus.textContent = `Catálogos listos · ${catalog.length} códigos SAP · ${locations.length} ubicaciones`;
       catalogStatus.className = 'catalog-status ready';
       updateProcessButton();
     } catch (error) {
-      catalogStatus.textContent = 'No fue posible cargar CodigosSAP.json';
+      catalogStatus.textContent = 'No fue posible cargar los catálogos de SIGLO';
       catalogStatus.className = 'catalog-status error';
-      processMessage.textContent = 'Verifica que el catálogo de topologías exista en data/CodigosSAP.json.';
+      processMessage.textContent = 'Verifica data/CodigosSAP.json y data/Ubicaciones.json.';
       processMessage.className = 'process-message error';
       console.error(error);
     }
   }
 
   function updateProcessButton() {
-    processPdfBtn.disabled = !(currentFile && catalogMap.size && window.pdfjsLib);
+    processPdfBtn.disabled = !(currentFile && catalogMap.size && locationMap.size && window.pdfjsLib);
   }
 
   function setFile(file) {
@@ -365,38 +376,64 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getAllocation(dominio) {
-    return currentAllocations.get(normalizeCode(dominio)) || { almacen: '', ubicacion: '' };
+    return currentAllocations.get(normalizeCode(dominio)) || { almacen: '', ubicacion: '', segmento: '' };
+  }
+
+  function locationOptions() {
+    return [
+      '<option value="">Seleccionar</option>',
+      ...locations.map(item => `<option value="${escapeHtml(item.ubicacion)}">${escapeHtml(item.ubicacion)}</option>`)
+    ].join('');
   }
 
   function renderAllocations(rows) {
     const unique = new Map();
+
     rows.forEach(row => {
       const key = normalizeCode(row.dominio_pdf);
-      if (!unique.has(key)) unique.set(key, row);
+      if (!unique.has(key)) {
+        unique.set(key, { row, cantidad: 0 });
+      }
+      const entry = unique.get(key);
+      entry.cantidad += Number(row.cantidad || 0);
     });
 
-    currentAllocations = new Map([...unique.keys()].map(key => [key, { almacen: '', ubicacion: '' }]));
+    currentAllocations = new Map(
+      [...unique.keys()].map(key => [key, { almacen: '', ubicacion: '', segmento: '' }])
+    );
 
-    allocationBody.innerHTML = [...unique.entries()].map(([dominio, row]) => `
-      <tr data-dominio="${escapeHtml(dominio)}">
-        <td class="dominion-code">${escapeHtml(dominio)}</td>
-        <td><strong>${escapeHtml(row.codigo_sap)}</strong></td>
-        <td>${escapeHtml(row.descripcion)}</td>
-        <td><span class="lote-pill">${escapeHtml(row.lote)}</span></td>
-        <td>
-          <select class="allocation-almacen" aria-label="Almacén para ${escapeHtml(dominio)}">
-            <option value="">Seleccionar</option>
-            <option value="A221">A221</option>
-            <option value="U020">U020</option>
-          </select>
-        </td>
-        <td>
-          <input class="allocation-ubicacion" type="text" autocomplete="off" placeholder="Ubicación" aria-label="Ubicación para ${escapeHtml(dominio)}">
-        </td>
-      </tr>`).join('');
+    const ubicacionOptions = locationOptions();
 
-    allocationBody.querySelectorAll('select,input').forEach(control => {
-      control.addEventListener('input', handleAllocationChange);
+    allocationBody.innerHTML = [...unique.entries()].map(([dominio, entry]) => {
+      const row = entry.row;
+      const cantidad = Number.isInteger(entry.cantidad)
+        ? entry.cantidad
+        : Number(entry.cantidad || 0).toLocaleString('es-CO');
+
+      return `
+        <tr data-dominio="${escapeHtml(dominio)}">
+          <td class="dominion-code">${escapeHtml(dominio)}</td>
+          <td><strong>${escapeHtml(row.codigo_sap)}</strong></td>
+          <td>${escapeHtml(row.descripcion)}</td>
+          <td><span class="lote-pill">${escapeHtml(row.lote)}</span></td>
+          <td class="allocation-quantity"><strong>${escapeHtml(cantidad)}</strong></td>
+          <td>
+            <select class="allocation-almacen" aria-label="Almacén para ${escapeHtml(dominio)}">
+              <option value="">Seleccionar</option>
+              <option value="A221">A221</option>
+              <option value="U020">U020</option>
+            </select>
+          </td>
+          <td>
+            <select class="allocation-ubicacion" aria-label="Ubicación para ${escapeHtml(dominio)}">
+              ${ubicacionOptions}
+            </select>
+          </td>
+          <td class="allocation-segmento"><span class="segment-auto">—</span></td>
+        </tr>`;
+    }).join('');
+
+    allocationBody.querySelectorAll('select').forEach(control => {
       control.addEventListener('change', handleAllocationChange);
     });
   }
@@ -404,18 +441,24 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleAllocationChange(event) {
     const tr = event.target.closest('tr[data-dominio]');
     if (!tr) return;
+
     const dominio = tr.dataset.dominio;
-    currentAllocations.set(dominio, {
-      almacen: tr.querySelector('.allocation-almacen')?.value || '',
-      ubicacion: tr.querySelector('.allocation-ubicacion')?.value.trim() || ''
-    });
+    const almacen = tr.querySelector('.allocation-almacen')?.value || '';
+    const ubicacion = tr.querySelector('.allocation-ubicacion')?.value || '';
+    const segmento = ubicacion ? (locationMap.get(normalizeCode(ubicacion)) || '') : '';
+
+    currentAllocations.set(dominio, { almacen, ubicacion, segmento });
+
+    const segmentCell = tr.querySelector('.allocation-segmento');
+    if (segmentCell) {
+      segmentCell.innerHTML = `<span class="segment-auto${segmento ? ' ready' : ''}">${escapeHtml(segmento || '—')}</span>`;
+    }
+
     validateRegistration();
-    renderDetail(currentRows);
   }
 
   function renderDetail(rows) {
     const body = document.getElementById('detailBody');
-    const segmento = segmentoInput?.value.trim() || '';
     body.innerHTML = rows.map(row => {
       const top = normalizeTopology(row.topologia);
       const topClass = top.includes('SIN PERFIL') ? 'saldo' : (top.includes('CON PERFIL') ? 'serial' : 'review');
@@ -534,38 +577,34 @@ document.addEventListener('DOMContentLoaded', () => {
   function validateRegistration() {
     if (resultsSection.hidden) return;
 
-    const status = document.getElementById('manualStatus');
     const bar = document.querySelector('.register-bar');
     const title = document.getElementById('registerTitle');
     const help = document.getElementById('registerHelp');
-    const segmento = segmentoInput?.value.trim() || '';
 
-    let pending = segmento ? 0 : 1;
-    segmentoInput?.classList.toggle('invalid', !segmento);
+    let pending = 0;
 
     allocationBody.querySelectorAll('tr[data-dominio]').forEach(tr => {
-      const select = tr.querySelector('.allocation-almacen');
-      const input = tr.querySelector('.allocation-ubicacion');
-      const missingAlmacen = !select?.value;
-      const missingUbicacion = !input?.value.trim();
-      select?.classList.toggle('invalid', missingAlmacen);
-      input?.classList.toggle('invalid', missingUbicacion);
+      const almacenSelect = tr.querySelector('.allocation-almacen');
+      const ubicacionSelect = tr.querySelector('.allocation-ubicacion');
+      const missingAlmacen = !almacenSelect?.value;
+      const missingUbicacion = !ubicacionSelect?.value;
+      const allocation = getAllocation(tr.dataset.dominio);
+      const missingSegmento = Boolean(ubicacionSelect?.value) && !allocation.segmento;
+
+      almacenSelect?.classList.toggle('invalid', missingAlmacen);
+      ubicacionSelect?.classList.toggle('invalid', missingUbicacion || missingSegmento);
+
       if (missingAlmacen) pending += 1;
-      if (missingUbicacion) pending += 1;
+      if (missingUbicacion || missingSegmento) pending += 1;
     });
 
     if (pending) {
-      status.textContent = `${pending} pendiente${pending === 1 ? '' : 's'}`;
-      status.className = 'status-chip pending';
       registerBtn.disabled = true;
       bar.classList.remove('ready');
       title.textContent = 'Faltan datos obligatorios';
-      help.textContent = 'Completa el Segmento y el destino de cada Código Dominion.';
+      help.textContent = 'Completa el Almacén y la Ubicación de cada Código Dominion.';
       return;
     }
-
-    status.textContent = 'Datos completos';
-    status.className = 'status-chip ready';
 
     const serialesPendientes = unresolvedSerialRows().length;
     if (blockingIssues.length || serialesPendientes) {
@@ -583,11 +622,6 @@ document.addEventListener('DOMContentLoaded', () => {
     title.textContent = 'Ingreso listo para registrar';
     help.textContent = 'Todos los destinos están completos y el PDF superó las validaciones.';
   }
-
-  segmentoInput?.addEventListener('input', () => {
-    validateRegistration();
-    renderDetail(currentRows);
-  });
 
   processPdfBtn?.addEventListener('click', async () => {
     if (!currentFile) return;
@@ -633,7 +667,6 @@ document.addEventListener('DOMContentLoaded', () => {
     validateRegistration();
     if (registerBtn.disabled) return;
 
-    const segmento = segmentoInput?.value.trim() || '';
     const payload = currentRows.map(row => {
       const destino = getAllocation(row.dominio_pdf);
       return {
@@ -641,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
         centro: 'C903',
         almacen: destino.almacen,
         ubicacion: destino.ubicacion,
-        segmento
+        segmento: destino.segmento
       };
     });
     console.log('SIGLO · Ingreso validado (sin persistencia BD)', payload);
@@ -664,10 +697,6 @@ document.addEventListener('DOMContentLoaded', () => {
     processMessage.className = 'process-message';
     resultsSection.hidden = true;
     currentAllocations = new Map();
-    if (segmentoInput) {
-      segmentoInput.value = '';
-      segmentoInput.classList.remove('invalid');
-    }
     if (allocationBody) allocationBody.innerHTML = '';
     updateProcessButton();
     dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
