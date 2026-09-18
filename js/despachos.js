@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-9';
+  const VERSION = '20260918-10';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -34,17 +34,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadCatalog() {
     try {
-      const response = await fetch(`data/CodigosSAP.json?v=${VERSION}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      catalog = await response.json();
+      const supabase = window.sigloSupabase;
+      if (supabase) {
+        const { data, error } = await supabase.rpc('consultar_catalogo_codigos');
+        if (!error && Array.isArray(data) && data.length) catalog = data;
+      }
+
+      if (!catalog.length) {
+        const response = await fetch(`data/CodigosSAP.json?v=${VERSION}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        catalog = await response.json();
+      }
+
       catalogMap = new Map(catalog.map(item => [normalizeCode(item.codigo_sap), item]));
       catalogStatus.textContent = `Catálogo listo · ${catalog.length} códigos SAP cargados`;
       catalogStatus.className = 'catalog-status ready';
       updateProcessButton();
     } catch (error) {
-      catalogStatus.textContent = 'No fue posible cargar CodigosSAP.json';
+      catalogStatus.textContent = 'No fue posible cargar el catálogo de SIGLO';
       catalogStatus.className = 'catalog-status error';
-      processMessage.textContent = 'Verifica que el archivo exista en data/CodigosSAP.json.';
+      processMessage.textContent = 'No fue posible consultar la Maestra Códigos SAP.';
       processMessage.className = 'process-message error';
       console.error(error);
     }
