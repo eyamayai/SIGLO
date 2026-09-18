@@ -103,7 +103,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     body.innerHTML = rows.map(row => {
-      const inventoryClass = row.estado_inventario === 'Disponible' ? 'available' : 'dispatched';
+      const inventoryClass = row.estado_inventario === 'Disponible'
+        ? 'available'
+        : (row.estado_inventario === 'Garantía' ? 'guarantee' : 'dispatched');
       return `<tr>
         <td class="serial-cell">${escapeHtml(row.serial)}</td>
         <td class="code-cell">${escapeHtml(row.codigo_sap)}</td>
