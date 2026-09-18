@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const loteFilter = document.getElementById('loteFilter');
   const segmentFilter = document.getElementById('segmentFilter');
   const refreshBtn = document.getElementById('refreshBalancesBtn');
+  const resetBtn = document.getElementById('resetBalancesBtn');
   const message = document.getElementById('balanceMessage');
 
   let equipos = [];
@@ -180,6 +181,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   [searchInput, stateFilter, loteFilter, segmentFilter].forEach(control => {
     control?.addEventListener(control === searchInput ? 'input' : 'change', renderAll);
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    searchInput.value = '';
+    stateFilter.value = '';
+    loteFilter.value = '';
+    segmentFilter.value = '';
+    renderAll();
+    message.textContent = 'Filtros restablecidos.';
+    message.className = 'balance-message';
   });
 
   refreshBtn?.addEventListener('click', loadBalances);
