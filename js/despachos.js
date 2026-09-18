@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-6';
+  const VERSION = '20260918-7';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cedula = text.match(/CC:\s*(\d+)/i)?.[1] || '';
 
     const nombreMatch = text.match(
-      /Nombre:\s*([\s\S]*?)(?=\s+RHAC1\s*\/\s*DES\s*\/\s*\d+|\n|$)/i
+      /Nombre:\s*([\s\S]*?)(?=\s*(?:Bandeja:|Fecha\s+env[ií]o:|RHAC1\s*\/\s*DES\s*\/\s*\d+|DOMINION\s+COLOMBIA\s+SAS|$))/i
     );
     const nombre = (nombreMatch?.[1] || '')
       .replace(/\s+/g, ' ')
@@ -318,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (despachoRegistrado) {
       registerDispatchBtn.disabled = true;
+      bar.classList.remove('error');
       bar.classList.add('ready');
       title.textContent = 'Despacho registrado';
       help.textContent = 'La salida ya fue aplicada al inventario y almacenada en la base de datos.';
@@ -334,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!seriales && !noSerializados) {
       registerDispatchBtn.disabled = true;
-      bar.classList.remove('ready');
+      bar.classList.remove('ready', 'error');
       title.textContent = 'No hay materiales para registrar';
       help.textContent = 'Procesa un PDF de despacho válido.';
       return;
@@ -342,13 +343,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (blockers) {
       registerDispatchBtn.disabled = true;
-      bar.classList.remove('ready');
+      bar.classList.remove('ready', 'error');
       title.textContent = 'El despacho requiere revisión';
       help.textContent = 'Resuelve los bloqueos indicados antes de registrar.';
       return;
     }
 
     registerDispatchBtn.disabled = false;
+    bar.classList.remove('error');
     bar.classList.add('ready');
     title.textContent = 'Despacho listo para registrar';
     help.textContent = 'SIGLO validará existencias y estados nuevamente en la base de datos.';
@@ -434,11 +436,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (error) {
       console.error('Error registrando despacho', error);
+      const dbMessage = error.message || 'No fue posible registrar el despacho.';
+      const registerBar = document.querySelector('.dispatch-register-bar');
+      const registerTitle = document.getElementById('dispatchRegisterTitle');
+      const registerHelp = document.getElementById('dispatchRegisterHelp');
+
       registerDispatchBtn.innerHTML = oldText;
       despachoRegistrado = false;
-      processMessage.textContent = error.message || 'No fue posible registrar el despacho.';
+      processMessage.textContent = dbMessage;
       processMessage.className = 'process-message error';
+
       validateDispatchRegistration();
+
+      registerBar?.classList.remove('ready');
+      registerBar?.classList.add('error');
+      if (registerTitle) registerTitle.textContent = 'No se pudo registrar el despacho';
+      if (registerHelp) registerHelp.textContent = dbMessage;
+
+      registerBar?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      if (/ya fue registrado anteriormente/i.test(dbMessage)) {
+        window.alert(`SIGLO · Despacho duplicado\n\n${dbMessage}`);
+      } else {
+        window.alert(`SIGLO · No se pudo registrar\n\n${dbMessage}`);
+      }
       return;
     }
 
