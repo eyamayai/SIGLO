@@ -8,15 +8,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-7">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-8">
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/ingresos.css?v=20260918-7">
+  <link rel="stylesheet" href="css/ingresos.css?v=20260918-8">
 </head>
 <body class="dashboard-body">
   <div class="app-shell">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <img src="assets/icono-siglo.png?v=20260918-7" alt="Icono SIGLO">
+        <img src="assets/icono-siglo.png?v=20260918-8" alt="Icono SIGLO">
         <strong>SIGLO</strong>
       </div>
 
@@ -121,9 +121,9 @@
           <div class="table-heading">
             <div>
               <h3>Datos generales del ingreso</h3>
-              <p>Centro, Stock, Tipo y Estado son automáticos. El Segmento se aplica a todos los materiales del PDF.</p>
+              <p>Centro, Stock, Tipo y Estado se asignan automáticamente.</p>
             </div>
-            <span id="manualStatus" class="status-chip pending">Pendiente</span>
+            <span class="status-chip ready">Automático</span>
           </div>
 
           <div class="general-entry-grid">
@@ -132,10 +132,6 @@
               <strong>C903</strong>
               <small>Automático</small>
             </div>
-            <label class="segment-field">
-              <span>Segmento *</span>
-              <input id="segmentoInput" type="text" autocomplete="off" placeholder="Segmento">
-            </label>
             <div class="fixed-field"><span>Stock</span><strong>1</strong><small>Automático</small></div>
             <div class="fixed-field"><span>Tipo</span><strong>LIBRE</strong><small>Automático</small></div>
             <div class="fixed-field"><span>Estado</span><strong>Bueno</strong><small>Automático</small></div>
@@ -146,7 +142,7 @@
           <div class="table-heading">
             <div>
               <h3>Destino por Código Dominion</h3>
-              <p>Selecciona el Almacén y registra la Ubicación de cada Código Dominion detectado en el PDF.</p>
+              <p>Selecciona el Almacén y la Ubicación de cada Código Dominion. El Segmento se asigna automáticamente según la Ubicación.</p>
             </div>
           </div>
           <div class="table-wrap allocation-wrap">
@@ -157,8 +153,10 @@
                   <th>Código SAP</th>
                   <th>Descripción</th>
                   <th>Lote</th>
+                  <th>Cantidad</th>
                   <th>Almacén *</th>
                   <th>Ubicación *</th>
+                  <th>Segmento</th>
                 </tr>
               </thead>
               <tbody id="allocationBody"></tbody>
@@ -203,7 +201,7 @@
         <section class="register-bar">
           <div>
             <strong id="registerTitle">Faltan datos obligatorios</strong>
-            <p id="registerHelp">Completa el Segmento y el destino de cada Código Dominion.</p>
+            <p id="registerHelp">Completa el Almacén y la Ubicación de cada Código Dominion.</p>
           </div>
           <button id="registerBtn" class="register-button" type="button" disabled>
             Registrar ingreso <span>→</span>
@@ -217,7 +215,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="js/app.js?v=20260918-7"></script>
-  <script src="js/ingresos.js?v=20260918-7"></script>
+  <script src="js/app.js?v=20260918-8"></script>
+  <script src="js/ingresos.js?v=20260918-8"></script>
 </body>
 </html>
