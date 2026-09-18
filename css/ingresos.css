@@ -42,3 +42,23 @@
   .detail-card .table-wrap{overflow-x:auto}
   .detail-table{min-width:760px;table-layout:auto}
 }
+
+
+/* Ingresos: más espacio horizontal sin alterar la página Inicio */
+.app-shell{grid-template-columns:190px minmax(0,1fr)}
+.ingreso-main{min-width:0}
+.ingreso-card{min-width:0}
+.table-wrap{max-width:100%}
+.sidebar{padding-left:12px;padding-right:12px}
+.sidebar-brand{gap:9px;padding-left:5px;padding-right:5px}
+.sidebar-brand img{width:38px;height:38px}
+.sidebar-brand strong{font-size:20px}
+.nav-title{margin-left:9px;margin-right:9px;font-size:10px}
+.nav-link{gap:9px;padding:11px 10px;font-size:13px}
+.nav-link svg{width:19px;height:19px;flex:0 0 19px}
+@media(max-width:1100px){
+  .app-shell{grid-template-columns:180px minmax(0,1fr)}
+}
+@media(max-width:800px){
+  .app-shell{grid-template-columns:1fr}
+}
