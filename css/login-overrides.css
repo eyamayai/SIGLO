@@ -75,3 +75,29 @@
     height:56px;
   }
 }
+
+
+/* Login compacto para pantallas 1366x768 con área útil reducida del navegador */
+@media (min-width:1101px) and (max-height:720px){
+  .brand-features{
+    margin-top:20px;
+    width:min(100%,560px);
+    padding:11px 8px;
+    border-radius:12px;
+  }
+
+  .feature-item{
+    gap:7px;
+    padding:0 16px;
+    font-size:15px;
+  }
+
+  .feature-image{
+    width:48px;
+    height:48px;
+  }
+
+  .card-footer-login{
+    margin-top:14px;
+  }
+}
