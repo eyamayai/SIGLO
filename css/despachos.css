@@ -2,3 +2,21 @@
 @media(max-width:1200px){.dispatch-info-grid{grid-template-columns:repeat(3,1fr)}.result-grid{grid-template-columns:1fr}}
 @media(max-width:800px){.dispatch-info-grid{grid-template-columns:1fr 1fr}.summary-grid{grid-template-columns:1fr}.process-row,.section-title-row{align-items:stretch;flex-direction:column}.dispatch-primary{width:100%}.uploader-card{padding:18px}.card-heading p{margin-left:0}.dashboard-main.dispatch-main{padding:20px 16px}}
 @media(max-width:520px){.dispatch-info-grid{grid-template-columns:1fr}.drop-zone{padding:28px 14px}}
+
+/* Ajustes de densidad para portátiles de 14" */
+@media (min-width:801px) and (max-width:1500px){
+  .uploader-card{margin-top:22px;padding:20px}
+  .drop-zone{margin-top:16px;padding:24px 18px}
+  .drop-icon{width:46px;height:46px;margin-bottom:9px}
+  .drop-zone h3{font-size:16px}
+  .drop-zone p{margin:5px 0 13px}
+  .process-row{margin-top:14px}
+  .results-section{margin-top:22px}
+  .dispatch-info-grid{gap:9px}
+  .info-box{padding:13px;min-height:76px}
+  .summary-grid{gap:10px;margin-top:10px}
+  .summary-card{padding:14px}
+  .summary-card strong{font-size:25px}
+  .result-grid{gap:12px;margin-top:12px}
+  .result-card,.review-card{padding:16px}
+}
