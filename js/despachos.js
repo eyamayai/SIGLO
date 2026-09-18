@@ -276,11 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('countSerializados').textContent = classification.serializados.length;
     document.getElementById('countNoSerializados').textContent = classification.noSerializados.length;
 
-    renderTableBody('serialBody', classification.serializados, ['serial', 'cedula'], 2);
+    renderTableBody('serialBody', classification.serializados, ['serial', 'codigo_sap', 'dominio', 'cedula'], 4);
     renderTableBody('noSerialBody', classification.noSerializados.map(row => ({
       ...row,
       cantidad: Number.isInteger(row.cantidad) ? row.cantidad : row.cantidad.toFixed(2)
-    })), ['codigo_sap', 'cantidad', 'cedula'], 3);
+    })), ['codigo_sap', 'dominio', 'cantidad', 'cedula'], 4);
 
     const reviewCard = document.getElementById('reviewCard');
     const reviewBody = document.getElementById('reviewBody');
