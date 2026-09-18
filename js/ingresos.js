@@ -181,8 +181,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     starts.forEach((start, position) => {
       const endIndex = position + 1 < starts.length ? starts[position + 1].index : rows.length;
-      const block = rows.slice(start.index, endIndex)
-        .filter(row => !/Firma Resp\.|DOMINION COLOMBIA SAS|P[aá]gina:/i.test(row.text));
+      const rawBlock = rows.slice(start.index, endIndex);
+      const footerIndex = rawBlock.findIndex(row =>
+        /Firma Resp\.|Firma Técnico|DOMINION COLOMBIA SAS|Calle 94A|Bogot[aá]|NIT:|P[aá]gina:/i.test(row.text)
+      );
+      const block = footerIndex >= 0 ? rawBlock.slice(0, footerIndex) : rawBlock;
       if (!block.length) return;
 
       const first = block[0];
