@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-3';
+  const VERSION = '20260918-4';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -10,18 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultsSection = document.getElementById('resultsSection');
   const clearBtn = document.getElementById('clearBtn');
   const registerBtn = document.getElementById('registerBtn');
-  const manualInputs = {
-    centro: document.getElementById('centroInput'),
-    almacen: document.getElementById('almacenInput'),
-    ubicacion: document.getElementById('ubicacionInput'),
-    segmento: document.getElementById('segmentoInput')
-  };
+  const segmentoInput = document.getElementById('segmentoInput');
+  const allocationBody = document.getElementById('allocationBody');
 
   let currentFile = null;
   let catalog = [];
   let catalogMap = new Map();
   let currentRows = [];
   let blockingIssues = [];
+  let currentAllocations = new Map();
 
   if (window.pdfjsLib) {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -47,14 +44,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       catalog = await response.json();
       catalogMap = new Map(catalog.map(item => [normalizeCode(item.codigo_sap), item]));
-      const withDescription = catalog.filter(item => String(item.descripcion || '').trim()).length;
-      catalogStatus.textContent = `Catálogo listo · ${catalog.length} códigos SAP · ${withDescription} con descripción maestra`;
+      catalogStatus.textContent = `Catálogo de topologías listo · ${catalog.length} códigos SAP`;
       catalogStatus.className = 'catalog-status ready';
       updateProcessButton();
     } catch (error) {
       catalogStatus.textContent = 'No fue posible cargar CodigosSAP.json';
       catalogStatus.className = 'catalog-status error';
-      processMessage.textContent = 'Verifica que el archivo exista en data/CodigosSAP.json.';
+      processMessage.textContent = 'Verifica que el catálogo de topologías exista en data/CodigosSAP.json.';
       processMessage.className = 'process-message error';
       console.error(error);
     }
@@ -218,30 +214,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let descripcionPdf = descriptionParts.join(' ').replace(/\s+/g, ' ').trim();
 
-      // Un mismo Código SAP puede tener dos códigos Dominion:
-      // uno para VALORADO y otro para NOVALORADO.
-      // En los PDF actuales, "(NO VALORADO)" identifica de forma explícita NOVALORADO.
-      // La función también queda preparada para la futura Maestra de Códigos SAP,
-      // donde podremos almacenar ambos Dominion por separado.
-      const dominioValorado = normalizeCode(
-        config?.dominio_valorado ??
-        config?.dominios?.VALORADO ??
-        ''
-      );
-      const dominioNoValorado = normalizeCode(
-        config?.dominio_novalorado ??
-        config?.dominios?.NOVALORADO ??
-        ''
-      );
-      const dominioActual = normalizeCode(dominioPdf);
+      // El PDF define el lote: "(NO VALORADO)" se almacena como NOVALORADO.
+      // Si no aparece esa marca, el material se almacena como VALORADO.
       const marcadoNoValorado = /\(\s*NO\s+VALORADO\s*\)/i.test(descripcionPdf);
-
-      let lote = 'VALORADO';
-      if (marcadoNoValorado || (dominioNoValorado && dominioActual === dominioNoValorado)) {
-        lote = 'NOVALORADO';
-      } else if (dominioValorado && dominioActual === dominioValorado) {
-        lote = 'VALORADO';
-      }
+      const lote = marcadoNoValorado ? 'NOVALORADO' : 'VALORADO';
 
       descripcionPdf = descripcionPdf
         .replace(/\(\s*NO\s+VALORADO\s*\)/ig, '')
@@ -253,13 +229,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const serials = splitSerials(seriesParts.join(' '));
 
       if (!config) {
-        issues.push(`Código SAP ${codigoSap}: no existe en la Maestra de Códigos SAP.`);
+        issues.push(`Código SAP ${codigoSap}: no existe en el catálogo de topologías.`);
       }
 
-      // No se marca diferencia de Dominion como error ni aviso.
-      // Es válido que un mismo Código SAP tenga un Dominion para VALORADO
-      // y otro para NOVALORADO.
-      const descripcion = String(config?.descripcion || '').trim() || descripcionPdf || 'SIN DESCRIPCIÓN';
+      // Dominion y descripción provienen del PDF. El JSON solo decide la Topología.
+      const descripcion = descripcionPdf || 'SIN DESCRIPCIÓN';
       const serializado = isSerialTopology(topologia);
 
       if (serializado) {
@@ -316,14 +290,66 @@ document.addEventListener('DOMContentLoaded', () => {
     return { products, issues, notices };
   }
 
+  function getAllocation(dominio) {
+    return currentAllocations.get(normalizeCode(dominio)) || { almacen: '', ubicacion: '' };
+  }
+
+  function renderAllocations(rows) {
+    const unique = new Map();
+    rows.forEach(row => {
+      const key = normalizeCode(row.dominio_pdf);
+      if (!unique.has(key)) unique.set(key, row);
+    });
+
+    currentAllocations = new Map([...unique.keys()].map(key => [key, { almacen: '', ubicacion: '' }]));
+
+    allocationBody.innerHTML = [...unique.entries()].map(([dominio, row]) => `
+      <tr data-dominio="${escapeHtml(dominio)}">
+        <td class="dominion-code">${escapeHtml(dominio)}</td>
+        <td><strong>${escapeHtml(row.codigo_sap)}</strong></td>
+        <td>${escapeHtml(row.descripcion)}</td>
+        <td><span class="lote-pill">${escapeHtml(row.lote)}</span></td>
+        <td>
+          <select class="allocation-almacen" aria-label="Almacén para ${escapeHtml(dominio)}">
+            <option value="">Seleccionar</option>
+            <option value="A221">A221</option>
+            <option value="U020">U020</option>
+          </select>
+        </td>
+        <td>
+          <input class="allocation-ubicacion" type="text" autocomplete="off" placeholder="Ubicación" aria-label="Ubicación para ${escapeHtml(dominio)}">
+        </td>
+      </tr>`).join('');
+
+    allocationBody.querySelectorAll('select,input').forEach(control => {
+      control.addEventListener('input', handleAllocationChange);
+      control.addEventListener('change', handleAllocationChange);
+    });
+  }
+
+  function handleAllocationChange(event) {
+    const tr = event.target.closest('tr[data-dominio]');
+    if (!tr) return;
+    const dominio = tr.dataset.dominio;
+    currentAllocations.set(dominio, {
+      almacen: tr.querySelector('.allocation-almacen')?.value || '',
+      ubicacion: tr.querySelector('.allocation-ubicacion')?.value.trim() || ''
+    });
+    validateRegistration();
+    renderDetail(currentRows);
+  }
+
   function renderDetail(rows) {
     const body = document.getElementById('detailBody');
+    const segmento = segmentoInput?.value.trim() || '';
     body.innerHTML = rows.map(row => {
       const top = normalizeTopology(row.topologia);
       const topClass = top.includes('SIN PERFIL') ? 'saldo' : (top.includes('CON PERFIL') ? 'serial' : 'review');
       const cantidad = Number.isInteger(row.cantidad) ? row.cantidad : Number(row.cantidad || 0).toLocaleString('es-CO');
+      const destino = getAllocation(row.dominio_pdf);
       return `
         <tr>
+          <td class="dominion-code">${escapeHtml(row.dominio_pdf)}</td>
           <td><strong>${escapeHtml(row.codigo_sap)}</strong></td>
           <td>${escapeHtml(row.descripcion)}</td>
           <td><span class="topology-pill ${topClass}">${escapeHtml(row.topologia)}</span></td>
@@ -333,6 +359,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${escapeHtml(row.stock)}</td>
           <td>${escapeHtml(row.tipo)}</td>
           <td>${escapeHtml(row.estado)}</td>
+          <td class="destination-preview">C903</td>
+          <td class="destination-preview">${escapeHtml(destino.almacen || '—')}</td>
+          <td class="destination-preview">${escapeHtml(destino.ubicacion || '—')}</td>
+          <td class="destination-preview">${escapeHtml(segmento || '—')}</td>
         </tr>`;
     }).join('');
   }
@@ -374,6 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('countRevisar').textContent = parsed.issues.length;
 
     currentRows = parsed.products;
+    renderAllocations(currentRows);
     renderDetail(currentRows);
     renderReview(parsed.issues, parsed.notices);
     resultsSection.hidden = false;
@@ -381,30 +412,36 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function getManualData() {
-    return Object.fromEntries(Object.entries(manualInputs).map(([key, input]) => [key, input.value.trim()]));
-  }
-
   function validateRegistration() {
     if (resultsSection.hidden) return;
-    const manual = getManualData();
-    const missing = Object.entries(manual).filter(([, value]) => !value).map(([key]) => key);
+
     const status = document.getElementById('manualStatus');
     const bar = document.querySelector('.register-bar');
     const title = document.getElementById('registerTitle');
     const help = document.getElementById('registerHelp');
+    const segmento = segmentoInput?.value.trim() || '';
 
-    Object.entries(manualInputs).forEach(([key, input]) => {
-      input.classList.toggle('invalid', !manual[key]);
+    let pending = segmento ? 0 : 1;
+    segmentoInput?.classList.toggle('invalid', !segmento);
+
+    allocationBody.querySelectorAll('tr[data-dominio]').forEach(tr => {
+      const select = tr.querySelector('.allocation-almacen');
+      const input = tr.querySelector('.allocation-ubicacion');
+      const missingAlmacen = !select?.value;
+      const missingUbicacion = !input?.value.trim();
+      select?.classList.toggle('invalid', missingAlmacen);
+      input?.classList.toggle('invalid', missingUbicacion);
+      if (missingAlmacen) pending += 1;
+      if (missingUbicacion) pending += 1;
     });
 
-    if (missing.length) {
-      status.textContent = `${missing.length} pendiente${missing.length === 1 ? '' : 's'}`;
+    if (pending) {
+      status.textContent = `${pending} pendiente${pending === 1 ? '' : 's'}`;
       status.className = 'status-chip pending';
       registerBtn.disabled = true;
       bar.classList.remove('ready');
       title.textContent = 'Faltan datos obligatorios';
-      help.textContent = 'Completa Centro, Almacén, Ubicación y Segmento.';
+      help.textContent = 'Completa el Segmento y el destino de cada Código Dominion.';
       return;
     }
 
@@ -422,16 +459,19 @@ document.addEventListener('DOMContentLoaded', () => {
     registerBtn.disabled = false;
     bar.classList.add('ready');
     title.textContent = 'Ingreso listo para registrar';
-    help.textContent = 'Todos los campos obligatorios están completos y el PDF superó las validaciones.';
+    help.textContent = 'Todos los destinos están completos y el PDF superó las validaciones.';
   }
 
-  Object.values(manualInputs).forEach(input => input.addEventListener('input', validateRegistration));
+  segmentoInput?.addEventListener('input', () => {
+    validateRegistration();
+    renderDetail(currentRows);
+  });
 
   processPdfBtn?.addEventListener('click', async () => {
     if (!currentFile) return;
     processPdfBtn.disabled = true;
     processPdfBtn.textContent = 'Procesando…';
-    processMessage.textContent = 'Leyendo PDF y validando materiales contra la Maestra de Códigos SAP…';
+    processMessage.textContent = 'Leyendo PDF y validando la topología de cada Código SAP…';
     processMessage.className = 'process-message';
 
     try {
@@ -464,8 +504,17 @@ document.addEventListener('DOMContentLoaded', () => {
     validateRegistration();
     if (registerBtn.disabled) return;
 
-    const manual = getManualData();
-    const payload = currentRows.map(row => ({ ...row, ...manual }));
+    const segmento = segmentoInput?.value.trim() || '';
+    const payload = currentRows.map(row => {
+      const destino = getAllocation(row.dominio_pdf);
+      return {
+        ...row,
+        centro: 'C903',
+        almacen: destino.almacen,
+        ubicacion: destino.ubicacion,
+        segmento
+      };
+    });
     console.log('SIGLO · Ingreso validado (sin persistencia BD)', payload);
 
     processMessage.textContent = `Ingreso validado: ${payload.length} registro(s) listos. En esta etapa de SIGLO todavía no se almacena información en una BD.`;
@@ -485,10 +534,12 @@ document.addEventListener('DOMContentLoaded', () => {
     processMessage.textContent = '';
     processMessage.className = 'process-message';
     resultsSection.hidden = true;
-    Object.values(manualInputs).forEach(input => {
-      input.value = '';
-      input.classList.remove('invalid');
-    });
+    currentAllocations = new Map();
+    if (segmentoInput) {
+      segmentoInput.value = '';
+      segmentoInput.classList.remove('invalid');
+    }
+    if (allocationBody) allocationBody.innerHTML = '';
     updateProcessButton();
     dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
