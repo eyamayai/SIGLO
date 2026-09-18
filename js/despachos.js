@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-5';
+  const VERSION = '20260918-6';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -130,11 +130,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function extractMetadata(text) {
     const documento = text.match(/RHAC1\s*\/\s*DES\s*\/\s*\d+/i)?.[0]?.replace(/\s/g, '') || '';
     const cedula = text.match(/CC:\s*(\d+)/i)?.[1] || '';
-    const nombreRaw = text.match(/Nombre:\s*([\s\S]*?)\s*Bandeja:/i)?.[1] || '';
-    const nombre = nombreRaw.replace(/\s+/g, ' ').trim();
-    const bandeja = text.match(/Bandeja:\s*(\d+)/i)?.[1] || '';
+
+    const nombreMatch = text.match(
+      /Nombre:\s*([\s\S]*?)(?=\s+RHAC1\s*\/\s*DES\s*\/\s*\d+|\n|$)/i
+    );
+    const nombre = (nombreMatch?.[1] || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
     const fecha = text.match(/Fecha\s+env[ií]o:\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/i)?.[1] || '';
-    return { documento, cedula, nombre, bandeja, fecha };
+    return { documento, cedula, nombre, fecha };
   }
 
   function findQuantityMatch(segment) {
@@ -255,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('metaDocumento').textContent = metadata.documento || 'No detectado';
     document.getElementById('metaTecnico').textContent = metadata.nombre || 'No detectado';
     document.getElementById('metaCedula').textContent = metadata.cedula || 'No detectada';
-    document.getElementById('metaBandeja').textContent = metadata.bandeja || 'No detectada';
     document.getElementById('metaFecha').textContent = metadata.fecha || 'No detectada';
 
     document.getElementById('countSerializados').textContent = classification.serializados.length;
@@ -411,7 +415,6 @@ document.addEventListener('DOMContentLoaded', () => {
       fecha: currentMetadata.fecha || null,
       tecnico: currentMetadata.nombre || null,
       cedula: currentMetadata.cedula || '',
-      bandeja: currentMetadata.bandeja || null,
       seriales: currentClassification.serializados.map(row => row.serial),
       no_serializados: currentClassification.noSerializados.map(row => ({
         codigo_sap: row.codigo_sap,
