@@ -3,3 +3,26 @@
 @media(min-width:801px) and (max-width:1500px){.uploader-card{margin-top:22px;padding:20px}.drop-zone{margin-top:16px;padding:24px 18px}.drop-icon{width:46px;height:46px;margin-bottom:9px}.drop-zone h3{font-size:16px}.drop-zone p{margin:5px 0 13px}.process-row{margin-top:14px}.results-section{margin-top:22px}.pdf-info-grid{gap:9px}.info-box{padding:13px;min-height:76px}.summary-grid{gap:10px;margin-top:10px}.summary-card{padding:14px}.summary-card strong{font-size:25px}.manual-card,.detail-card,.review-card{padding:16px}.manual-grid input{height:40px}.register-bar{padding:14px 16px}}
 @media(max-width:800px){.pdf-info-grid{grid-template-columns:1fr 1fr}.summary-grid,.auto-values{grid-template-columns:1fr}.manual-grid{grid-template-columns:1fr 1fr}.process-row,.section-title-row,.register-bar{align-items:stretch;flex-direction:column}.ingreso-primary,.register-button{width:100%}.uploader-card{padding:18px}.card-heading p{margin-left:0}.dashboard-main.ingreso-main{padding:20px 16px}}
 @media(max-width:520px){.pdf-info-grid,.manual-grid{grid-template-columns:1fr}.drop-zone{padding:28px 14px}}
+
+/* Ingresos: datos generales y destino por Código Dominion */
+.general-entry-grid{display:grid;grid-template-columns:1fr 1.4fr repeat(3,.8fr);gap:10px;align-items:end}
+.fixed-field,.segment-field{min-height:68px;border:1px solid #dce7ef;border-radius:11px;padding:10px 12px;background:#f5f8fb}
+.fixed-field span,.segment-field>span{display:block;font-size:11px;font-weight:700;color:#64798c;margin-bottom:5px}
+.fixed-field strong{display:block;color:#183754;font-size:14px}
+.fixed-field small{display:block;margin-top:3px;color:#92a0ad;font-size:10px}
+.segment-field{background:#fff}
+.segment-field input{width:100%;height:34px;border:1px solid #cbd9e5;border-radius:8px;padding:0 10px;font:inherit;color:#1d344a;outline:none;background:#fff}
+.segment-field input:focus,.allocation-table select:focus,.allocation-table input:focus{border-color:#1781d3;box-shadow:0 0 0 3px rgba(23,129,211,.08)}
+.segment-field input.invalid,.allocation-table select.invalid,.allocation-table input.invalid{border-color:#d28a3a;background:#fffaf3}
+.allocation-card{padding:20px;margin-top:16px}
+.allocation-wrap{overflow-x:auto}
+.allocation-table{min-width:930px}
+.allocation-table td:nth-child(3){white-space:normal;min-width:260px}
+.allocation-table select,.allocation-table input{width:100%;height:36px;border:1px solid #cbd9e5;border-radius:8px;padding:0 9px;font:inherit;font-size:12px;color:#1d344a;background:#fff;outline:none}
+.allocation-table select{min-width:110px;cursor:pointer}
+.allocation-table input{min-width:150px}
+.allocation-table .dominion-code{font-weight:800;color:#1b4f78}
+.destination-preview{color:#61778a}
+@media(max-width:1200px){.general-entry-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:800px){.general-entry-grid{grid-template-columns:1fr 1fr}.allocation-card{padding:16px}}
+@media(max-width:520px){.general-entry-grid{grid-template-columns:1fr}}
