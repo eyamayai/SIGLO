@@ -432,27 +432,81 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
+  function unresolvedSerialRows() {
+    return currentRows.filter(row => isSerialTopology(row.topologia) && !isValidSerial(row.serial));
+  }
+
+  function updateReviewCounter() {
+    document.getElementById('countRevisar').textContent = blockingIssues.length + unresolvedSerialRows().length;
+  }
+
   function renderReview(issues, notices) {
     blockingIssues = issues;
     const card = document.getElementById('reviewCard');
     const list = document.getElementById('reviewList');
+    const missingRows = unresolvedSerialRows();
     const all = [
       ...issues.map(text => ({ text, blocking: true })),
       ...notices.map(text => ({ text, blocking: false }))
     ];
 
-    if (!all.length) {
+    if (!all.length && !missingRows.length) {
       card.hidden = true;
       list.innerHTML = '';
+      updateReviewCounter();
       return;
     }
 
-    list.innerHTML = all.map(item => `
+    const staticItems = all.map(item => `
       <div class="review-item">
         <strong>${item.blocking ? 'Bloqueo' : 'Aviso'}:</strong>
         ${escapeHtml(item.text)}
       </div>`).join('');
+
+    const corrections = missingRows.length ? `
+      <div class="serial-corrections">
+        <div class="serial-corrections-title">
+          <strong>Seriales pendientes de completar</strong>
+          <span>El serial debe contener al menos 5 dígitos o caracteres.</span>
+        </div>
+        ${missingRows.map(row => `
+          <div class="serial-correction-row" data-row-id="${escapeHtml(row._rowId || '')}">
+            <div><span>Dominion</span><strong>${escapeHtml(row.dominio_pdf)}</strong></div>
+            <div><span>Código SAP</span><strong>${escapeHtml(row.codigo_sap)}</strong></div>
+            <div class="serial-correction-description"><span>Descripción</span><strong>${escapeHtml(row.descripcion)}</strong></div>
+            <label>
+              <span>Serial *</span>
+              <input class="serial-fix-input invalid" type="text" autocomplete="off"
+                placeholder="Ingresar serial" value="${escapeHtml(row.serial || '')}">
+            </label>
+          </div>`).join('')}
+      </div>` : '';
+
+    list.innerHTML = staticItems + corrections;
     card.hidden = false;
+    updateReviewCounter();
+
+    list.querySelectorAll('.serial-fix-input').forEach(input => {
+      input.addEventListener('input', handleSerialCorrection);
+      input.addEventListener('change', () => {
+        if (isValidSerial(input.value)) renderReview(blockingIssues, notices);
+      });
+    });
+  }
+
+  function handleSerialCorrection(event) {
+    const rowElement = event.target.closest('[data-row-id]');
+    const row = currentRows.find(item => item._rowId === rowElement?.dataset.rowId);
+    if (!row) return;
+
+    row.serial = cleanSerialValue(event.target.value);
+    const valid = isValidSerial(row.serial);
+    event.target.classList.toggle('invalid', !valid);
+    event.target.classList.toggle('corrected', valid);
+
+    renderDetail(currentRows);
+    updateReviewCounter();
+    validateRegistration();
   }
 
   function renderResults(metadata, parsed) {
@@ -466,9 +520,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const noSerializados = parsed.products.filter(row => normalizeTopology(row.topologia).includes('SIN PERFIL')).length;
     document.getElementById('countSerializados').textContent = serializados;
     document.getElementById('countNoSerializados').textContent = noSerializados;
-    document.getElementById('countRevisar').textContent = parsed.issues.length;
-
     currentRows = parsed.products;
+    document.getElementById('countRevisar').textContent =
+      parsed.issues.length + currentRows.filter(row => isSerialTopology(row.topologia) && !isValidSerial(row.serial)).length;
     renderAllocations(currentRows);
     renderDetail(currentRows);
     renderReview(parsed.issues, parsed.notices);
@@ -513,11 +567,14 @@ document.addEventListener('DOMContentLoaded', () => {
     status.textContent = 'Datos completos';
     status.className = 'status-chip ready';
 
-    if (blockingIssues.length) {
+    const serialesPendientes = unresolvedSerialRows().length;
+    if (blockingIssues.length || serialesPendientes) {
       registerBtn.disabled = true;
       bar.classList.remove('ready');
       title.textContent = 'El ingreso requiere revisión';
-      help.textContent = 'Resuelve los bloqueos indicados antes de registrar.';
+      help.textContent = serialesPendientes
+        ? `Completa ${serialesPendientes} serial(es) pendiente(s) antes de registrar.`
+        : 'Resuelve los bloqueos indicados antes de registrar.';
       return;
     }
 
@@ -547,8 +604,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       renderResults(metadata, parsed);
 
-      if (parsed.issues.length) {
-        processMessage.textContent = `PDF procesado con ${parsed.issues.length} bloqueo(s). La información no puede registrarse todavía.`;
+      const serialesPendientes = parsed.products.filter(
+        row => isSerialTopology(row.topologia) && !isValidSerial(row.serial)
+      ).length;
+
+      if (parsed.issues.length || serialesPendientes) {
+        const partes = [];
+        if (parsed.issues.length) partes.push(`${parsed.issues.length} bloqueo(s)`);
+        if (serialesPendientes) partes.push(`${serialesPendientes} serial(es) pendiente(s)`);
+        processMessage.textContent = `PDF procesado con ${partes.join(' y ')}. Corrige la revisión requerida antes de registrar.`;
         processMessage.className = 'process-message error';
       } else {
         processMessage.textContent = `PDF procesado correctamente · ${parsed.products.length} registro(s) preparados. Completa los datos obligatorios.`;
