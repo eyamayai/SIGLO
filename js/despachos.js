@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260917-4';
+  const VERSION = '20260918-5';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -9,10 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const processMessage = document.getElementById('processMessage');
   const resultsSection = document.getElementById('resultsSection');
   const clearBtn = document.getElementById('clearBtn');
+  const registerDispatchBtn = document.getElementById('registerDispatchBtn');
 
   let currentFile = null;
   let catalog = [];
   let catalogMap = new Map();
+  let currentMetadata = {};
+  let currentClassification = null;
+  let despachoRegistrado = false;
 
   if (window.pdfjsLib) {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -244,6 +248,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderResults(metadata, classification) {
+    currentMetadata = { ...metadata };
+    currentClassification = classification;
+    despachoRegistrado = false;
+
     document.getElementById('metaDocumento').textContent = metadata.documento || 'No detectado';
     document.getElementById('metaTecnico').textContent = metadata.nombre || 'No detectado';
     document.getElementById('metaCedula').textContent = metadata.cedula || 'No detectada';
@@ -252,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('countSerializados').textContent = classification.serializados.length;
     document.getElementById('countNoSerializados').textContent = classification.noSerializados.length;
-    document.getElementById('countNoConfigurados').textContent = classification.revisar.length;
 
     renderTableBody('serialBody', classification.serializados, ['serial', 'cedula'], 2);
     renderTableBody('noSerialBody', classification.noSerializados.map(row => ({
@@ -262,6 +269,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const reviewCard = document.getElementById('reviewCard');
     const reviewBody = document.getElementById('reviewBody');
+    const reviewMessages = document.getElementById('reviewMessages');
+    const reviewTableWrap = document.getElementById('reviewTableWrap');
+    const messages = [];
+
+    if (!metadata.documento) messages.push('No se detectó el número de documento del despacho.');
+    if (!metadata.cedula) messages.push('No se detectó la cédula del técnico.');
+    messages.push(...classification.serialWarnings);
+
+    reviewMessages.innerHTML = messages.map(message =>
+      `<div class="review-message"><strong>Bloqueo:</strong> ${escapeHtml(message)}</div>`
+    ).join('');
+
     if (classification.revisar.length) {
       reviewBody.innerHTML = classification.revisar.map(item => `
         <tr>
@@ -271,14 +290,64 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${escapeHtml(Number.isInteger(item.cantidad) ? item.cantidad : item.cantidad.toFixed(2))}</td>
           <td><span class="status-pill">${escapeHtml(item.topologia)}</span></td>
         </tr>`).join('');
-      reviewCard.hidden = false;
+      reviewTableWrap.hidden = false;
     } else {
       reviewBody.innerHTML = '';
-      reviewCard.hidden = true;
+      reviewTableWrap.hidden = true;
     }
 
+    const blockers = messages.length + classification.revisar.length;
+    document.getElementById('countNoConfigurados').textContent = blockers;
+    reviewCard.hidden = blockers === 0;
+
     resultsSection.hidden = false;
+    validateDispatchRegistration();
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function validateDispatchRegistration() {
+    if (resultsSection.hidden) return;
+
+    const bar = document.querySelector('.dispatch-register-bar');
+    const title = document.getElementById('dispatchRegisterTitle');
+    const help = document.getElementById('dispatchRegisterHelp');
+
+    if (despachoRegistrado) {
+      registerDispatchBtn.disabled = true;
+      bar.classList.add('ready');
+      title.textContent = 'Despacho registrado';
+      help.textContent = 'La salida ya fue aplicada al inventario y almacenada en la base de datos.';
+      return;
+    }
+
+    const seriales = currentClassification?.serializados?.length || 0;
+    const noSerializados = currentClassification?.noSerializados?.length || 0;
+    const blockers =
+      (currentMetadata.documento ? 0 : 1) +
+      (currentMetadata.cedula ? 0 : 1) +
+      (currentClassification?.serialWarnings?.length || 0) +
+      (currentClassification?.revisar?.length || 0);
+
+    if (!seriales && !noSerializados) {
+      registerDispatchBtn.disabled = true;
+      bar.classList.remove('ready');
+      title.textContent = 'No hay materiales para registrar';
+      help.textContent = 'Procesa un PDF de despacho válido.';
+      return;
+    }
+
+    if (blockers) {
+      registerDispatchBtn.disabled = true;
+      bar.classList.remove('ready');
+      title.textContent = 'El despacho requiere revisión';
+      help.textContent = 'Resuelve los bloqueos indicados antes de registrar.';
+      return;
+    }
+
+    registerDispatchBtn.disabled = false;
+    bar.classList.add('ready');
+    title.textContent = 'Despacho listo para registrar';
+    help.textContent = 'SIGLO validará existencias y estados nuevamente en la base de datos.';
   }
 
   processPdfBtn?.addEventListener('click', async () => {
@@ -318,6 +387,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  registerDispatchBtn?.addEventListener('click', async () => {
+    validateDispatchRegistration();
+    if (registerDispatchBtn.disabled) return;
+
+    const supabase = window.sigloSupabase;
+    if (!supabase) {
+      processMessage.textContent = 'No fue posible conectar con la base de datos.';
+      processMessage.className = 'process-message error';
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      processMessage.textContent = 'Tu sesión expiró. Inicia sesión nuevamente antes de registrar el despacho.';
+      processMessage.className = 'process-message error';
+      setTimeout(() => window.location.replace('index.html'), 1400);
+      return;
+    }
+
+    const payload = {
+      documento: currentMetadata.documento || '',
+      fecha: currentMetadata.fecha || null,
+      tecnico: currentMetadata.nombre || null,
+      cedula: currentMetadata.cedula || '',
+      bandeja: currentMetadata.bandeja || null,
+      seriales: currentClassification.serializados.map(row => row.serial),
+      no_serializados: currentClassification.noSerializados.map(row => ({
+        codigo_sap: row.codigo_sap,
+        cantidad: Number(row.cantidad || 0)
+      }))
+    };
+
+    const oldText = registerDispatchBtn.innerHTML;
+    registerDispatchBtn.disabled = true;
+    registerDispatchBtn.innerHTML = 'Registrando…';
+    processMessage.textContent = 'Validando existencias y aplicando el despacho en SIGLO…';
+    processMessage.className = 'process-message';
+
+    const { data, error } = await supabase.rpc('registrar_despacho', {
+      p_payload: payload
+    });
+
+    if (error) {
+      console.error('Error registrando despacho', error);
+      registerDispatchBtn.innerHTML = oldText;
+      despachoRegistrado = false;
+      processMessage.textContent = error.message || 'No fue posible registrar el despacho.';
+      processMessage.className = 'process-message error';
+      validateDispatchRegistration();
+      return;
+    }
+
+    despachoRegistrado = true;
+    registerDispatchBtn.innerHTML = 'Registrado ✓';
+    processMessage.textContent =
+      `Despacho ${data?.documento || payload.documento} registrado correctamente · ` +
+      `${data?.serializados ?? payload.seriales.length} serial(es) · ` +
+      `${data?.unidades_no_serializadas ?? 0} unidad(es) no serializada(s).`;
+    processMessage.className = 'process-message success';
+    validateDispatchRegistration();
+  });
+
   clearBtn?.addEventListener('click', () => {
     currentFile = null;
     pdfInput.value = '';
@@ -325,6 +456,9 @@ document.addEventListener('DOMContentLoaded', () => {
     processMessage.textContent = '';
     processMessage.className = 'process-message';
     resultsSection.hidden = true;
+    currentMetadata = {};
+    currentClassification = null;
+    despachoRegistrado = false;
     updateProcessButton();
     dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
