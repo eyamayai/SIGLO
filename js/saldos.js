@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const supabase = window.sigloSupabase;
   const searchInput = document.getElementById('balanceSearch');
   const stateFilter = document.getElementById('stateFilter');
+  const typeFilter = document.getElementById('typeFilter');
   const loteFilter = document.getElementById('loteFilter');
   const segmentFilter = document.getElementById('segmentFilter');
   const refreshBtn = document.getElementById('refreshBalancesBtn');
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       row.almacen,
       row.ubicacion,
       row.segmento,
+      row.tipo,
       row.estado_fisico,
       row.estado_inventario,
       row.ultimo_documento
@@ -61,12 +63,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   function filteredEquipos() {
     const query = normalize(searchInput.value);
     const state = stateFilter.value;
+    const type = typeFilter.value;
     const lote = loteFilter.value;
     const segment = segmentFilter.value;
 
     return equipos.filter(row => {
       if (query && !searchText(row).includes(query)) return false;
       if (state && row.estado_inventario !== state) return false;
+      if (type && row.tipo !== type) return false;
       if (lote && row.lote !== lote) return false;
       if (segment && row.segmento !== segment) return false;
       return true;
@@ -75,11 +79,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function filteredSaldos() {
     const query = normalize(searchInput.value);
+    const type = typeFilter.value;
     const lote = loteFilter.value;
     const segment = segmentFilter.value;
 
     return saldos.filter(row => {
       if (query && !searchText(row).includes(query)) return false;
+      if (type && row.tipo !== type) return false;
       if (lote && row.lote !== lote) return false;
       if (segment && row.segmento !== segment) return false;
       return true;
@@ -92,7 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('serialCount').textContent = `${rows.length} registro${rows.length === 1 ? '' : 's'}`;
 
     if (!rows.length) {
-      body.innerHTML = '<tr class="empty-row"><td colspan="9">No hay equipos que coincidan con los filtros.</td></tr>';
+      body.innerHTML = '<tr class="empty-row"><td colspan="10">No hay equipos que coincidan con los filtros.</td></tr>';
       return;
     }
 
@@ -103,6 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td class="code-cell">${escapeHtml(row.codigo_sap)}</td>
         <td class="description-cell">${escapeHtml(row.descripcion)}</td>
         <td><span class="lote-pill">${escapeHtml(row.lote)}</span></td>
+        <td><span class="type-pill ${row.tipo === 'DESMONTE' ? 'desmonte' : 'libre'}">${escapeHtml(row.tipo)}</span></td>
         <td>${escapeHtml(row.almacen)}</td>
         <td>${escapeHtml(row.ubicacion)}</td>
         <td>${escapeHtml(row.segmento)}</td>
@@ -118,7 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('quantityCount').textContent = `${rows.length} saldo${rows.length === 1 ? '' : 's'}`;
 
     if (!rows.length) {
-      body.innerHTML = '<tr class="empty-row"><td colspan="7">No hay saldos que coincidan con los filtros.</td></tr>';
+      body.innerHTML = '<tr class="empty-row"><td colspan="8">No hay saldos que coincidan con los filtros.</td></tr>';
       return;
     }
 
@@ -126,6 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <td class="code-cell">${escapeHtml(row.codigo_sap)}</td>
       <td class="description-cell">${escapeHtml(row.descripcion)}</td>
       <td><span class="lote-pill">${escapeHtml(row.lote)}</span></td>
+      <td><span class="type-pill ${row.tipo === 'DESMONTE' ? 'desmonte' : 'libre'}">${escapeHtml(row.tipo)}</span></td>
       <td>${escapeHtml(row.almacen)}</td>
       <td>${escapeHtml(row.ubicacion)}</td>
       <td>${escapeHtml(row.segmento)}</td>
@@ -179,13 +187,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     message.className = 'balance-message';
   }
 
-  [searchInput, stateFilter, loteFilter, segmentFilter].forEach(control => {
+  [searchInput, stateFilter, typeFilter, loteFilter, segmentFilter].forEach(control => {
     control?.addEventListener(control === searchInput ? 'input' : 'change', renderAll);
   });
 
   resetBtn?.addEventListener('click', () => {
     searchInput.value = '';
     stateFilter.value = '';
+    typeFilter.value = '';
     loteFilter.value = '';
     segmentFilter.value = '';
     renderAll();
