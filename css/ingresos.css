@@ -116,3 +116,8 @@
 @media(max-width:520px){
   .general-entry-grid{grid-template-columns:1fr}
 }
+
+
+/* Estado de error al registrar ingreso */
+.register-bar.error{background:#6b2727}
+.register-bar.error p{color:#f2d2d2}
