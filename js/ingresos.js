@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-9';
+  const VERSION = '20260918-10';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -587,6 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (ingresoRegistrado) {
       registerBtn.disabled = true;
+      bar.classList.remove('error');
       bar.classList.add('ready');
       title.textContent = 'Ingreso registrado';
       help.textContent = 'La información ya fue almacenada en la base de datos.';
@@ -613,7 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (pending) {
       registerBtn.disabled = true;
-      bar.classList.remove('ready');
+      bar.classList.remove('ready', 'error');
       title.textContent = 'Faltan datos obligatorios';
       help.textContent = 'Completa el Almacén y la Ubicación de cada Código Dominion.';
       return;
@@ -622,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const serialesPendientes = unresolvedSerialRows().length;
     if (blockingIssues.length || serialesPendientes) {
       registerBtn.disabled = true;
-      bar.classList.remove('ready');
+      bar.classList.remove('ready', 'error');
       title.textContent = 'El ingreso requiere revisión';
       help.textContent = serialesPendientes
         ? `Completa ${serialesPendientes} serial(es) pendiente(s) antes de registrar.`
@@ -631,6 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     registerBtn.disabled = false;
+    bar.classList.remove('error');
     bar.classList.add('ready');
     title.textContent = 'Ingreso listo para registrar';
     help.textContent = 'Todos los destinos están completos y el PDF superó las validaciones.';
@@ -736,11 +738,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (error) {
       console.error('Error registrando ingreso', error);
+      const dbMessage = error.message || 'No fue posible registrar el ingreso.';
+      const registerBar = document.querySelector('.register-bar');
+      const registerTitle = document.getElementById('registerTitle');
+      const registerHelp = document.getElementById('registerHelp');
+
       registerBtn.innerHTML = oldText;
       ingresoRegistrado = false;
-      processMessage.textContent = error.message || 'No fue posible registrar el ingreso.';
-      processMessage.className = 'process-message error';
+      processMessage.textContent = '';
+      processMessage.className = 'process-message';
+
       validateRegistration();
+
+      registerBar?.classList.remove('ready');
+      registerBar?.classList.add('error');
+      if (registerTitle) registerTitle.textContent = 'No se pudo registrar el ingreso';
+      if (registerHelp) registerHelp.textContent = dbMessage;
+
+      registerBar?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
