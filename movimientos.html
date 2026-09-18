@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-12">
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/movimientos.css?v=20260918-1">
+  <link rel="stylesheet" href="css/movimientos.css?v=20260918-2">
 </head>
 <body class="dashboard-body">
   <div class="app-shell">
@@ -102,6 +102,7 @@
               <option value="">Todos</option>
               <option value="INGRESO">INGRESO</option>
               <option value="DESPACHO">DESPACHO</option>
+              <option value="DEVOLUCION">DEVOLUCIÓN</option>
             </select>
           </label>
           <label>
@@ -110,6 +111,14 @@
               <option value="">Todas</option>
               <option value="CON PERFIL DE SERIE">CON PERFIL DE SERIE</option>
               <option value="SIN PERFIL DE SERIE">SIN PERFIL DE SERIE</option>
+            </select>
+          </label>
+          <label>
+            <span>Tipo</span>
+            <select id="movementStockTypeFilter">
+              <option value="">Todos</option>
+              <option value="LIBRE">LIBRE</option>
+              <option value="DESMONTE">DESMONTE</option>
             </select>
           </label>
           <label>
@@ -144,6 +153,7 @@
                 <th>Serial</th>
                 <th>Cantidad</th>
                 <th>Lote</th>
+                <th>Tipo</th>
                 <th>Almacén</th>
                 <th>Ubicación</th>
                 <th>Segmento</th>
@@ -152,7 +162,7 @@
               </tr>
             </thead>
             <tbody id="movementsBody">
-              <tr class="empty-row"><td colspan="13">Cargando movimientos…</td></tr>
+              <tr class="empty-row"><td colspan="14">Cargando movimientos…</td></tr>
             </tbody>
           </table>
         </div>
@@ -166,6 +176,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js?v=20260918-1"></script>
   <script src="js/app.js?v=20260918-4"></script>
-  <script src="js/movimientos.js?v=20260918-1"></script>
+  <script src="js/movimientos.js?v=20260918-2"></script>
 </body>
 </html>
