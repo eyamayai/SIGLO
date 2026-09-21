@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Prealerta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260921-1">
+  <link rel="stylesheet" href="css/styles.css?v=20260918-6">
+  <link rel="stylesheet" href="css/prealerta.css?v=20260921-1">
+</head>
+<body class="dashboard-body">
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-brand"><img src="assets/icono-siglo.png?v=20260921-1" alt="Icono SIGLO"><strong>SIGLO</strong></div>
+  <nav aria-label="Navegación principal">
+    <a class="nav-link" href="inicio.html"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
+    <a class="nav-link" href="ingresos.html"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Ingresos</a>
+    <a class="nav-link" href="despachos.html"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Despachos</a>
+    <a class="nav-link" href="devoluciones.html"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>Devoluciones</a>
+    <a class="nav-link" href="desmonte.html"><svg viewBox="0 0 24 24"><path d="M4 6h16v4H4z"/><path d="M7 10v8h10v-8"/><path d="M9 14h6"/></svg>Desmonte</a>
+    <a class="nav-link active" href="prealerta.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M8 9h8"/><path d="M8 13h5"/><path d="m14 16 2 2 4-4"/></svg>Prealerta</a>
+    <a class="nav-link" href="saldos.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Saldos</a>
+    <a class="nav-link" href="movimientos.html"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg>Movimientos</a>
+    <a class="nav-link" href="auditoria.html"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>Auditoría</a>
+    <a class="nav-link" href="#" data-coming-soon><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>Informes</a>
+  </nav>
+  <div class="sidebar-bottom"><a class="nav-link" id="logoutBtn" href="index.html"><svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>Cerrar sesión</a></div>
+</aside>
+
+<main class="dashboard-main prealert-main">
+  <div class="dashboard-top">
+    <div class="dashboard-title">
+      <div class="breadcrumb"><a href="inicio.html">Inicio</a><span>›</span><strong>Prealerta</strong></div>
+      <h1>Prealerta</h1>
+      <p>Registra la recogida de material de Desmonte mediante el archivo Excel del documento del cliente.</p>
+    </div>
+    <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div>
+  </div>
+
+  <section class="prealert-card uploader-card">
+    <div class="card-heading">
+      <div><span class="step-badge">1</span><h2>Cargar Prealerta</h2><p>Procesar el Excel no modifica el inventario.</p></div>
+    </div>
+
+    <div class="template-row">
+      <div>
+        <strong>Plantilla de Prealerta</strong>
+        <p>Incluye una hoja para serializados y otra para materiales manejados por cantidad.</p>
+      </div>
+      <button id="downloadTemplateBtn" class="outline-action" type="button">Descargar plantilla</button>
+    </div>
+
+    <div id="excelDropZone" class="drop-zone" tabindex="0" role="button" aria-label="Seleccionar Excel de Prealerta">
+      <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14a2 2 0 0 0 2-2v-3"/><path d="M3 15v3a2 2 0 0 0 2 2"/></svg></div>
+      <h3>Arrastra el Excel aquí</h3>
+      <p>o selecciónalo desde tu computador</p>
+      <button id="selectExcelBtn" class="outline-action" type="button">Seleccionar Excel</button>
+      <input id="excelInput" type="file" accept=".xlsx,.xls" hidden>
+      <div id="excelFileName" class="selected-file">Ningún archivo seleccionado</div>
+    </div>
+
+    <div class="process-row">
+      <div id="fileStatus" class="catalog-status">Excel listo para seleccionar</div>
+      <button id="processExcelBtn" class="primary-action" type="button" disabled>Procesar Excel <span>→</span></button>
+    </div>
+    <div id="processMessage" class="process-message" role="status" aria-live="polite"></div>
+  </section>
+
+  <section id="resultsSection" class="results-section" hidden>
+    <div class="section-title-row">
+      <div><span class="step-badge">2</span><h2>Revisar Prealerta</h2></div>
+      <button id="clearBtn" class="ghost-button" type="button">Procesar otro archivo</button>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card"><span>Serializados</span><strong id="countSerial">0</strong><small>equipos encontrados</small></div>
+      <div class="summary-card"><span>No serializados</span><strong id="countNoSerial">0</strong><small>códigos encontrados</small></div>
+      <div class="summary-card"><span>Unidades no serializadas</span><strong id="countUnits">0</strong><small>unidades solicitadas</small></div>
+      <div class="summary-card error"><span>Errores</span><strong id="countErrors">0</strong><small>bloqueos antes de registrar</small></div>
+    </div>
+
+    <section class="prealert-card result-card">
+      <div class="table-heading"><div><h3>Equipos serializados</h3><p>Solo pueden salir equipos DESMONTE en estado Inversa o Garantía y con estado físico Dañado.</p></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Serial</th><th>Código SAP</th><th>Dominion</th><th>Descripción</th><th>Segmento</th><th>Estado actual</th><th>Resultado</th><th>Detalle</th></tr></thead>
+          <tbody id="serialBody"><tr class="empty-row"><td colspan="8">Sin registros</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="prealert-card result-card">
+      <div class="table-heading"><div><h3>Material no serializado</h3><p>SIGLO valida el saldo global DESMONTE por Código SAP antes de descontar.</p></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Código SAP</th><th>Cantidad solicitada</th><th>Disponible Desmonte</th><th>Resultado</th><th>Detalle</th></tr></thead>
+          <tbody id="noSerialBody"><tr class="empty-row"><td colspan="5">Sin registros</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="globalErrorsCard" class="prealert-card review-card" hidden>
+      <div class="table-heading"><div><h3>Revisión requerida</h3><p>Corrige estos bloqueos en el archivo antes de registrar.</p></div></div>
+      <div id="globalErrors" class="review-messages"></div>
+    </section>
+
+    <section class="register-bar">
+      <div><strong id="registerTitle">Prealerta pendiente de validación</strong><p id="registerHelp">Procesa un Excel válido para continuar.</p></div>
+      <button id="registerBtn" class="register-button" type="button" disabled>Registrar Prealerta <span>→</span></button>
+    </section>
+  </section>
+
+  <footer class="dashboard-footer">SIGLO v0.1 · Prealerta</footer>
+</main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js?v=20260918-1"></script>
+<script src="js/app.js?v=20260918-4"></script>
+<script src="js/prealerta.js?v=20260921-1"></script>
+</body>
+</html>
