@@ -163,9 +163,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }else{
         const expected=Math.round(item.cantidad||0);
         const detected=item.serials.slice(-expected);
-        if(detected.length){
-          detected.forEach(serial=>seriales.push({serial,codigo_sap:item.codigo_sap,dominio_documento:item.dominio_documento,fecha:meta.fecha,segmento_manual:''}));
-        }else{
+        detected.forEach(serial=>seriales.push({serial,codigo_sap:item.codigo_sap,dominio_documento:item.dominio_documento,fecha:meta.fecha,segmento_manual:''}));
+        for(let miss=detected.length;miss<expected;miss++){
           seriales.push({serial:'',codigo_sap:item.codigo_sap,dominio_documento:item.dominio_documento,fecha:meta.fecha,segmento_manual:''});
         }
       }
@@ -218,7 +217,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('countErrors').textContent=s.errores||0;
 
     const sr=v.seriales||[];
-    document.getElementById('serialBody').innerHTML=sr.length?sr.map((r,i)=>'<tr><td><strong>'+esc(r.serial||'—')+'</strong></td><td>'+esc(r.codigo_sap)+'</td><td>'+esc(r.dominio||'—')+'</td><td>'+esc(r.descripcion||'—')+'</td><td>'+esc(r.tecnico||'—')+'</td><td>'+esc(r.cedula||'—')+'</td><td>'+segmentSelect(r,i,'serial')+'</td><td>'+pill(r.resultado)+'</td><td>'+esc(r.detalle)+'</td></tr>').join(''):'<tr class="empty-row"><td colspan="9">Sin registros</td></tr>';
+    document.getElementById('serialBody').innerHTML=sr.length?sr.map((r,i)=>{
+      const serialCell=r.serial?'<strong>'+esc(r.serial)+'</strong>':'<input class="manual-serial" data-index="'+i+'" type="text" placeholder="Ingresar serial">';
+      return '<tr><td>'+serialCell+'</td><td>'+esc(r.codigo_sap)+'</td><td>'+esc(r.dominio||'—')+'</td><td>'+esc(r.descripcion||'—')+'</td><td>'+esc(r.tecnico||'—')+'</td><td>'+esc(r.cedula||'—')+'</td><td>'+segmentSelect(r,i,'serial')+'</td><td>'+pill(r.resultado)+'</td><td>'+esc(r.detalle)+'</td></tr>';
+    }).join(''):'<tr class="empty-row"><td colspan="9">Sin registros</td></tr>';
 
     const nr=v.no_serializados||[];
     document.getElementById('noSerialBody').innerHTML=nr.length?nr.map((r,i)=>'<tr><td><strong>'+esc(r.codigo_sap)+'</strong></td><td>'+esc(r.dominio||'—')+'</td><td>'+esc(r.descripcion||'—')+'</td><td>'+esc(r.cantidad)+'</td><td>'+segmentSelect(r,i,'no')+'</td><td>'+pill(r.resultado)+'</td><td>'+esc(r.detalle)+'</td></tr>').join(''):'<tr class="empty-row"><td colspan="7">Sin registros</td></tr>';
@@ -229,6 +231,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     card.hidden=!ge.length;
     document.getElementById('globalErrors').innerHTML=ge.map(x=>'<div class="review-message">'+esc(x)+'</div>').join('');
 
+    document.querySelectorAll('.manual-serial').forEach(input=>input.addEventListener('change',async e=>{
+      const idx=Number(e.target.dataset.index);
+      currentPayload.seriales[idx].serial=upper(e.target.value);
+      processMessage.textContent='Revalidando serial…';processMessage.className='process-message';
+      try{await validatePayload(currentPayload);processMessage.textContent='Serial validado.';processMessage.className='process-message success';}
+      catch(err){processMessage.textContent=err.message||'No fue posible validar.';processMessage.className='process-message error';}
+    }));
     document.querySelectorAll('.segment-select').forEach(sel=>sel.addEventListener('change',async e=>{
       const idx=Number(e.target.dataset.index),kind=e.target.dataset.kind,val=e.target.value;
       if(kind==='serial')currentPayload.seriales[idx].segmento_manual=val;
