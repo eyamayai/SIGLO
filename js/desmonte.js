@@ -226,12 +226,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return '<span class="result-pill '+cls+'">'+esc(result)+'</span>';
   }
   function renderValidation(){
-    const v=currentValidation||{},s=v.resumen||{},m=currentPayload?._meta||{};
-    document.getElementById('metaFuente').textContent=v.fuente||source;
-    document.getElementById('metaDocumento').textContent=v.documento||'—';
-    document.getElementById('metaTecnico').textContent=v.tecnico_pdf||m.trabajador||'Varios / según Excel';
-    document.getElementById('metaCedula').textContent=v.cedula_pdf||'Según cada fila';
-    document.getElementById('metaFecha').textContent=m.fecha||currentPayload?.fecha_documento||'—';
+    const v=currentValidation||{},s=v.resumen||{};
     document.getElementById('countSerial').textContent=s.serializados||0;
     document.getElementById('countNoSerial').textContent=s.no_serializados||0;
     document.getElementById('countReview').textContent=s.revisar||0;
