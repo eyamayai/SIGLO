@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const supabase=window.sigloSupabase;
+  if (window.pdfjsLib?.GlobalWorkerOptions) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
   const pdfTab=document.getElementById('pdfTab'),excelTab=document.getElementById('excelTab');
   const pdfPanel=document.getElementById('pdfPanel'),excelPanel=document.getElementById('excelPanel');
   const pdfInput=document.getElementById('pdfInput'),excelInput=document.getElementById('excelInput');
@@ -122,8 +125,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     return expected?candidates.slice(-expected):candidates.slice(-1);
   }
   function findQuantity(segment){
-    const patterns=[/(\d+(?:[.,]\d+)?)\s+(?:Unidad|Unidades|Pieza|Piezas)\s+([\d,.]+(?:\.\d{2}|,\d{2}))/gi,/\b(\d+(?:[.,]\d+)?)\s+[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+\s+[\d,.]+(?:\.\d{2}|,\d{2})/g];
-    for(const p of patterns){const m=p.exec(segment);if(m){const q=parseNum(m[1]);if(Number.isFinite(q))return {cantidad:q,index:m.index};}}
+    const quantityFirst=/(\d+(?:[.,]\d+)?)\s+(?:Unidad|Unidades|Pieza|Piezas)\s+([\d,.]+(?:\.\d{2}|,\d{2}))/gi;
+    let m=quantityFirst.exec(segment);
+    if(m){
+      const q=parseNum(m[1]);
+      if(Number.isFinite(q)) return {cantidad:q,index:m.index};
+    }
+
+    const unitFirst=/(?:Unidad|Unidades|Pieza|Piezas)\s+(\d+(?:[.,]\d+)?)\s+([\d,.]+(?:\.\d{2}|,\d{2}))/gi;
+    m=unitFirst.exec(segment);
+    if(m){
+      const q=parseNum(m[1]);
+      if(Number.isFinite(q)) return {cantidad:q,index:m.index};
+    }
+
+    const genericUnitFirst=/\b[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+\s+(\d+(?:[.,]\d+)?)\s+([\d,.]+(?:\.\d{2}|,\d{2}))/g;
+    m=genericUnitFirst.exec(segment);
+    if(m){
+      const q=parseNum(m[1]);
+      if(Number.isFinite(q)) return {cantidad:q,index:m.index};
+    }
     return null;
   }
   function extractPdfItems(text){
