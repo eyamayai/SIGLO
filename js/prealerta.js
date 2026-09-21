@@ -60,6 +60,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     return text(value);
   }
 
+  function dateKey(value) {
+    const normalized = normalizeExcelDate(value);
+    if (!normalized) return '';
+    const iso = normalized.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return iso[1] + '-' + iso[2] + '-' + iso[3];
+    const latin = normalized.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+    if (latin) return latin[3] + '-' + pad(latin[2]) + '-' + pad(latin[1]);
+    return normalized;
+  }
+
   function setFile(file) {
     if (!file) return;
     if (!/\.(xlsx|xls)$/i.test(file.name)) {
@@ -133,7 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ['SIGLO · Plantilla Prealerta'],
       ['SERIALIZADOS: FECHA | DOCUMENTO | SERIE.'],
       ['NO_SERIALIZADOS: FECHA | DOCUMENTO | CODIGO | CANTIDAD.'],
-      ['El archivo debe corresponder a un único documento de Prealerta.'],
+      ['El archivo puede contener varios documentos de Prealerta, siempre que todos correspondan al mismo día.'],
       ['Los seriales deben existir en SIGLO como DESMONTE, estado Inversa o Garantía, y estado físico Dañado.'],
       ['Los no serializados se descuentan globalmente del saldo DESMONTE del Código SAP, tomando primero los saldos más antiguos.'],
       ['Procesar el archivo no modifica el inventario; el cambio ocurre únicamente al pulsar Registrar Prealerta.']
@@ -179,49 +189,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const allRows = [...serialRows, ...quantityRows];
-    const documents = new Set();
     const dates = new Set();
 
     allRows.forEach(row => {
       const documento = text(row.DOCUMENTO);
-      const fecha = normalizeExcelDate(row.FECHA);
+      const fecha = dateKey(row.FECHA);
       if (!documento) throw new Error('Hay una fila sin DOCUMENTO.');
       if (!fecha) throw new Error('Hay una fila sin FECHA.');
-      documents.add(documento);
       dates.add(fecha);
     });
 
-    if (documents.size !== 1) {
-      throw new Error('El Excel debe corresponder a un único DOCUMENTO de Prealerta.');
+    if (dates.size !== 1) {
+      throw new Error('Todos los documentos del Excel deben corresponder al mismo día de Prealerta.');
     }
 
-    if (dates.size !== 1) {
-      throw new Error('El Excel debe manejar una única FECHA para el documento de Prealerta.');
-    }
+    const fechaDocumento = [...dates][0] + ' 00:00:00';
 
     const seriales = serialRows.map(row => {
+      const documento = text(row.DOCUMENTO);
       const serial = upper(row.SERIE);
       if (!serial) throw new Error('SERIALIZADOS fila ' + row._row + ': falta SERIE.');
-      return { serial };
+      return { documento, serial };
     });
 
     const quantityMap = new Map();
     quantityRows.forEach(row => {
+      const documento = text(row.DOCUMENTO);
       const codigo = text(row.CODIGO);
       const cantidad = Number(String(row.CANTIDAD ?? '').replace(',','.'));
       if (!codigo) throw new Error('NO_SERIALIZADOS fila ' + row._row + ': falta CODIGO.');
       if (!Number.isFinite(cantidad) || cantidad <= 0) {
         throw new Error('NO_SERIALIZADOS fila ' + row._row + ': CANTIDAD inválida.');
       }
-      quantityMap.set(codigo, (quantityMap.get(codigo) || 0) + cantidad);
+      const key = documento + '\u0001' + codigo;
+      const current = quantityMap.get(key) || { documento, codigo_sap:codigo, cantidad:0 };
+      current.cantidad += cantidad;
+      quantityMap.set(key, current);
     });
 
     return {
-      documento: [...documents][0],
-      fecha_documento: [...dates][0],
+      fecha_documento: fechaDocumento,
       archivo: fileName,
       seriales,
-      no_serializados: [...quantityMap.entries()].map(([codigo_sap,cantidad]) => ({ codigo_sap, cantidad }))
+      no_serializados: [...quantityMap.values()]
     };
   }
 
@@ -253,6 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('serialBody').innerHTML = serialRows.length
       ? serialRows.map(row => '<tr>' +
+          '<td><strong>' + escapeHtml(row.documento || '—') + '</strong></td>' +
           '<td><strong>' + escapeHtml(row.serial || '—') + '</strong></td>' +
           '<td>' + escapeHtml(row.codigo_sap || '—') + '</td>' +
           '<td>' + escapeHtml(row.dominio || '—') + '</td>' +
@@ -262,17 +273,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td>' + resultPill(row.resultado) + '</td>' +
           '<td>' + escapeHtml(row.detalle || '') + '</td>' +
         '</tr>').join('')
-      : '<tr class="empty-row"><td colspan="8">Sin registros</td></tr>';
+      : '<tr class="empty-row"><td colspan="9">Sin registros</td></tr>';
 
     document.getElementById('noSerialBody').innerHTML = quantityRows.length
       ? quantityRows.map(row => '<tr>' +
+          '<td><strong>' + escapeHtml(row.documento || '—') + '</strong></td>' +
           '<td><strong>' + escapeHtml(row.codigo_sap || '—') + '</strong></td>' +
           '<td>' + numberFormat.format(Number(row.cantidad || 0)) + '</td>' +
           '<td>' + numberFormat.format(Number(row.disponible || 0)) + '</td>' +
           '<td>' + resultPill(row.resultado) + '</td>' +
           '<td>' + escapeHtml(row.detalle || '') + '</td>' +
         '</tr>').join('')
-      : '<tr class="empty-row"><td colspan="5">Sin registros</td></tr>';
+      : '<tr class="empty-row"><td colspan="6">Sin registros</td></tr>';
 
     const globalErrors = validation.errores_globales || [];
     const card = document.getElementById('globalErrorsCard');
@@ -299,7 +311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       registerBtn.disabled = false;
       bar.className = 'register-bar ready';
       title.textContent = 'Prealerta lista para registrar';
-      help.textContent = 'Los serializados pasarán a RECOGIDO · Prealertado · Dañado y los no serializados saldrán del saldo DESMONTE.';
+      help.textContent = (summary.documentos || 0) + ' documento(s) listos. Los serializados pasarán a RECOGIDO · Prealertado · Dañado y los no serializados saldrán del saldo DESMONTE.';
     }
 
     resultsSection.hidden = false;
@@ -355,8 +367,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     registered = true;
     registerBtn.textContent = 'Registrado ✓';
     setMessage(
-      'Prealerta ' + (data?.documento || currentPayload.documento) +
-      ' registrada · ' + (data?.movimientos || 0) + ' movimiento(s).',
+      (data?.documentos || 0) + ' documento(s) de Prealerta registrados · ' +
+      (data?.movimientos || 0) + ' movimiento(s).',
       'success'
     );
     renderValidation();
