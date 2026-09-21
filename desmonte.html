@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260921-1">
   <link rel="stylesheet" href="css/styles.css?v=20260918-6">
-  <link rel="stylesheet" href="css/desmonte.css?v=20260921-4">
+  <link rel="stylesheet" href="css/desmonte.css?v=20260921-5">
 </head>
 <body class="dashboard-body">
 <div class="app-shell">
@@ -39,11 +39,6 @@
     </div>
     <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div>
   </div>
-
-  <section class="rule-strip">
-    <strong>Resultado fijo:</strong>
-    <span>DESMONTE</span><span>Inversa</span><span>Dañado</span><span>Stock 4</span><span>NOVALORADO</span><span>A221</span><span>QA01Q1</span>
-  </section>
 
   <section class="dismantle-card source-card">
     <div class="card-heading"><div><span class="step-badge">1</span><h2>Origen del ingreso</h2><p>Procesar un archivo no modifica el inventario.</p></div></div>
@@ -85,14 +80,6 @@
   <section id="resultsSection" class="results-section" hidden>
     <div class="section-title-row"><div><span class="step-badge">2</span><h2>Revisar Desmonte</h2></div><button id="clearBtn" class="ghost-button" type="button">Procesar otro archivo</button></div>
 
-    <div class="info-grid">
-      <div class="info-box"><span>Fuente</span><strong id="metaFuente">—</strong></div>
-      <div class="info-box"><span>Documento</span><strong id="metaDocumento">—</strong></div>
-      <div class="info-box"><span>Técnico PDF</span><strong id="metaTecnico">—</strong></div>
-      <div class="info-box"><span>Cédula</span><strong id="metaCedula">—</strong></div>
-      <div class="info-box"><span>Fecha</span><strong id="metaFecha">—</strong></div>
-    </div>
-
     <div class="summary-grid">
       <div class="summary-card"><span>Serializados</span><strong id="countSerial">0</strong><small>equipos detectados</small></div>
       <div class="summary-card"><span>No serializados</span><strong id="countNoSerial">0</strong><small>códigos detectados</small></div>
@@ -130,6 +117,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20260918-4"></script>
-<script src="js/desmonte.js?v=20260921-4"></script>
+<script src="js/desmonte.js?v=20260921-5"></script>
 </body>
 </html>
