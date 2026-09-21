@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
       destinationEffect.textContent='Libre: serializados → Disponible / Bueno. No serializados → regresan a sus saldos LIBRE de origen.';
     }else if(value==='DESMONTE'){
       destinationEffect.classList.add('desmonte');
-      destinationEffect.textContent='Desmonte: material → Garantía / Dañado · Stock 4 · Lote NOVALORADO. El saldo queda separado como DESMONTE.';
+      destinationEffect.textContent='Desmonte: material → Garantía / Dañado · Stock 4 · NOVALORADO · A221 · QA01Q1. El saldo queda separado como DESMONTE.';
     }else{
       destinationEffect.textContent='Selecciona Libre o Desmonte para ver el resultado.';
     }
