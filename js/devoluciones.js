@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260921-1';
+  const VERSION = '20260921-3';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearBtn = document.getElementById('clearBtn');
   const destinationSelect = document.getElementById('returnDestination');
   const destinationEffect = document.getElementById('destinationEffect');
+  const desmonteLocationWrap = document.getElementById('returnDesmonteLocationWrap');
+  const desmonteLocationSelect = document.getElementById('returnDesmonteLocation');
   const registerBtn = document.getElementById('registerReturnBtn');
 
   let currentFile = null;
@@ -310,12 +312,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const value=destinationSelect.value;
     destinationEffect.className='destination-effect';
     if(value==='LIBRE'){
+      desmonteLocationWrap.hidden=true;
+      desmonteLocationSelect.value='';
       destinationEffect.classList.add('libre');
-      destinationEffect.textContent='Libre: serializados → Disponible / Bueno. No serializados → regresan a sus saldos LIBRE de origen.';
+      destinationEffect.textContent='Libre: serializados → Disponible / Bueno. El material regresa a la ubicación de origen.';
     }else if(value==='DESMONTE'){
+      desmonteLocationWrap.hidden=false;
+      const ubicacion=desmonteLocationSelect.value;
       destinationEffect.classList.add('desmonte');
-      destinationEffect.textContent='Desmonte: material → Garantía / Dañado · Stock 4 · NOVALORADO · A221 · QA01Q1. El saldo queda separado como DESMONTE.';
+      destinationEffect.textContent=ubicacion
+        ? 'Desmonte: material → Garantía / Dañado · Stock 4 · NOVALORADO · A221 · '+ubicacion+'. El saldo queda separado como DESMONTE.'
+        : 'Desmonte: selecciona QMINTIC o QQ01Q1 para definir la ubicación de todo el PDF.';
     }else{
+      desmonteLocationWrap.hidden=true;
+      desmonteLocationSelect.value='';
       destinationEffect.textContent='Selecciona Libre o Desmonte para ver el resultado.';
     }
   }
@@ -337,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const blockers=(currentMetadata.documento?0:1)+(currentMetadata.nombre?0:1)+(currentMetadata.cedula?0:1)
       +(currentClassification?.serialWarnings?.length||0)+(currentClassification?.revisar?.length||0);
     const destino=destinationSelect.value;
+    const ubicacionDesmonte=desmonteLocationSelect.value;
 
     if(!material){
       registerBtn.disabled=true;bar.classList.remove('ready','error');
@@ -350,6 +361,10 @@ document.addEventListener('DOMContentLoaded', () => {
       registerBtn.disabled=true;bar.classList.remove('ready','error');
       title.textContent='Selecciona el destino de la devolución';help.textContent='Elige Libre o Desmonte. El destino aplica a todo el PDF.';return;
     }
+    if(destino==='DESMONTE'&&!ubicacionDesmonte){
+      registerBtn.disabled=true;bar.classList.remove('ready','error');
+      title.textContent='Selecciona la ubicación de Desmonte';help.textContent='Elige QMINTIC o QQ01Q1. La ubicación aplica a todo el PDF.';return;
+    }
 
     registerBtn.disabled=false;bar.classList.remove('error');bar.classList.add('ready');
     title.textContent='Devolución lista para registrar';
@@ -357,6 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   destinationSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
+  desmonteLocationSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
 
   processPdfBtn?.addEventListener('click',async()=>{
     if(!currentFile)return;
@@ -402,6 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tecnico:currentMetadata.nombre||null,
       cedula:currentMetadata.cedula||'',
       destino:destinationSelect.value,
+      ubicacion_desmonte:destinationSelect.value==='DESMONTE'?desmonteLocationSelect.value:'',
       seriales:currentClassification.serializados.map(row=>({serial:row.serial,codigo_sap:row.codigo_sap,dominio:row.dominio})),
       no_serializados:currentClassification.noSerializados.map(row=>({codigo_sap:row.codigo_sap,dominio:row.dominio,cantidad:Number(row.cantidad||0)}))
     };
@@ -434,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
   clearBtn?.addEventListener('click',()=>{
     currentFile=null;pdfInput.value='';selectedFile.textContent='Ningún archivo seleccionado';
     processMessage.textContent='';processMessage.className='process-message';resultsSection.hidden=true;
-    currentMetadata={};currentClassification=null;devolucionRegistrada=false;destinationSelect.value='';
+    currentMetadata={};currentClassification=null;devolucionRegistrada=false;destinationSelect.value='';desmonteLocationSelect.value='';
     updateDestinationEffect();updateProcessButton();dropZone.scrollIntoView({behavior:'smooth',block:'center'});
   });
 
