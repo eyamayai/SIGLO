@@ -7,14 +7,14 @@ document.addEventListener('DOMContentLoaded',async()=>{
 
  async function loadMaster(){
    const {data,error}=await supabase.rpc('consultar_maestra_codigos');
-   if(error){document.getElementById('masterBody').innerHTML='<tr class="empty-row"><td colspan="5">No fue posible consultar la maestra.</td></tr>';return;}
+   if(error){document.getElementById('masterBody').innerHTML='<tr class="empty-row"><td colspan="6">No fue posible consultar la maestra.</td></tr>';return;}
    master=Array.isArray(data)?data:[];
    document.getElementById('masterCount').textContent=`${master.length} combinación${master.length===1?'':'es'} SAP/Dominion`;renderMaster();
  }
  function renderMaster(){
    const q=String(document.getElementById('masterSearch').value||'').toLowerCase();
-   const list=master.filter(r=>!q||`${r.codigo_sap} ${r.dominio} ${r.descripcion||''} ${r.topologia}`.toLowerCase().includes(q));
-   document.getElementById('masterBody').innerHTML=list.length?list.map(r=>`<tr><td><strong>${A.escapeHtml(r.codigo_sap)}</strong></td><td>${A.escapeHtml(r.dominio)}</td><td class="description">${A.escapeHtml(r.descripcion||'—')}</td><td>${A.escapeHtml(r.topologia)}</td><td>${A.escapeHtml(r.actualizado_en?new Date(r.actualizado_en).toLocaleString('es-CO'):'—')}</td></tr>`).join(''):'<tr class="empty-row"><td colspan="5">Sin coincidencias.</td></tr>';
+   const list=master.filter(r=>!q||`${r.codigo_sap} ${r.dominio} ${r.descripcion||''} ${r.topologia} ${r.lote||''}`.toLowerCase().includes(q));
+   document.getElementById('masterBody').innerHTML=list.length?list.map(r=>`<tr><td><strong>${A.escapeHtml(r.codigo_sap)}</strong></td><td>${A.escapeHtml(r.dominio)}</td><td class="description">${A.escapeHtml(r.descripcion||'—')}</td><td>${A.escapeHtml(r.topologia)}</td><td>${A.escapeHtml(r.lote||'—')}</td><td>${A.escapeHtml(r.actualizado_en?new Date(r.actualizado_en).toLocaleString('es-CO'):'—')}</td></tr>`).join(''):'<tr class="empty-row"><td colspan="6">Sin coincidencias.</td></tr>';
  }
  document.getElementById('masterSearch').addEventListener('input',renderMaster);
 
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
    validation=v;const s=v.resumen||{},list=v.filas||[];
    document.getElementById('kpiNew').textContent=s.nuevos||0;document.getElementById('kpiUpdate').textContent=s.actualizar||0;document.getElementById('kpiSame').textContent=s.coinciden||0;document.getElementById('kpiConflict').textContent=s.conflictos||0;document.getElementById('kpiError').textContent=s.errores||0;
    document.getElementById('rowCount').textContent=`${list.length} fila${list.length===1?'':'s'}`;
-   document.getElementById('previewBody').innerHTML=list.length?list.map(r=>`<tr><td><strong>${A.escapeHtml(r.codigo_sap)}</strong></td><td>${A.escapeHtml(r.dominio)}</td><td class="description">${A.escapeHtml(r.descripcion)}</td><td>${A.escapeHtml(r.topologia)}</td><td><span class="result-pill ${A.resultClass(r.resultado)}">${A.escapeHtml(r.resultado)}</span></td><td>${A.escapeHtml(r.detalle)}</td></tr>`).join(''):'<tr class="empty-row"><td colspan="6">Sin filas.</td></tr>';
+   document.getElementById('previewBody').innerHTML=list.length?list.map(r=>`<tr><td><strong>${A.escapeHtml(r.codigo_sap)}</strong></td><td>${A.escapeHtml(r.dominio)}</td><td class="description">${A.escapeHtml(r.descripcion)}</td><td>${A.escapeHtml(r.topologia)}</td><td>${A.escapeHtml(r.lote)}</td><td><span class="result-pill ${A.resultClass(r.resultado)}">${A.escapeHtml(r.resultado)}</span></td><td>${A.escapeHtml(r.detalle)}</td></tr>`).join(''):'<tr class="empty-row"><td colspan="7">Sin filas.</td></tr>';
    document.getElementById('previewSection').hidden=false;updateRegister();
  }
  function updateRegister(){
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
    validateBtn.disabled=true;validateBtn.textContent='Validando…';message.textContent='Comparando códigos con la maestra actual…';message.className='audit-message';
    try{
      const wb=await A.readWorkbook(file);
-     rows=A.sheetRows(wb,'CODIGOS_SAP',{codigo_sap:['Código SAP','Codigo SAP'],dominio:['Dominion'],descripcion:['Descripción','Descripcion'],topologia:['Topología','Topologia']}).map(r=>({...r,topologia:String(r.topologia).toUpperCase()}));
+     rows=A.sheetRows(wb,'CODIGOS_SAP',{codigo_sap:['Código SAP','Codigo SAP'],dominio:['Dominion'],descripcion:['Descripción','Descripcion'],topologia:['Topología','Topologia'],lote:['Lote']}).map(r=>({...r,topologia:String(r.topologia).toUpperCase(),lote:String(r.lote).toUpperCase()}));
      if(!rows.length)throw new Error('La hoja CODIGOS_SAP está vacía.');
      const {data,error}=await supabase.rpc('validar_maestra_codigos',{p_rows:rows});if(error)throw error;render(data);message.textContent='Validación terminada.';message.className='audit-message success';
    }catch(e){message.textContent=e.message||'No fue posible validar.';message.className='audit-message error';document.getElementById('previewSection').hidden=true;}
