@@ -87,10 +87,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         ? 'in'
         : (row.tipo_movimiento === 'DEVOLUCION'
           ? 'return'
-          : (row.tipo_movimiento === 'CARGA INICIAL' ? 'initial' : 'out'));
+          : (row.tipo_movimiento === 'DESMONTE'
+            ? 'dismantle'
+            : (row.tipo_movimiento === 'CARGA INICIAL' ? 'initial' : 'out')));
       const statusClass = row.estado_inventario === 'Disponible'
         ? 'available'
-        : (row.estado_inventario === 'Garantía' ? 'guarantee' : 'dispatched');
+        : ((row.estado_inventario === 'Garantía' || row.estado_inventario === 'Inversa') ? 'guarantee' : 'dispatched');
       return `<tr>
         <td>${escapeHtml(displayDate(row.fecha_documento || row.fecha_registro))}</td>
         <td class="document-cell">${escapeHtml(row.documento)}</td>
