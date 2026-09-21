@@ -36,7 +36,7 @@
     <div class="dashboard-title">
       <div class="breadcrumb"><a href="inicio.html">Inicio</a><span>›</span><strong>Prealerta</strong></div>
       <h1>Prealerta</h1>
-      <p>Registra la recogida de material de Desmonte mediante el archivo Excel del documento del cliente.</p>
+      <p>Registra la recogida de material de Desmonte mediante un Excel que puede contener varios documentos del mismo día.</p>
     </div>
     <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div>
   </div>
@@ -49,7 +49,7 @@
     <div class="template-row">
       <div>
         <strong>Plantilla de Prealerta</strong>
-        <p>Incluye una hoja para serializados y otra para materiales manejados por cantidad.</p>
+        <p>Incluye una hoja para serializados y otra para materiales por cantidad. Puedes cargar varios documentos del mismo día.</p>
       </div>
       <button id="downloadTemplateBtn" class="outline-action" type="button">Descargar plantilla</button>
     </div>
@@ -87,8 +87,8 @@
       <div class="table-heading"><div><h3>Equipos serializados</h3><p>Solo pueden salir equipos DESMONTE en estado Inversa o Garantía y con estado físico Dañado.</p></div></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Serial</th><th>Código SAP</th><th>Dominion</th><th>Descripción</th><th>Segmento</th><th>Estado actual</th><th>Resultado</th><th>Detalle</th></tr></thead>
-          <tbody id="serialBody"><tr class="empty-row"><td colspan="8">Sin registros</td></tr></tbody>
+          <thead><tr><th>Documento</th><th>Serial</th><th>Código SAP</th><th>Dominion</th><th>Descripción</th><th>Segmento</th><th>Estado actual</th><th>Resultado</th><th>Detalle</th></tr></thead>
+          <tbody id="serialBody"><tr class="empty-row"><td colspan="9">Sin registros</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -97,8 +97,8 @@
       <div class="table-heading"><div><h3>Material no serializado</h3><p>SIGLO valida el saldo global DESMONTE por Código SAP antes de descontar.</p></div></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Código SAP</th><th>Cantidad solicitada</th><th>Disponible Desmonte</th><th>Resultado</th><th>Detalle</th></tr></thead>
-          <tbody id="noSerialBody"><tr class="empty-row"><td colspan="5">Sin registros</td></tr></tbody>
+          <thead><tr><th>Documento</th><th>Código SAP</th><th>Cantidad solicitada</th><th>Disponible Desmonte</th><th>Resultado</th><th>Detalle</th></tr></thead>
+          <tbody id="noSerialBody"><tr class="empty-row"><td colspan="6">Sin registros</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -123,6 +123,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20260918-4"></script>
-<script src="js/prealerta.js?v=20260921-1"></script>
+<script src="js/prealerta.js?v=20260921-2"></script>
 </body>
 </html>
