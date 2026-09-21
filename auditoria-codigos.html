@@ -22,7 +22,7 @@
 </aside>
 <main class="dashboard-main audit-main">
 <div class="dashboard-top"><div class="dashboard-title"><div class="breadcrumb"><a href="auditoria.html">Auditoría</a><span>›</span><strong>Maestra Códigos SAP</strong></div>
-<h1>Maestra Códigos SAP</h1><p>Administra Código SAP, Dominion, descripción y topología desde una fuente controlada.</p></div>
+<h1>Maestra Códigos SAP</h1><p>Administra Código SAP, Dominion, descripción, topología y lote desde una fuente controlada.</p></div>
 <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div></div>
 
 <section class="audit-card audit-upload">
@@ -35,16 +35,16 @@
 
 <section id="previewSection" hidden>
 <div class="audit-summary" style="grid-template-columns:repeat(5,minmax(0,1fr))"><div class="audit-kpi"><span>Nuevos</span><strong id="kpiNew">0</strong></div><div class="audit-kpi"><span>Actualizar</span><strong id="kpiUpdate">0</strong></div><div class="audit-kpi"><span>Coinciden</span><strong id="kpiSame">0</strong></div><div class="audit-kpi conflict"><span>Conflictos</span><strong id="kpiConflict">0</strong></div><div class="audit-kpi error"><span>Errores</span><strong id="kpiError">0</strong></div></div>
-<section class="audit-card preview-card"><div class="preview-heading"><div><h2>Vista previa</h2><p>Un SAP puede tener varios Dominion, pero la topología debe ser consistente.</p></div><span id="rowCount" class="count-chip">0 filas</span></div>
-<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Código SAP</th><th>Dominion</th><th>Descripción</th><th>Topología</th><th>Resultado</th><th>Detalle</th></tr></thead><tbody id="previewBody"></tbody></table></div></section>
+<section class="audit-card preview-card"><div class="preview-heading"><div><h2>Vista previa</h2><p>Un SAP puede tener Dominion VALORADO y NOVALORADO, manteniendo una topología consistente.</p></div><span id="rowCount" class="count-chip">0 filas</span></div>
+<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Código SAP</th><th>Dominion</th><th>Descripción</th><th>Topología</th><th>Lote</th><th>Resultado</th><th>Detalle</th></tr></thead><tbody id="previewBody"></tbody></table></div></section>
 <section class="audit-register-bar"><div><strong id="registerTitle">Maestra pendiente de validación</strong><p id="registerHelp">Valida el archivo antes de registrar.</p></div><button id="registerBtn" class="audit-button" type="button" disabled>Actualizar maestra</button></section>
 </section>
 
-<section class="audit-card master-current"><div class="master-toolbar"><div class="preview-heading"><div><h2>Maestra actual</h2><p id="masterCount">Consultando códigos…</p></div></div><input id="masterSearch" class="master-search" type="search" placeholder="Buscar SAP, Dominion o descripción"></div>
-<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Código SAP</th><th>Dominion</th><th>Descripción</th><th>Topología</th><th>Actualizado</th></tr></thead><tbody id="masterBody"><tr class="empty-row"><td colspan="5">Cargando…</td></tr></tbody></table></div></section>
+<section class="audit-card master-current"><div class="master-toolbar"><div class="preview-heading"><div><h2>Maestra actual</h2><p id="masterCount">Consultando códigos…</p></div></div><input id="masterSearch" class="master-search" type="search" placeholder="Buscar SAP, Dominion, lote o descripción"></div>
+<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Código SAP</th><th>Dominion</th><th>Descripción</th><th>Topología</th><th>Lote</th><th>Actualizado</th></tr></thead><tbody id="masterBody"><tr class="empty-row"><td colspan="6">Cargando…</td></tr></tbody></table></div></section>
 <footer class="dashboard-footer">SIGLO v0.1 · Auditoría · Maestra Códigos SAP</footer>
 </main></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase-client.js?v=20260918-1"></script><script src="js/app.js?v=20260918-4"></script>
-<script src="js/auditoria-common.js?v=20260918-1"></script><script src="js/auditoria-codigos.js?v=20260918-1"></script>
+<script src="js/auditoria-common.js?v=20260921-1"></script><script src="js/auditoria-codigos.js?v=20260921-1"></script>
 </body></html>
