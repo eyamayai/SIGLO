@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-3';
+  const VERSION = '20260921-1';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
       destinationEffect.textContent='Libre: serializados → Disponible / Bueno. No serializados → regresan a sus saldos LIBRE de origen.';
     }else if(value==='DESMONTE'){
       destinationEffect.classList.add('desmonte');
-      destinationEffect.textContent='Desmonte: serializados → Garantía / Dañado. No serializados → saldo DESMONTE separado.';
+      destinationEffect.textContent='Desmonte: material → Garantía / Dañado · Stock 4 · Lote NOVALORADO. El saldo queda separado como DESMONTE.';
     }else{
       destinationEffect.textContent='Selecciona Libre o Desmonte para ver el resultado.';
     }
