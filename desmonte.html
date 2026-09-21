@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Desmonte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260921-2">
+  <link rel="stylesheet" href="css/styles.css?v=20260918-6">
+  <link rel="stylesheet" href="css/desmonte.css?v=20260921-1">
+</head>
+<body class="dashboard-body">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><img src="assets/icono-siglo.png?v=20260921-2" alt="Icono SIGLO"><strong>SIGLO</strong></div>
+    <nav aria-label="Navegación principal">
+      <a class="nav-link" href="inicio.html"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
+      <a class="nav-link" href="ingresos.html"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Ingresos</a>
+      <a class="nav-link" href="despachos.html"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Despachos</a>
+      <a class="nav-link" href="devoluciones.html"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>Devoluciones</a>
+      <a class="nav-link active" href="desmonte.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v5H4z"/><path d="M7 14h10"/><path d="m9 12-2 2 2 2"/><path d="m15 12 2 2-2 2"/><path d="M4 19h16"/></svg>Desmonte</a>
+      <a class="nav-link" href="saldos.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Saldos</a>
+      <a class="nav-link" href="movimientos.html"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg>Movimientos</a>
+      <a class="nav-link" href="auditoria.html"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>Auditoría</a>
+      <a class="nav-link" href="#" data-coming-soon><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>Informes</a>
+    </nav>
+    <div class="sidebar-bottom"><a class="nav-link" id="logoutBtn" href="index.html"><svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>Cerrar sesión</a></div>
+  </aside>
+
+  <main class="dashboard-main dismantle-main">
+    <div class="dashboard-top">
+      <div class="dashboard-title">
+        <div class="breadcrumb"><a href="inicio.html">Inicio</a><span>›</span><strong>Desmonte</strong></div>
+        <h1>Desmonte</h1>
+        <p>Registra equipos dañados que ingresan a Inversa por PDF o Excel.</p>
+      </div>
+      <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div>
+    </div>
+
+    <section class="dismantle-card source-card">
+      <div class="card-heading">
+        <div><span class="step-badge">1</span><h2>Origen de la información</h2><p>Elige cómo recibiste el Desmonte. Procesar el archivo todavía no modifica inventario.</p></div>
+      </div>
+      <div class="source-tabs" role="tablist">
+        <button id="pdfTab" class="source-tab active" type="button" data-source="PDF">PDF</button>
+        <button id="excelTab" class="source-tab" type="button" data-source="EXCEL">Excel</button>
+      </div>
+
+      <div id="pdfPanel" class="source-panel">
+        <div id="pdfDropZone" class="drop-zone" tabindex="0" role="button">
+          <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14a2 2 0 0 0 2-2v-3"/><path d="M3 15v3a2 2 0 0 0 2 2"/></svg></div>
+          <h3>Arrastra el PDF aquí</h3><p>o selecciónalo desde tu computador</p>
+          <button id="selectPdfBtn" class="outline-action" type="button">Seleccionar PDF</button>
+          <input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden>
+          <div id="selectedPdf" class="selected-file">Ningún archivo seleccionado</div>
+        </div>
+      </div>
+
+      <div id="excelPanel" class="source-panel" hidden>
+        <div class="excel-actions">
+          <div><strong>Plantilla Desmonte</strong><span>Columnas utilizadas: FECHA · CEDULA · SERIE · CODIGO</span></div>
+          <button id="downloadExcelTemplateBtn" class="outline-action" type="button">Descargar plantilla</button>
+        </div>
+        <label class="excel-picker">
+          <input id="excelInput" type="file" accept=".xlsx,.xls" hidden>
+          <span id="selectedExcel">Seleccionar Excel</span>
+          <small>Los campos NOMBRE, DESCRIPCION y DOMINION se completan desde las Maestras.</small>
+        </label>
+      </div>
+
+      <div class="process-row">
+        <div id="catalogStatus" class="catalog-status">Cargando Maestras de SIGLO…</div>
+        <button id="processBtn" class="dismantle-primary" type="button" disabled>Procesar archivo <span>→</span></button>
+      </div>
+      <div id="processMessage" class="process-message" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="resultsSection" class="results-section" hidden>
+      <div class="section-title-row">
+        <div><span class="step-badge">2</span><h2>Revisar Desmonte</h2></div>
+        <button id="clearBtn" class="ghost-button" type="button">Procesar otro archivo</button>
+      </div>
+
+      <div class="dismantle-info-grid">
+        <div class="info-box"><span>Fuente</span><strong id="metaFuente">—</strong></div>
+        <div class="info-box"><span>Documento / Archivo</span><strong id="metaDocumento">—</strong></div>
+        <div class="info-box"><span>Técnico PDF</span><strong id="metaTecnico">—</strong></div>
+        <div class="info-box"><span>Cédula</span><strong id="metaCedula">—</strong></div>
+        <div class="info-box"><span>Fecha</span><strong id="metaFecha">—</strong></div>
+      </div>
+
+      <section class="dismantle-card fixed-rules-card">
+        <div class="table-heading"><div><h3>Resultado automático</h3><p>Estas condiciones no son editables para un ingreso a Inversa.</p></div><span class="status-chip ready">Automático</span></div>
+        <div class="fixed-grid">
+          <div><span>Tipo</span><strong>DESMONTE</strong></div>
+          <div><span>Estado inventario</span><strong>Inversa</strong></div>
+          <div><span>Estado físico</span><strong>Dañado</strong></div>
+          <div><span>Stock</span><strong>4</strong></div>
+          <div><span>Lote</span><strong>NOVALORADO</strong></div>
+          <div><span>Almacén</span><strong>A221</strong></div>
+          <div><span>Ubicación</span><strong>QA01Q1</strong></div>
+        </div>
+      </section>
+
+      <div class="summary-grid">
+        <div class="summary-card"><span>Serializados</span><strong id="countSerializados">0</strong><small>equipos</small></div>
+        <div class="summary-card"><span>No serializados</span><strong id="countNoSerializados">0</strong><small>códigos / cantidades</small></div>
+        <div class="summary-card warning-summary"><span>Por revisar</span><strong id="countReview">0</strong><small>antes de registrar</small></div>
+      </div>
+
+      <section class="dismantle-card preview-card">
+        <div class="table-heading"><div><h3>Vista previa</h3><p>Nombres, descripciones y Dominion se toman de las Maestras de SIGLO.</p></div></div>
+        <div class="table-wrap">
+          <table class="dismantle-table">
+            <thead><tr><th>Fecha</th><th>Cédula</th><th>Técnico</th><th>Serial</th><th>Código SAP</th><th>Dominion</th><th>Descripción</th><th>Topología</th><th>Cantidad</th><th>Segmento</th><th>Resultado</th></tr></thead>
+            <tbody id="previewBody"><tr class="empty-row"><td colspan="11">Sin información procesada.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="reviewCard" class="dismantle-card review-card" hidden>
+        <div class="table-heading"><div><h3>Revisión requerida</h3><p>Completa las excepciones antes de registrar.</p></div></div>
+        <div id="reviewList" class="review-list"></div>
+      </section>
+
+      <section class="dismantle-register-bar">
+        <div><strong id="registerTitle">Desmonte pendiente</strong><p id="registerHelp">Procesa un archivo válido.</p></div>
+        <button id="registerBtn" class="dismantle-register-button" type="button" disabled>Registrar Desmonte <span>→</span></button>
+      </section>
+    </section>
+
+    <footer class="dashboard-footer">SIGLO v0.1 · Desmonte</footer>
+  </main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js?v=20260918-1"></script>
+<script src="js/app.js?v=20260918-4"></script>
+<script src="js/desmonte.js?v=20260921-1"></script>
+</body>
+</html>
