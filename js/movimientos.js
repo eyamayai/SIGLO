@@ -89,10 +89,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           ? 'return'
           : (row.tipo_movimiento === 'DESMONTE'
             ? 'dismantle'
-            : (row.tipo_movimiento === 'CARGA INICIAL' ? 'initial' : 'out')));
+            : (row.tipo_movimiento === 'PREALERTA'
+              ? 'prealert'
+              : (row.tipo_movimiento === 'CARGA INICIAL' ? 'initial' : 'out'))));
       const statusClass = row.estado_inventario === 'Disponible'
         ? 'available'
-        : ((row.estado_inventario === 'Garantía' || row.estado_inventario === 'Inversa') ? 'guarantee' : 'dispatched');
+        : ((row.estado_inventario === 'Garantía' || row.estado_inventario === 'Inversa')
+          ? 'guarantee'
+          : (row.estado_inventario === 'Prealertado' ? 'prealerted' : 'dispatched'));
       return `<tr>
         <td>${escapeHtml(displayDate(row.fecha_documento || row.fecha_registro))}</td>
         <td class="document-cell">${escapeHtml(row.documento)}</td>
@@ -102,7 +106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td class="serial-cell">${escapeHtml(row.serial || '—')}</td>
         <td class="quantity-cell">${numberFormat.format(Number(row.cantidad || 0))}</td>
         <td><span class="lote-pill">${escapeHtml(row.lote)}</span></td>
-        <td><span class="type-pill ${row.tipo === 'DESMONTE' ? 'desmonte' : 'libre'}">${escapeHtml(row.tipo || '—')}</span></td>
+        <td><span class="type-pill ${row.tipo === 'DESMONTE' ? 'desmonte' : (row.tipo === 'RECOGIDO' ? 'recogido' : 'libre')}">${escapeHtml(row.tipo || '—')}</span></td>
         <td>${escapeHtml(row.almacen)}</td>
         <td>${escapeHtml(row.ubicacion)}</td>
         <td>${escapeHtml(row.segmento)}</td>
