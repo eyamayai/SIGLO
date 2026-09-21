@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-13">
   <link rel="stylesheet" href="css/styles.css?v=20260918-6">
-  <link rel="stylesheet" href="css/devoluciones.css?v=20260918-1">
+  <link rel="stylesheet" href="css/devoluciones.css?v=20260921-2">
 </head>
 <body class="dashboard-body">
   <div class="app-shell">
@@ -91,6 +91,14 @@
               <option value="DESMONTE">Desmonte</option>
             </select>
           </label>
+          <label id="returnDesmonteLocationWrap" hidden>
+            <span>Ubicación Desmonte</span>
+            <select id="returnDesmonteLocation">
+              <option value="">Seleccionar…</option>
+              <option value="QMINTIC">QMINTIC</option>
+              <option value="QQ01Q1">QQ01Q1</option>
+            </select>
+          </label>
           <div id="destinationEffect" class="destination-effect">Selecciona Libre o Desmonte para ver el resultado.</div>
         </section>
 
@@ -133,6 +141,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js?v=20260918-1"></script>
   <script src="js/app.js?v=20260918-4"></script>
-  <script src="js/devoluciones.js?v=20260921-2"></script>
+  <script src="js/devoluciones.js?v=20260921-3"></script>
 </body>
 </html>
