@@ -57,11 +57,12 @@ window.SigloAudit = (() => {
     }
 
     if (kind === 'codigos') {
-      XLSX.utils.book_append_sheet(wb, buildSheet(['Código SAP','Dominion','Descripción','Topología'],[16,18,46,26]), 'CODIGOS_SAP');
+      XLSX.utils.book_append_sheet(wb, buildSheet(['Código SAP','Dominion','Descripción','Topología','Lote'],[16,18,46,26,16]), 'CODIGOS_SAP');
       addInstructions(wb,[
         'No cambies el nombre de la hoja CODIGOS_SAP ni los encabezados.',
         'Topología permitida: CON PERFIL DE SERIE o SIN PERFIL DE SERIE.',
-        'Un Código SAP puede tener más de un Dominion, pero su Topología debe ser consistente.'
+        'Lote permitido: VALORADO o NOVALORADO.',
+        'Un Código SAP puede tener más de un Dominion, pero solo uno por cada Lote y su Topología debe ser consistente.'
       ]);
       XLSX.writeFile(wb,'SIGLO_Plantilla_Maestra_Codigos_SAP.xlsx');
     }
