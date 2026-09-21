@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const bar=document.querySelector('.register-bar'),title=document.getElementById('registerTitle'),help=document.getElementById('registerHelp');
     if(registered){registerBtn.disabled=true;bar.className='register-bar ready';title.textContent='Desmonte registrado';help.textContent='Inventario e historial actualizados correctamente.';}
     else if((s.errores||0)>0||(s.revisar||0)>0){registerBtn.disabled=true;bar.className='register-bar error';title.textContent='El Desmonte requiere revisión';help.textContent='Corrige los errores y completa todos los Segmentos pendientes.';}
-    else{registerBtn.disabled=false;bar.className='register-bar ready';title.textContent='Desmonte listo para registrar';help.textContent='SIGLO aplicará A221 · QA01Q1 · NOVALORADO · Stock 4 · DESMONTE · Inversa · Dañado.';}
+    else{registerBtn.disabled=false;bar.className='register-bar ready';title.textContent='Desmonte listo para registrar';help.textContent='SIGLO aplicará A221 · '+(source==='PDF'?'QMINTIC':'QQ01Q1')+' · NOVALORADO · Stock 4 · DESMONTE · Inversa · Dañado.';}
     resultsSection.hidden=false;
   }
 
