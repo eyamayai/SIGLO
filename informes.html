@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Informes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260921-1">
+  <link rel="stylesheet" href="css/styles.css?v=20260918-6">
+  <link rel="stylesheet" href="css/informes.css?v=20260921-1">
+</head>
+<body class="dashboard-body">
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-brand"><img src="assets/icono-siglo.png?v=20260921-1" alt="Icono SIGLO"><strong>SIGLO</strong></div>
+  <nav aria-label="Navegación principal">
+    <a class="nav-link" href="inicio.html"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
+    <a class="nav-link" href="ingresos.html"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Ingresos</a>
+    <a class="nav-link" href="despachos.html"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Despachos</a>
+    <a class="nav-link" href="devoluciones.html"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>Devoluciones</a>
+    <a class="nav-link" href="desmonte.html"><svg viewBox="0 0 24 24"><path d="M4 6h16v4H4z"/><path d="M7 10v8h10v-8"/><path d="M9 14h6"/></svg>Desmonte</a>
+    <a class="nav-link" href="prealerta.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M8 9h8"/><path d="M8 13h5"/><path d="m14 16 2 2 4-4"/></svg>Prealerta</a>
+    <a class="nav-link" href="saldos.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Saldos</a>
+    <a class="nav-link" href="movimientos.html"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg>Movimientos</a>
+    <a class="nav-link" href="auditoria.html"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>Auditoría</a>
+    <a class="nav-link active" href="informes.html"><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>Informes</a>
+  </nav>
+  <div class="sidebar-bottom"><a class="nav-link" id="logoutBtn" href="index.html"><svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>Cerrar sesión</a></div>
+</aside>
+
+<main class="dashboard-main reports-main">
+  <div class="dashboard-top">
+    <div class="dashboard-title">
+      <div class="breadcrumb"><a href="inicio.html">Inicio</a><span>›</span><strong>Informes</strong></div>
+      <h1>Informes</h1>
+      <p>Genera los formatos fiscales a partir del inventario físico actual de SIGLO.</p>
+    </div>
+    <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div>
+  </div>
+
+  <section class="report-selector">
+    <button class="report-option active" data-report="mapa_fiscal" type="button">
+      <span class="report-icon">MF</span><strong>Mapa Fiscal</strong><small>Ubicación fiscal del inventario</small>
+    </button>
+    <button class="report-option" data-report="certificado_mensual" type="button">
+      <span class="report-icon">CM</span><strong>Certificado Mensual</strong><small>Saldos consolidados por material</small>
+    </button>
+    <button class="report-option" data-report="inventario_fiscal" type="button">
+      <span class="report-icon">IF</span><strong>Inventario Fiscal</strong><small>Saldos por ubicación y stock</small>
+    </button>
+  </section>
+
+  <section class="report-card controls-card">
+    <div>
+      <span class="step-badge">1</span>
+      <div>
+        <h2 id="selectedReportTitle">Mapa Fiscal</h2>
+        <p id="selectedReportHelp">Genera una fila única por combinación de material, almacén, lote, ubicación y stock.</p>
+      </div>
+    </div>
+    <button id="generateReportBtn" class="primary-action" type="button">Generar informe <span>→</span></button>
+    <div id="reportMessage" class="report-message" role="status" aria-live="polite"></div>
+  </section>
+
+  <section id="reportResult" class="report-card result-card" hidden>
+    <div class="result-heading">
+      <div>
+        <span class="step-badge">2</span>
+        <div>
+          <h2 id="resultTitle">Mapa Fiscal</h2>
+          <p><span id="resultCount">0 filas</span> · Generado el <strong id="resultDate">—</strong></p>
+        </div>
+      </div>
+      <button id="exportReportBtn" class="outline-action" type="button">Exportar Excel</button>
+    </div>
+    <div class="table-wrap">
+      <table id="reportTable">
+        <thead id="reportHead"></thead>
+        <tbody id="reportBody"><tr class="empty-row"><td>Sin datos</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="dashboard-footer">SIGLO v0.1 · Informes</footer>
+</main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js?v=20260918-1"></script>
+<script src="js/app.js?v=20260918-4"></script>
+<script src="js/informes.js?v=20260921-1"></script>
+</body>
+</html>
