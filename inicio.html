@@ -2,105 +2,89 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#1976c9">
   <title>SIGLO | Inicio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260917-4">
-  <link rel="stylesheet" href="css/styles.css?v=20260918-6">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260922-2">
+  <link rel="stylesheet" href="css/styles.css?v=20260922-1">
+  <link rel="stylesheet" href="css/inicio.css?v=20260922-1">
 </head>
-<body class="dashboard-body">
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <img src="assets/icono-siglo.png?v=20260917-4" alt="Icono SIGLO" width="46" height="46">
-        <strong>SIGLO</strong>
-      </div>
-<nav aria-label="Navegación principal">
-    <a class="nav-link active" href="inicio.html"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
-    <a class="nav-link" href="ingresos.html"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Ingresos</a>
-    <a class="nav-link" href="despachos.html"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Despachos</a>
-    <a class="nav-link" href="salidas.html"><svg viewBox="0 0 24 24"><path d="M4 12h13"/><path d="m13 7 5 5-5 5"/><path d="M4 5v14"/></svg>Salidas</a>
-    <a class="nav-link" href="devoluciones.html"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>Devoluciones</a>
-    <a class="nav-link" href="desmonte.html"><svg viewBox="0 0 24 24"><path d="M4 6h16v4H4z"/><path d="M7 10v8h10v-8"/><path d="M9 14h6"/></svg>Desmonte</a>
-    <a class="nav-link" href="prealerta.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M8 9h8"/><path d="M8 13h5"/><path d="m14 16 2 2 4-4"/></svg>Prealerta</a>
-    <a class="nav-link" href="saldos.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Saldos</a>
-    <a class="nav-link" href="movimientos.html"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg>Movimientos</a>
-    <a class="nav-link" href="auditoria.html"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>Auditoría</a>
-    <a class="nav-link" href="informes.html"><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>Informes</a>
-  </nav>
+<body class="dashboard-body home-body">
+<div class="app-shell home-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><img src="assets/icono-siglo.png?v=20260922-2" alt="Icono SIGLO"><strong>SIGLO</strong></div>
+    <nav aria-label="Navegación principal">
+      <a class="nav-link active" href="inicio.html"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
+      <a class="nav-link" href="ingresos.html"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Ingresos</a>
+      <a class="nav-link" href="despachos.html"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Despachos</a>
+      <a class="nav-link" href="salidas.html"><svg viewBox="0 0 24 24"><path d="M4 12h13"/><path d="m13 7 5 5-5 5"/><path d="M4 5v14"/></svg>Salidas</a>
+      <a class="nav-link" href="devoluciones.html"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>Devoluciones</a>
+      <a class="nav-link" href="desmonte.html"><svg viewBox="0 0 24 24"><path d="M4 6h16v4H4z"/><path d="M7 10v8h10v-8"/><path d="M9 14h6"/></svg>Desmonte</a>
+      <a class="nav-link" href="prealerta.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M8 9h8"/><path d="M8 13h5"/><path d="m14 16 2 2 4-4"/></svg>Prealerta</a>
+      <a class="nav-link" href="saldos.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Saldos</a>
+      <a class="nav-link" href="movimientos.html"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg>Movimientos</a>
+      <a class="nav-link" href="auditoria.html"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>Auditoría</a>
+      <a class="nav-link" href="informes.html"><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>Informes</a>
+    </nav>
+    <div class="sidebar-bottom"><a class="nav-link" id="logoutBtn" href="index.html"><svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>Cerrar sesión</a></div>
+  </aside>
 
-      <div class="sidebar-bottom">
-        <a class="nav-link" id="logoutBtn" href="index.html">
-          <svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>
-          Cerrar sesión
-        </a>
+  <main class="dashboard-main home-main">
+    <div class="dashboard-top">
+      <div class="dashboard-title">
+        <h1>Bienvenido a SIGLO</h1>
+        <p>Actividad operativa y alertas del inventario en un solo vistazo.</p>
       </div>
-    </aside>
+      <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div>
+    </div>
 
-    <main class="dashboard-main">
-      <div class="dashboard-top">
-        <div class="dashboard-title">
-          <h1>Bienvenido a SIGLO</h1>
-          <p>Gestión, control y trazabilidad en cada operación.</p>
+    <section class="home-kpis" aria-label="Indicadores de hoy">
+      <article class="home-kpi"><span>Operaciones hoy</span><strong id="kpiOperations">0</strong><small>Registros procesados</small></article>
+      <article class="home-kpi"><span>Ingresos hoy</span><strong id="kpiEntries">0</strong><small>Documentos de ingreso</small></article>
+      <article class="home-kpi"><span>Despachos / Salidas</span><strong id="kpiOuts">0</strong><small>Movimientos de salida hoy</small></article>
+      <article class="home-kpi alert"><span>Alertas activas</span><strong id="kpiAlerts">0</strong><small>Requieren revisión</small></article>
+    </section>
+
+    <section class="home-workspace">
+      <article class="home-panel activity-panel">
+        <div class="home-panel-heading">
+          <div><h2>Actividad reciente</h2><p id="activitySubtitle">Últimos movimientos registrados en SIGLO</p></div>
+          <div class="period-switch" aria-label="Periodo de actividad">
+            <button class="period-button" type="button" data-days="1">Hoy</button>
+            <button class="period-button active" type="button" data-days="7">7 días</button>
+            <button class="period-button" type="button" data-days="30">30 días</button>
+          </div>
         </div>
-        <div class="user-chip">
-          <div class="user-avatar">S</div>
-          <span id="userLabel">Usuario SIGLO</span>
+        <div id="activityList" class="activity-list">
+          <div class="empty-dashboard">Cargando actividad…</div>
         </div>
-      </div>
-<section class="module-grid" aria-label="Módulos SIGLO">
-        <a class="module-card" href="ingresos.html">
-          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M3 8v8l9 5 9-5V8"/></svg></div>
-          <h3>Ingresos</h3><p>Registro y control de entrada de material.</p><span class="card-arrow">→</span>
-        </a>
-        <a class="module-card" href="despachos.html">
-          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></div>
-          <h3>Despachos</h3><p>Procesamiento y control de salidas de material.</p><span class="card-arrow">→</span>
-        </a>
-        <a class="module-card" href="salidas.html">
-          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M4 12h13"/><path d="m13 7 5 5-5 5"/><path d="M4 5v14"/></svg></div>
-          <h3>Salidas</h3><p>Transferencias SAL e INT de material disponible.</p><span class="card-arrow">→</span>
-        </a>
+      </article>
 
-        <a class="module-card" href="saldos.html">
-          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg></div>
-          <h3>Saldos</h3><p>Consulta del inventario actual y disponibilidad.</p><span class="card-arrow">→</span>
-        </a>
-        <a class="module-card" href="movimientos.html">
-          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg></div>
-          <h3>Movimientos</h3><p>Historial y trazabilidad de cada operación.</p><span class="card-arrow">→</span>
-        </a>
-        <a class="module-card" href="devoluciones.html">
-          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg></div>
-          <h3>Devoluciones</h3><p>Retorno de material a Libre o Desmonte con trazabilidad.</p><span class="card-arrow">→</span>
-        </a>
-        <a class="module-card" href="desmonte.html">
-          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16v4H4z"/><path d="M7 10v8h10v-8"/><path d="M9 14h6"/></svg></div>
-          <h3>Desmonte</h3><p>Ingreso y control de material de inversa por PDF o Excel.</p><span class="card-arrow">→</span>
-        </a>
-        <a class="module-card" href="prealerta.html">
-          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M8 9h8"/><path d="M8 13h5"/><path d="m14 16 2 2 4-4"/></svg></div>
-          <h3>Prealerta</h3><p>Salida de material recogido por el cliente con trazabilidad.</p><span class="card-arrow">→</span>
-        </a>
-        <a class="module-card" href="auditoria.html">
-          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg></div>
-          <h3>Auditoría</h3><p>Carga inicial y administración de maestras de SIGLO.</p><span class="card-arrow">→</span>
-        </a>
-        <a class="module-card" href="informes.html">
-          <div class="module-icon"><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg></div>
-          <h3>Informes</h3><p>Consultas, indicadores y reportes operativos.</p><span class="card-arrow">→</span>
-        </a>
-      </section>
-<footer class="dashboard-footer">SIGLO v0.1 · Sistema Integrado de Gestión de Logística y Operaciones</footer>
-    </main>
-  </div>
+      <article class="home-panel alerts-panel">
+        <div class="home-panel-heading">
+          <div><h2>Alertas</h2><p>Situaciones que requieren atención</p></div>
+          <span id="alertsBadge" class="home-message">0 activas</span>
+        </div>
+        <div id="alertList" class="alert-list">
+          <div class="empty-dashboard">Cargando alertas…</div>
+        </div>
+      </article>
+    </section>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-client.js?v=20260918-1"></script>
-  <script src="js/app.js?v=20260918-4"></script>
+    <footer class="dashboard-footer home-footer">
+      <span>SIGLO v0.1 · Sistema Integrado de Gestión de Logística y Operaciones</span>
+      <span id="dashboardRefresh" class="dashboard-refresh">Actualizando…</span>
+    </footer>
+  </main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js?v=20260918-1"></script>
+<script src="js/app.js?v=20260918-4"></script>
+<script src="js/inicio.js?v=20260922-1"></script>
 </body>
 </html>
