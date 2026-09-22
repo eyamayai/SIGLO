@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Auditoría · Usuarios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260922-2">
+  <link rel="stylesheet" href="css/styles.css?v=20260922-2">
+  <link rel="stylesheet" href="css/auditoria.css?v=20260921-2">
+  <link rel="stylesheet" href="css/auditoria-usuarios.css?v=20260922-1">
+</head>
+<body class="dashboard-body"><div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><img src="assets/icono-siglo.png?v=20260922-2" alt="Icono SIGLO"><strong>SIGLO</strong></div>
+    <nav aria-label="Navegación principal">
+      <a class="nav-link" href="inicio.html"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
+      <a class="nav-link" href="ingresos.html"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Ingresos</a>
+      <a class="nav-link" href="despachos.html"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Despachos</a>
+      <a class="nav-link" href="salidas.html"><svg viewBox="0 0 24 24"><path d="M4 12h13"/><path d="m13 7 5 5-5 5"/><path d="M4 5v14"/></svg>Salidas</a>
+      <a class="nav-link" href="devoluciones.html"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>Devoluciones</a>
+      <a class="nav-link" href="desmonte.html"><svg viewBox="0 0 24 24"><path d="M4 6h16v4H4z"/><path d="M7 10v8h10v-8"/><path d="M9 14h6"/></svg>Desmonte</a>
+      <a class="nav-link" href="prealerta.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M8 9h8"/><path d="M8 13h5"/><path d="m14 16 2 2 4-4"/></svg>Prealerta</a>
+      <a class="nav-link" href="saldos.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Saldos</a>
+      <a class="nav-link" href="movimientos.html"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg>Movimientos</a>
+      <a class="nav-link active" href="auditoria.html"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>Auditoría</a>
+      <a class="nav-link" href="informes.html"><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>Informes</a>
+    </nav>
+    <div class="sidebar-bottom"><a class="nav-link" id="logoutBtn" href="index.html"><svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>Cerrar sesión</a></div>
+  </aside>
+
+  <main class="dashboard-main audit-main users-main">
+    <div class="dashboard-top">
+      <div class="dashboard-title">
+        <div class="breadcrumb"><a href="auditoria.html">Auditoría</a><span>›</span><strong>Usuarios</strong></div>
+        <h1>Usuarios</h1>
+        <p>Administra accesos, Username y permisos individuales de cada usuario de SIGLO.</p>
+      </div>
+      <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div>
+    </div>
+
+    <section class="users-toolbar">
+      <div class="users-stats">
+        <div><span>Usuarios</span><strong id="statUsers">0</strong></div>
+        <div><span>Activos</span><strong id="statActive">0</strong></div>
+        <div><span>Con acceso</span><strong id="statAccess">0</strong></div>
+      </div>
+      <button id="newUserBtn" class="audit-button primary" type="button">+ Nuevo usuario</button>
+    </section>
+
+    <section class="users-layout">
+      <article class="audit-card users-list-card">
+        <div class="users-list-heading">
+          <div><h2>Usuarios registrados</h2><p>Selecciona un usuario para revisar o modificar su acceso.</p></div>
+          <input id="userSearch" class="master-search" type="search" placeholder="Buscar nombre, Username o correo">
+        </div>
+        <div id="usersList" class="users-list"><div class="users-empty">Cargando usuarios…</div></div>
+      </article>
+
+      <article class="audit-card user-editor-card">
+        <form id="userForm" novalidate>
+          <input id="userId" type="hidden">
+          <div class="editor-heading">
+            <div><h2 id="editorTitle">Nuevo usuario</h2><p id="editorSubtitle">Define los datos del usuario y marca los módulos a los que tendrá acceso.</p></div>
+            <span id="authStatus" class="auth-badge no-access">SIN ACCESO</span>
+          </div>
+
+          <div class="user-fields">
+            <label><span>Nombre completo</span><input id="fullName" type="text" autocomplete="off" placeholder="NOMBRE COMPLETO" required></label>
+            <label><span>Username</span><input id="username" type="text" autocomplete="off" placeholder="Ej. EVIN" required></label>
+            <label class="field-wide"><span>Correo</span><input id="userEmail" type="email" autocomplete="off" placeholder="usuario@empresa.com" required></label>
+            <label><span>Rol</span><select id="userRole"><option value="OPERATIVO">OPERATIVO</option><option value="ADMINISTRADOR">ADMINISTRADOR</option></select></label>
+            <label><span>Estado</span><select id="userState"><option value="ACTIVO">ACTIVO</option><option value="INACTIVO">INACTIVO</option></select></label>
+          </div>
+
+          <div class="permissions-heading">
+            <div><h3>Permisos por módulo</h3><p>Desmarcar un módulo lo oculta del menú y también bloquea sus operaciones en la base de datos.</p></div>
+            <button id="toggleAllOperational" class="permission-action" type="button">Marcar operativos</button>
+          </div>
+
+          <div id="permissionsGrid" class="permissions-grid">
+            <label class="permission-item"><input type="checkbox" data-permission="ingresos"><span><strong>Ingresos</strong><small>Registrar entradas de material</small></span></label>
+            <label class="permission-item"><input type="checkbox" data-permission="despachos"><span><strong>Despachos</strong><small>Despachar material a técnicos</small></span></label>
+            <label class="permission-item"><input type="checkbox" data-permission="salidas"><span><strong>Salidas</strong><small>Procesar SAL e INT</small></span></label>
+            <label class="permission-item"><input type="checkbox" data-permission="devoluciones"><span><strong>Devoluciones</strong><small>Retornos a Libre o Desmonte</small></span></label>
+            <label class="permission-item"><input type="checkbox" data-permission="desmonte"><span><strong>Desmonte</strong><small>Ingreso de material de inversa</small></span></label>
+            <label class="permission-item"><input type="checkbox" data-permission="prealerta"><span><strong>Prealerta</strong><small>Salida de material recogido</small></span></label>
+            <label class="permission-item"><input type="checkbox" data-permission="saldos"><span><strong>Saldos</strong><small>Consultar inventario actual</small></span></label>
+            <label class="permission-item"><input type="checkbox" data-permission="movimientos"><span><strong>Movimientos</strong><small>Consultar trazabilidad</small></span></label>
+            <label class="permission-item"><input type="checkbox" data-permission="informes"><span><strong>Informes</strong><small>Generar reportes de SIGLO</small></span></label>
+          </div>
+
+          <div class="audit-permissions">
+            <h3>Auditoría</h3><p>Puedes habilitar solo las herramientas de Auditoría que realmente necesite el usuario.</p>
+            <div class="permissions-grid audit-permissions-grid">
+              <label class="permission-item sensitive"><input type="checkbox" data-permission="auditoria_carga"><span><strong>Carga Inicial</strong><small>Cargar inventario base</small></span></label>
+              <label class="permission-item sensitive"><input type="checkbox" data-permission="auditoria_tecnicos"><span><strong>Maestra Técnicos</strong><small>Modificar técnicos</small></span></label>
+              <label class="permission-item sensitive"><input type="checkbox" data-permission="auditoria_codigos"><span><strong>Maestra Códigos SAP</strong><small>Modificar códigos y topologías</small></span></label>
+              <label class="permission-item"><input type="checkbox" data-permission="auditoria_documentos"><span><strong>Validación Documentos</strong><small>Control diario documental</small></span></label>
+              <label class="permission-item sensitive"><input type="checkbox" data-permission="auditoria_usuarios"><span><strong>Usuarios</strong><small>Administrar accesos y permisos</small></span></label>
+            </div>
+          </div>
+
+          <div id="userMessage" class="audit-message" role="status" aria-live="polite"></div>
+
+          <div class="user-actions">
+            <button id="cancelUserBtn" class="audit-button" type="button">Limpiar</button>
+            <button id="inviteUserBtn" class="audit-button invite-button" type="button" hidden>Enviar invitación</button>
+            <button id="saveUserBtn" class="audit-button primary" type="submit">Guardar usuario</button>
+          </div>
+        </form>
+      </article>
+    </section>
+
+    <footer class="dashboard-footer">SIGLO v0.1 · Auditoría · Usuarios</footer>
+  </main>
+</div>
+<div id="toast" class="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js?v=20260918-1"></script>
+<script src="js/app.js?v=20260922-5"></script>
+<script src="js/auditoria-usuarios.js?v=20260922-1"></script>
+</body>
+</html>
