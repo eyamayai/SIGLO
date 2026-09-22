@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260922-2">
   <link rel="stylesheet" href="css/styles.css?v=20260922-2">
   <link rel="stylesheet" href="css/auditoria.css?v=20260921-2">
-  <link rel="stylesheet" href="css/auditoria-usuarios.css?v=20260922-2">
+  <link rel="stylesheet" href="css/auditoria-usuarios.css?v=20260922-3">
 </head>
 <body class="dashboard-body"><div class="app-shell">
   <aside class="sidebar">
@@ -104,8 +104,20 @@
 
           <div id="userMessage" class="audit-message" role="status" aria-live="polite"></div>
 
+          <div id="accessLinkPanel" class="access-link-panel" hidden>
+            <div>
+              <strong>Enlace de acceso temporal</strong>
+              <span>Compártelo únicamente con este usuario. Le permitirá crear su contraseña sin depender del correo.</span>
+            </div>
+            <div class="access-link-row">
+              <input id="accessLinkValue" type="text" readonly aria-label="Enlace de acceso temporal">
+              <button id="copyAccessLinkBtn" class="audit-button" type="button">Copiar enlace</button>
+            </div>
+          </div>
+
           <div class="user-actions">
             <button id="cancelUserBtn" class="audit-button" type="button">Limpiar</button>
+            <button id="manualAccessBtn" class="audit-button manual-access-button" type="button" hidden>Generar enlace de acceso</button>
             <button id="inviteUserBtn" class="audit-button invite-button" type="button" hidden>Enviar invitación</button>
             <button id="saveUserBtn" class="audit-button primary" type="submit">Guardar usuario</button>
           </div>
@@ -120,6 +132,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20260922-6"></script>
-<script src="js/auditoria-usuarios.js?v=20260922-2"></script>
+<script src="js/auditoria-usuarios.js?v=20260922-3"></script>
 </body>
 </html>
