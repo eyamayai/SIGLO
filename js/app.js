@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const assetVersion = '20260922-5';
+  const assetVersion = '20260922-6';
 
   const assetStyle = document.createElement('style');
   assetStyle.textContent =
@@ -61,8 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'auditoria_carga',
       'auditoria_tecnicos',
       'auditoria_codigos',
-      'auditoria_documentos',
-      'auditoria_usuarios'
+      'auditoria_documentos'
     ].some(key => permisos?.[key] === true);
   }
 
@@ -91,6 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!profile || profile.estado !== 'ACTIVO') return false;
     if (profile.rol === 'ADMINISTRADOR') return true;
     if (!permission) return true;
+    if (permission === 'auditoria_usuarios') return false;
     return profile.permisos?.[permission] === true;
   }
 
