@@ -101,3 +101,8 @@
     margin-top:14px;
   }
 }
+
+.password-setup-intro{margin:-6px 0 22px;padding:13px 15px;border-radius:11px;background:#eef6fc;border:1px solid #d7e8f4}
+.password-setup-intro strong{display:block;color:#173b5c;font-size:14px}
+.password-setup-intro span{display:block;margin-top:4px;color:#71869a;font-size:12px;line-height:1.4}
+.password-save-button{margin-top:24px}
