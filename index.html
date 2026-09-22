@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260917-3">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=20260922-2">
   <link rel="stylesheet" href="css/login-overrides.css?v=20260918-1">
 </head>
 <body data-page="login">
@@ -80,8 +80,29 @@
           </div>
 
           <button class="primary-button" type="submit">Ingresar <span>→</span></button>
-          <button class="text-link" id="createAccess" type="button">Crear acceso inicial</button>
           <p id="loginError" class="form-error" role="alert"></p>
+        </form>
+
+        <form id="passwordSetupForm" class="login-form" novalidate hidden>
+          <div class="password-setup-intro">
+            <strong id="passwordSetupTitle">Define tu contraseña</strong>
+            <span id="passwordSetupHelp">Crea la contraseña que utilizarás para ingresar a SIGLO.</span>
+          </div>
+
+          <label for="newPassword">Nueva contraseña</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input id="newPassword" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
+          </div>
+
+          <label for="confirmPassword">Confirmar contraseña</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Repite la contraseña" required>
+          </div>
+
+          <button class="primary-button password-save-button" type="submit">Guardar contraseña <span>→</span></button>
+          <p id="passwordSetupError" class="form-error" role="alert"></p>
         </form>
 
         <footer class="card-footer card-footer-login">
@@ -96,8 +117,14 @@
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+    window.sigloAuthFlowType =
+      new URLSearchParams(window.location.hash.replace(/^#/, '')).get('type') ||
+      new URLSearchParams(window.location.search).get('type') ||
+      '';
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js?v=20260918-1"></script>
-  <script src="js/app.js?v=20260918-4"></script>
+  <script src="js/app.js?v=20260922-5"></script>
 </body>
 </html>
