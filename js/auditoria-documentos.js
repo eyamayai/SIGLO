@@ -18,22 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
     message.className='audit-message'+(type?' '+type:'');
   }
 
-  function normalizeTipo(value){
-    return String(value??'')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-      .trim().toUpperCase().replace(/_/g,' ');
-  }
-
   function downloadTemplate(){
     if(!window.XLSX){setMessage('No fue posible cargar el generador de Excel.','error');return;}
     const wb=XLSX.utils.book_new();
-    const ws=XLSX.utils.aoa_to_sheet([['DOCUMENTO','FECHA','TIPO DOCUMENTO']]);
-    ws['!cols']=[{wch:28},{wch:14},{wch:20}];
+    const ws=XLSX.utils.aoa_to_sheet([['DOCUMENTO','FECHA']]);
+    ws['!cols']=[{wch:28},{wch:14}];
     XLSX.utils.book_append_sheet(wb,ws,'VALIDACION');
     const help=XLSX.utils.aoa_to_sheet([
       ['SIGLO · Validación de Documentos'],
       ['No cambies el nombre de la hoja VALIDACION ni los encabezados.'],
-      ['TIPO DOCUMENTO permitido: INGRESO, DESPACHO, DEVOLUCION, DESMONTE o PREALERTA.'],
+      ['SIGLO identifica automáticamente el tipo del documento cuando encuentra su número en la base de datos.'],
       ['Cada fila debe representar un documento generado por el sistema externo que quieras contrastar contra SIGLO.']
     ]);
     help['!cols']=[{wch:100}];
@@ -50,13 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return '<tr>'+
         '<td><strong>'+A.escapeHtml(row.documento||'—')+'</strong></td>'+
         '<td>'+A.escapeHtml(row.fecha||'—')+'</td>'+
-        '<td>'+A.escapeHtml(row.tipo||'—')+'</td>'+
         '<td><span class="result-pill '+cls+'">'+A.escapeHtml(row.estado||'—')+'</span></td>'+
         '<td>'+A.escapeHtml(row.fecha_siglo||'—')+'</td>'+
         '<td>'+A.escapeHtml(row.tipo_siglo||'—')+'</td>'+
         '<td>'+A.escapeHtml(row.detalle||'')+'</td>'+
       '</tr>';
-    }).join(''):'<tr class="empty-row"><td colspan="7">No hay documentos para este filtro.</td></tr>';
+    }).join(''):'<tr class="empty-row"><td colspan="6">No hay documentos para este filtro.</td></tr>';
   }
 
   document.getElementById('downloadTemplateBtn').addEventListener('click',downloadTemplate);
@@ -85,18 +78,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const wb=await A.readWorkbook(currentFile);
       const rows=A.sheetRows(wb,'VALIDACION',{
         documento:['DOCUMENTO'],
-        fecha:['FECHA'],
-        tipo:['TIPO DOCUMENTO','TIPO']
+        fecha:['FECHA']
       });
       if(!rows.length) throw new Error('La plantilla no contiene documentos para validar.');
 
-      const allowed=new Set(['INGRESO','DESPACHO','DEVOLUCION','DESMONTE','PREALERTA','CARGA INICIAL']);
       const payloadRows=rows.map((row,index)=>{
-        const tipo=normalizeTipo(row.tipo);
         if(!row.documento) throw new Error('Fila '+(index+2)+': falta DOCUMENTO.');
         if(!row.fecha) throw new Error('Fila '+(index+2)+': falta FECHA.');
-        if(!allowed.has(tipo)) throw new Error('Fila '+(index+2)+': TIPO DOCUMENTO no reconocido.');
-        return {documento:row.documento,fecha:row.fecha,tipo};
+        return {documento:row.documento,fecha:row.fecha};
       });
 
       const {data,error}=await supabase.rpc('validar_documentos_auditoria',{p_payload:{documentos:payloadRows}});
@@ -129,11 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const pending=resultRows.filter(row=>row.estado==='PENDIENTE');
     if(!pending.length){setMessage('No hay documentos pendientes para exportar.','success');return;}
     const data=[
-      ['DOCUMENTO','FECHA','TIPO DOCUMENTO','ESTADO','DETALLE'],
-      ...pending.map(row=>[row.documento,row.fecha,row.tipo,row.estado,row.detalle])
+      ['DOCUMENTO','FECHA','ESTADO','DETALLE'],
+      ...pending.map(row=>[row.documento,row.fecha,row.estado,row.detalle])
     ];
     const ws=XLSX.utils.aoa_to_sheet(data);
-    ws['!cols']=[{wch:28},{wch:14},{wch:20},{wch:14},{wch:52}];
+    ws['!cols']=[{wch:28},{wch:14},{wch:14},{wch:52}];
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'PENDIENTES');
     XLSX.writeFile(wb,'SIGLO_Documentos_Pendientes.xlsx');
