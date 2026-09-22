@@ -15,11 +15,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const exportActasBtn = document.getElementById('exportActasBtn');
   const actasMessage = document.getElementById('actasMessage');
 
+  const modelControls = document.getElementById('modelControls');
+  const modelResult = document.getElementById('modelResult');
+  const modelFileInput = document.getElementById('modelFileInput');
+  const modelFileName = document.getElementById('modelFileName');
+  const prepareModelBtn = document.getElementById('prepareModelBtn');
+  const exportModelBtn = document.getElementById('exportModelBtn');
+  const modelMessage = document.getElementById('modelMessage');
+
   let selected = 'mapa_fiscal';
   let dataCache = null;
   let currentRows = [];
   let actasFile = null;
   let preparedActas = null;
+  let modelFile = null;
+  let preparedModel = null;
 
   const definitions = {
     mapa_fiscal: {
@@ -86,6 +96,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     actasMessage.className='report-message'+(type?' '+type:'');
   }
 
+  function setModelMessage(text='',type=''){
+    modelMessage.textContent=text;
+    modelMessage.className='report-message'+(type?' '+type:'');
+  }
+
   function selectReport(key){
     selected=key;
     buttons.forEach(btn=>btn.classList.toggle('active',btn.dataset.report===key));
@@ -93,14 +108,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(key==='actas_conteo'){
       standardControls.hidden=true;
       result.hidden=true;
+      modelControls.hidden=true;
+      modelResult.hidden=true;
       actasControls.hidden=false;
       actasResult.hidden=!preparedActas;
       setMessage('');
       return;
     }
 
+    if(key==='modelo_estructura'){
+      standardControls.hidden=true;
+      result.hidden=true;
+      actasControls.hidden=true;
+      actasResult.hidden=true;
+      modelControls.hidden=false;
+      modelResult.hidden=!preparedModel;
+      setMessage('');
+      return;
+    }
+
     actasControls.hidden=true;
     actasResult.hidden=true;
+    modelControls.hidden=true;
+    modelResult.hidden=true;
     standardControls.hidden=false;
     const def=definitions[key];
     document.getElementById('selectedReportTitle').textContent=def.title;
@@ -174,9 +204,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     XLSX.writeFile(wb,def.title+' '+fileDate()+'.xlsx');
   });
 
-  function downloadActasTemplate(){
+  function downloadActasTemplate(fileName='SIGLO_Plantilla_Actas_de_Conteo.xlsx',target='actas'){
     if(!window.XLSX){
-      setActasMessage('No fue posible cargar el generador de Excel.','error');
+      if(target==='modelo') setModelMessage('No fue posible cargar el generador de Excel.','error');
+      else setActasMessage('No fue posible cargar el generador de Excel.','error');
       return;
     }
     const wb=XLSX.utils.book_new();
@@ -194,7 +225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     ]);
     instructions['!cols']=[{wch:105}];
     XLSX.utils.book_append_sheet(wb,instructions,'INSTRUCCIONES');
-    XLSX.writeFile(wb,'SIGLO_Plantilla_Actas_de_Conteo.xlsx');
+    XLSX.writeFile(wb,fileName);
   }
 
   function parseClientMatrix(fileBuffer){
@@ -365,10 +396,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         ...raw,
         codigo_sap:normalizeCode(raw.codigo_sap),
         descripcion:normalizeText(raw.descripcion),
+        centro:normalizeText(raw.centro),
         almacen:normalizeText(raw.almacen),
         ubicacion:normalizeText(raw.ubicacion),
         segmento:normalizeText(raw.segmento)||'SIN SEGMENTO',
         lote:normalizeHeader(raw.lote),
+        stock:Number(raw.stock||0) || (normalizeText(raw.tipo)==='DESMONTE'?4:1),
         cantidad:Number(raw.cantidad||0),
         serial:normalizeText(raw.serial),
         serializado:Boolean(raw.serializado)
@@ -397,7 +430,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const usedNames=new Set(['NO_CLASIFICADOS','NO_CLASIFICADOS_SER']);
     const serialMismatch=[];
-    groups.forEach(group=>{
+    groups.forEach((group,index)=>{
+      group.planilla=index+1;
       group.mainRows=aggregateActaRows(group.rows);
       group.serialRows=serialRows(group.rows);
       const names=reserveSheetPair(group.segmento,group.almacen,group.anotacion,group.serialRows.length>0,usedNames);
@@ -436,6 +470,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('actasPreviewBody').innerHTML=preparedActas.groups.length
       ? preparedActas.groups.map(group=>
           '<tr>'+
+            '<td><strong>'+group.planilla+'</strong></td>'+
             '<td><strong>'+escapeHtml(group.sheetName)+'</strong></td>'+
             '<td>'+escapeHtml(group.segmento)+'</td>'+
             '<td>'+escapeHtml(group.almacen)+'</td>'+
@@ -444,7 +479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             '<td>'+group.serialRows.length+'</td>'+
           '</tr>'
         ).join('')
-      : '<tr class="empty-row"><td colspan="6">No se generaron grupos de Actas con la matriz cargada.</td></tr>';
+      : '<tr class="empty-row"><td colspan="7">No se generaron grupos de Actas con la matriz cargada.</td></tr>';
 
     const issues=[];
     preparedActas.conflicts.forEach(item=>{
@@ -473,6 +508,160 @@ document.addEventListener('DOMContentLoaded', async () => {
     }else{
       setActasMessage('Distribución preparada correctamente. Revisa las actas y genera el Excel final.','success');
     }
+  }
+
+
+  function todayCompact(){
+    const d=new Date();
+    return String(d.getFullYear())+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  }
+
+  function buildModelStructure(prepared){
+    const structureMap=new Map();
+    const serials=[];
+
+    prepared.groups.forEach(group=>{
+      group.rows.forEach(row=>{
+        const key=[
+          group.planilla,row.codigo_sap,row.centro,row.almacen,row.lote,row.ubicacion,row.stock
+        ].join('|');
+
+        const current=structureMap.get(key)||{
+          codigo_sap:row.codigo_sap,
+          centro:row.centro,
+          almacen:row.almacen,
+          lote:row.lote,
+          ubicacion:row.ubicacion,
+          stock:row.stock,
+          planilla:group.planilla,
+          cantidad:0
+        };
+        current.cantidad+=Number(row.cantidad||0);
+        structureMap.set(key,current);
+      });
+
+      group.serialRows.forEach(row=>{
+        serials.push({
+          codigo_sap:row.codigo_sap,
+          descripcion:row.descripcion||'',
+          serial:row.serial||'',
+          cantidad:1,
+          lote:row.lote,
+          ubicacion:row.ubicacion,
+          stock:row.stock,
+          serial_rr:row.serial||'',
+          estado_rr:normalizeHeader(row.ubicacion)==='QMINTIC'?'':'E272',
+          planilla:group.planilla
+        });
+      });
+    });
+
+    const structure=[...structureMap.values()].sort((a,b)=>
+      a.planilla-b.planilla ||
+      compareSap(a.codigo_sap,b.codigo_sap) ||
+      lotOrder(a.lote)-lotOrder(b.lote) ||
+      String(a.ubicacion).localeCompare(String(b.ubicacion),'es',{numeric:true,sensitivity:'base'})
+    );
+
+    serials.sort((a,b)=>
+      a.planilla-b.planilla ||
+      compareSap(a.codigo_sap,b.codigo_sap) ||
+      lotOrder(a.lote)-lotOrder(b.lote) ||
+      String(a.ubicacion).localeCompare(String(b.ubicacion),'es',{numeric:true,sensitivity:'base'}) ||
+      String(a.serial).localeCompare(String(b.serial),'es',{numeric:true,sensitivity:'base'})
+    );
+
+    return {structure,serials};
+  }
+
+  function renderModelPrepared(){
+    if(!preparedModel) return;
+
+    const modelData=buildModelStructure(preparedModel);
+    preparedModel.modelData=modelData;
+
+    const blockCount=
+      preparedModel.conflicts.length+
+      preparedModel.unclassifiedCodes.length+
+      preparedModel.serialMismatch.length;
+
+    document.getElementById('modelPlanCount').textContent=preparedModel.groups.length;
+    document.getElementById('modelStructureCount').textContent=modelData.structure.length;
+    document.getElementById('modelSerialCount').textContent=modelData.serials.length;
+    document.getElementById('modelBlockCount').textContent=blockCount;
+
+    document.getElementById('modelPreviewBody').innerHTML=preparedModel.groups.length
+      ? preparedModel.groups.map(group=>
+          '<tr>'+
+            '<td><strong>'+group.planilla+'</strong></td>'+
+            '<td><strong>'+escapeHtml(group.sheetName)+'</strong></td>'+
+            '<td>'+escapeHtml(group.segmento)+'</td>'+
+            '<td>'+escapeHtml(group.almacen)+'</td>'+
+            '<td>'+escapeHtml(group.anotacion)+'</td>'+
+            '<td>'+group.mainRows.length+'</td>'+
+            '<td>'+group.serialRows.length+'</td>'+
+          '</tr>'
+        ).join('')
+      : '<tr class="empty-row"><td colspan="7">No se generaron planillas con la matriz cargada.</td></tr>';
+
+    const issues=[];
+    preparedModel.conflicts.forEach(item=>{
+      issues.push('<div class="actas-issue error"><strong>Conflicto '+escapeHtml(item.codigo_sap)+':</strong> aparece con más de una anotación. Corrige la matriz.</div>');
+    });
+    if(preparedModel.unclassifiedCodes.length){
+      issues.push('<div class="actas-issue error"><strong>Sin planilla:</strong> '+preparedModel.unclassifiedCodes.length+' Código(s) SAP con inventario no aparecen en la matriz. Modelo Estructura requiere que todo el inventario exportado tenga Nro Planilla.</div>');
+    }
+    preparedModel.serialMismatch.forEach(item=>{
+      issues.push('<div class="actas-issue error"><strong>Seriales:</strong> '+escapeHtml(item)+'</div>');
+    });
+    if(preparedModel.matrixWithoutStock.length){
+      issues.push('<div class="actas-issue"><strong>Sin existencia actual:</strong> '+preparedModel.matrixWithoutStock.length+' Código(s) SAP de la matriz no tienen inventario físico y no generan filas.</div>');
+    }
+
+    const issueBox=document.getElementById('modelIssues');
+    issueBox.innerHTML=issues.join('');
+    issueBox.hidden=issues.length===0;
+
+    exportModelBtn.disabled=blockCount>0 || preparedModel.groups.length===0;
+    modelResult.hidden=false;
+
+    if(blockCount>0){
+      setModelMessage('El Modelo Estructura tiene bloqueos. Corrige la matriz o las diferencias antes de exportar.','error');
+    }else{
+      setModelMessage('Modelo preparado correctamente con '+preparedModel.groups.length+' planilla(s).','success');
+    }
+  }
+
+  function exportModelWorkbook(){
+    if(!preparedModel || exportModelBtn.disabled || !window.XLSX) return;
+
+    const modelData=preparedModel.modelData || buildModelStructure(preparedModel);
+    const wb=XLSX.utils.book_new();
+
+    appendSheet(
+      wb,
+      'ESTRUCTURA',
+      ['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','FECHA','TIPO DE STOCK','NUMERO PLANILLA','CONTEO1','CONTEO2'],
+      modelData.structure.map(row=>[
+        row.codigo_sap,row.centro,row.almacen,row.lote,row.ubicacion,todayCompact(),
+        row.stock,row.planilla,row.cantidad,row.cantidad
+      ]),
+      [16,12,14,16,18,14,15,17,12,12]
+    );
+
+    appendSheet(
+      wb,
+      'SERIALIZADOS',
+      ['CÓDIGO SAP','DESCRIPCIÓN','SERIAL','CANTIDAD','LOTE','UBICACION','TIPO STOCK','SERIAL RR','ESTADO RR','NRO PLANILLA'],
+      modelData.serials.map(row=>[
+        row.codigo_sap,row.descripcion,row.serial,1,row.lote,row.ubicacion,row.stock,
+        row.serial_rr,row.estado_rr,row.planilla
+      ]),
+      [16,48,28,10,16,18,14,28,14,16]
+    );
+
+    XLSX.writeFile(wb,'SIGLO_Modelo_Estructura_'+fileDate()+'.xlsx');
+    setModelMessage('Modelo Estructura generado correctamente.','success');
   }
 
   function appendSheet(wb,name,headers,rows,widths){
@@ -577,4 +766,55 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   exportActasBtn.addEventListener('click',exportActasWorkbook);
+
+
+  document.getElementById('downloadModelTemplateBtn').addEventListener('click',()=>{
+    downloadActasTemplate('SIGLO_Plantilla_Modelo_Estructura.xlsx','modelo');
+  });
+
+  modelFileInput.addEventListener('change',()=>{
+    modelFile=modelFileInput.files?.[0]||null;
+    modelFileName.textContent=modelFile?modelFile.name:'Seleccionar Excel';
+    prepareModelBtn.disabled=!modelFile;
+    preparedModel=null;
+    modelResult.hidden=true;
+    exportModelBtn.disabled=true;
+    setModelMessage('');
+  });
+
+  prepareModelBtn.addEventListener('click',async()=>{
+    if(!modelFile) return;
+
+    prepareModelBtn.disabled=true;
+    prepareModelBtn.textContent='Preparando…';
+    setModelMessage('Leyendo la distribución y reconstruyendo la numeración de planillas…');
+
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      if(!session){window.location.replace('index.html');return;}
+
+      if(!/\.(xlsx|xls)$/i.test(modelFile.name)) throw new Error('Selecciona un archivo Excel .xlsx o .xls.');
+
+      const matrixRows=parseClientMatrix(await modelFile.arrayBuffer());
+      const {data:inventory,error}=await supabase.rpc('consultar_base_actas_conteo');
+      if(error) throw error;
+      if(!Array.isArray(inventory)) throw new Error('SIGLO no devolvió una base válida para Modelo Estructura.');
+
+      preparedModel=buildActas(matrixRows,inventory);
+      renderModelPrepared();
+      modelResult.scrollIntoView({behavior:'smooth',block:'start'});
+    }catch(error){
+      console.error('Error preparando Modelo Estructura',error);
+      preparedModel=null;
+      modelResult.hidden=true;
+      exportModelBtn.disabled=true;
+      setModelMessage(error.message||'No fue posible preparar Modelo Estructura.','error');
+    }finally{
+      prepareModelBtn.disabled=!modelFile;
+      prepareModelBtn.innerHTML='Preparar modelo <span>→</span>';
+    }
+  });
+
+  exportModelBtn.addEventListener('click',exportModelWorkbook);
+
 });
