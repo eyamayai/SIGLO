@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION='20260922-1';
+  const VERSION='20260922-2';
   const supabase=window.sigloSupabase;
   const pdfInput=document.getElementById('pdfInput');
   const selectPdfBtn=document.getElementById('selectPdfBtn');
@@ -124,13 +124,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function findQuantity(segment){
     const patterns=[
-      /(\d+(?:[.,]\d+)?)\s+(Unidad|Unidades|Und|UND)\s+([\d.,]+)/i,
-      /(Unidad|Unidades|Und|UND)\s*(\d+(?:[.,]\d+)?)\s+([\d.,]+)/i
+      {re:/(Unidad|Unidades|Und|UND)\s*(\d+(?:[.,]\d+)?)\s+([\d.,]+)/i,quantityGroup:2},
+      {re:/(\d+(?:[.,]\d+)?)\s+(Unidad|Unidades|Und|UND)\s+([\d.,]+)/i,quantityGroup:1}
     ];
-    for(let index=0;index<patterns.length;index+=1){
-      const match=patterns[index].exec(segment);
+    for(const pattern of patterns){
+      const match=pattern.re.exec(segment);
       if(!match) continue;
-      const cantidad=Number((index===0?match[1]:match[2]).replace(',','.'));
+      const cantidad=Number(match[pattern.quantityGroup].replace(',','.'));
       if(Number.isFinite(cantidad)) return {cantidad,index:match.index,end:match.index+match[0].length};
     }
     return null;
