@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const assetVersion = '20260922-6';
+  const assetVersion = '20260922-7';
 
   const assetStyle = document.createElement('style');
   assetStyle.textContent =
@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const passwordSetupError = document.getElementById('passwordSetupError');
   const authParams = new URLSearchParams(window.location.search);
   const authFlowType = String(window.sigloAuthFlowType || '').toLowerCase();
+  const authSetupRequested = authParams.get('auth') === 'setup';
 
   const toggle = document.getElementById('togglePassword');
   if (toggle && password) {
@@ -196,16 +197,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const { data: { session } } = await supabase.auth.getSession();
 
-    if (session && (authFlowType === 'invite' || authFlowType === 'recovery')) {
-      await showPasswordSetup(session);
-    } else if (session && !authFlowType) {
+    if (session) {
       try {
         const profile = await loadCurrentProfile();
-        if (profile?.registrado && profile.estado === 'ACTIVO') {
+        if (!profile?.registrado) {
+          await supabase.auth.signOut();
+          if (error) error.textContent = 'Tu correo no está autorizado en Usuarios de SIGLO.';
+        } else if (profile.estado !== 'ACTIVO') {
+          await supabase.auth.signOut();
+          if (error) error.textContent = 'Tu usuario está inactivo en SIGLO. Contacta al Administrador.';
+        } else if (
+          profile.acceso_configurado !== true ||
+          authFlowType === 'invite' ||
+          authFlowType === 'recovery' ||
+          authSetupRequested
+        ) {
+          await showPasswordSetup(session);
+        } else {
           window.location.replace('inicio.html');
           return;
         }
-        await supabase.auth.signOut();
       } catch (_) {
         await supabase.auth.signOut();
       }
@@ -314,6 +325,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
+      const { error: confirmAccessError } = await supabase.rpc('confirmar_acceso_usuario');
+      if (confirmAccessError) {
+        if (button) button.disabled = false;
+        if (passwordSetupError) passwordSetupError.textContent = confirmAccessError.message || 'La contraseña fue guardada, pero SIGLO no pudo confirmar el acceso.';
+        return;
+      }
+
       try {
         const profile = await loadCurrentProfile();
         if (!profile?.registrado || profile.estado !== 'ACTIVO') {
@@ -347,10 +365,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    const redirectTo = 'https://eyamayai.github.io/SIGLO/index.html';
+    const redirectTo = 'https://eyamayai.github.io/SIGLO/index.html?auth=setup';
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(correo, { redirectTo });
     if (resetError) {
-      if (error) error.textContent = resetError.message || 'No fue posible enviar la recuperación.';
+      if (error) {
+        const raw=String(resetError.message||'');
+        error.textContent=/rate limit/i.test(raw)
+          ? 'Se alcanzó temporalmente el límite de correos de Supabase. Espera a que se libere el cupo o solicita al Administrador un enlace de acceso.'
+          : (raw || 'No fue posible enviar la recuperación.');
+      }
       return;
     }
     showToast('Enviamos las instrucciones de recuperación a tu correo.');
