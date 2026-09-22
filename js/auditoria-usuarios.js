@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   const search=document.getElementById('userSearch');
   const message=document.getElementById('userMessage');
   const inviteBtn=document.getElementById('inviteUserBtn');
+  const manualAccessBtn=document.getElementById('manualAccessBtn');
+  const accessLinkPanel=document.getElementById('accessLinkPanel');
+  const accessLinkValue=document.getElementById('accessLinkValue');
+  const copyAccessLinkBtn=document.getElementById('copyAccessLinkBtn');
   const saveBtn=document.getElementById('saveUserBtn');
 
   let users=[];
@@ -29,7 +33,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   function authClass(status){
     const s=String(status||'').toUpperCase();
     if(s==='ACTIVO') return 'active';
-    if(s==='INVITADO'||s==='REGISTRADO') return 'invited';
+    if(s==='INVITADO'||s==='PENDIENTE CLAVE'||s==='REGISTRADO') return 'invited';
     return 'no-access';
   }
 
@@ -69,6 +73,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('userEmail').disabled=false;
     applyPermissions({},false);
     inviteBtn.hidden=true;
+    manualAccessBtn.hidden=true;
+    accessLinkPanel.hidden=true;
+    accessLinkValue.value='';
     saveBtn.textContent='Guardar y enviar invitación';
     [...list.querySelectorAll('.user-row')].forEach(row=>row.classList.remove('active'));
     setMessage('');
@@ -91,8 +98,13 @@ document.addEventListener('DOMContentLoaded',()=>{
     const isAdmin=user.rol==='ADMINISTRADOR';
     applyPermissions(isAdmin?allPermissions():(user.permisos||{}),isAdmin);
 
-    inviteBtn.hidden=user.estado!=='ACTIVO' || user.auth_estado==='ACTIVO';
-    inviteBtn.textContent=user.auth_estado==='INVITADO'?'Reenviar invitación':'Enviar invitación';
+    const accessReady=user.auth_estado==='ACTIVO';
+    const hasAuth=Boolean(user.auth_user_id);
+    inviteBtn.hidden=user.estado!=='ACTIVO' || accessReady || hasAuth;
+    inviteBtn.textContent='Enviar invitación';
+    manualAccessBtn.hidden=user.estado!=='ACTIVO' || accessReady;
+    accessLinkPanel.hidden=true;
+    accessLinkValue.value='';
     saveBtn.textContent='Guardar cambios';
 
     [...list.querySelectorAll('.user-row')].forEach(row=>row.classList.toggle('active',Number(row.dataset.id)===Number(user.id)));
@@ -160,6 +172,46 @@ document.addEventListener('DOMContentLoaded',()=>{
     }catch(error){
       console.error('Error enviando invitación',error);
       let detail=error?.message||'No fue posible enviar la invitación.';
+      let suggestManual=false;
+      try{
+        if(error?.context){
+          const body=await error.context.json();
+          if(body?.error) detail=body.error;
+          suggestManual=Boolean(body?.suggest_manual);
+        }
+      }catch(_){}
+      if(/rate limit/i.test(detail)) detail='Supabase alcanzó temporalmente el límite de correos. Genera un enlace de acceso y compártelo directamente con el usuario.';
+      if(suggestManual || /límite de correos|rate limit/i.test(detail)) manualAccessBtn.hidden=false;
+      setMessage(detail,'error');
+      return false;
+    }finally{
+      inviteBtn.disabled=false;
+    }
+  }
+
+
+  async function generateAccessLink(email){
+    if(!email) return false;
+    setMessage('Generando enlace seguro de acceso para '+email+'…');
+    manualAccessBtn.disabled=true;
+    try{
+      const {data,error}=await supabase.functions.invoke('siglo-admin-users',{
+        body:{action:'activation_link',email}
+      });
+      if(error) throw error;
+      if(data?.error) throw new Error(data.error);
+      if(!data?.activation_link) throw new Error('Supabase no devolvió el enlace de acceso.');
+
+      accessLinkValue.value=data.activation_link;
+      accessLinkPanel.hidden=false;
+      setMessage('Enlace generado correctamente. Compártelo únicamente con este usuario.','success');
+      await loadUsers(selectedId);
+      accessLinkPanel.hidden=false;
+      accessLinkValue.value=data.activation_link;
+      return true;
+    }catch(error){
+      console.error('Error generando enlace de acceso',error);
+      let detail=error?.message||'No fue posible generar el enlace de acceso.';
       try{
         if(error?.context){
           const body=await error.context.json();
@@ -169,9 +221,29 @@ document.addEventListener('DOMContentLoaded',()=>{
       setMessage(detail,'error');
       return false;
     }finally{
-      inviteBtn.disabled=false;
+      manualAccessBtn.disabled=false;
     }
   }
+
+  manualAccessBtn.addEventListener('click',async()=>{
+    const user=users.find(u=>Number(u.id)===Number(selectedId));
+    if(!user) return;
+    await generateAccessLink(user.correo);
+  });
+
+  copyAccessLinkBtn.addEventListener('click',async()=>{
+    const link=accessLinkValue.value.trim();
+    if(!link) return;
+    try{
+      await navigator.clipboard.writeText(link);
+      setMessage('Enlace copiado. Envíalo únicamente al usuario correspondiente.','success');
+    }catch(_){
+      accessLinkValue.focus();
+      accessLinkValue.select();
+      document.execCommand('copy');
+      setMessage('Enlace copiado. Envíalo únicamente al usuario correspondiente.','success');
+    }
+  });
 
   document.getElementById('newUserBtn').addEventListener('click',clearEditor);
   document.getElementById('cancelUserBtn').addEventListener('click',clearEditor);
