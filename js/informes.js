@@ -316,17 +316,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       );
   }
 
-  function validateSerialReconciliation(mainRows,serials){
+  function validateSerialReconciliation(mainRows,serials,includeWarehouse=false){
     const counts=new Map();
     serials.forEach(row=>{
-      const key=[row.codigo_sap,row.ubicacion,row.lote].join('|');
+      const key=(includeWarehouse?[row.codigo_sap,row.almacen,row.ubicacion,row.lote]:[row.codigo_sap,row.ubicacion,row.lote]).join('|');
       counts.set(key,(counts.get(key)||0)+1);
     });
 
     const errors=[];
     mainRows.forEach(row=>{
       if(row.hasNonSerial) return;
-      const key=[row.codigo_sap,row.ubicacion,row.lote].join('|');
+      const key=(includeWarehouse?[row.codigo_sap,row.almacen,row.ubicacion,row.lote]:[row.codigo_sap,row.ubicacion,row.lote]).join('|');
       const expected=Number(row.cantidad||0);
       const found=counts.get(key)||0;
       if(Math.abs(expected-found)>0.0001){
@@ -408,7 +408,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const unclassifiedMain=aggregateActaRows(unclassified,true);
     const unclassifiedSerial=serialRows(unclassified);
-    validateSerialReconciliation(unclassifiedMain,unclassifiedSerial).forEach(msg=>serialMismatch.push('NO_CLASIFICADOS: '+msg));
+    validateSerialReconciliation(unclassifiedMain,unclassifiedSerial,true).forEach(msg=>serialMismatch.push('NO_CLASIFICADOS: '+msg));
 
     const matrixWithoutStock=[...annotationSets.keys()].filter(code=>!inventoryCodes.has(code)).sort(compareSap);
 
