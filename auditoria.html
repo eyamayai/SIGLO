@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-14">
-  <link rel="stylesheet" href="css/styles.css?v=20260922-1"><link rel="stylesheet" href="css/auditoria.css?v=20260921-2">
+  <link rel="stylesheet" href="css/styles.css?v=20260922-2"><link rel="stylesheet" href="css/auditoria.css?v=20260921-2">
 </head>
 <body class="dashboard-body"><div class="app-shell">
     <aside class="sidebar">
@@ -53,6 +53,10 @@
       <div class="audit-tool-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="m8 13 2 2 4-4"/><path d="M15 13h1"/></svg></div>
       <h2>Validación de Documentos</h2><p>Contrasta el listado externo diario contra los documentos realmente procesados en SIGLO.</p><span class="audit-arrow">Validar →</span>
     </a>
+    <a class="audit-tool-card" href="auditoria-usuarios.html">
+      <div class="audit-tool-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2-7 6-7s6 3 6 7"/><path d="M16 8h5"/><path d="M18.5 5.5v5"/></svg></div>
+      <h2>Usuarios</h2><p>Administra Username, estado, invitaciones y permisos individuales por módulo.</p><span class="audit-arrow">Administrar →</span>
+    </a>
   </section>
 
   <section class="future-block"><strong>Próximamente en Auditoría</strong><br>Conciliación física, diferencias y ajustes autorizados.</section>
@@ -61,5 +65,5 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
-<script src="js/app.js?v=20260918-4"></script>
+<script src="js/app.js?v=20260922-5"></script>
 </body></html>
