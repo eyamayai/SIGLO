@@ -1,39 +1,30 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  // Recursos visuales oficiales de SIGLO.
-  // Se fuerzan con versionado en la URL para evitar que GitHub Pages o el navegador
-  // sigan mostrando una copia antigua después de reemplazar las imágenes.
-  const assetVersion = '20260917-2';
+  const assetVersion = '20260922-5';
 
   const assetStyle = document.createElement('style');
-  assetStyle.textContent = `
-    .brand-panel::before {
-      background-image:
-        linear-gradient(180deg,rgba(249,252,255,.98) 0%,rgba(249,252,255,.95) 31%,rgba(246,251,255,.74) 51%,rgba(231,241,249,.14) 74%,rgba(222,236,247,.05) 100%),
-        url("assets/login-wallpaper.png?v=${assetVersion}") !important;
-      background-position: center, center bottom !important;
-      background-size: cover, cover !important;
-      background-repeat: no-repeat !important;
-    }
-  `;
+  assetStyle.textContent =
+    '.brand-panel::before {' +
+    'background-image:linear-gradient(180deg,rgba(249,252,255,.98) 0%,rgba(249,252,255,.95) 31%,rgba(246,251,255,.74) 51%,rgba(231,241,249,.14) 74%,rgba(222,236,247,.05) 100%),url("assets/login-wallpaper.png?v=' + assetVersion + '") !important;' +
+    'background-position:center,center bottom !important;' +
+    'background-size:cover,cover !important;' +
+    'background-repeat:no-repeat !important;' +
+    '}';
   document.head.appendChild(assetStyle);
 
   const brandLogo = document.querySelector('.brand-logo');
   if (brandLogo) {
-    if (brandLogo.tagName === 'OBJECT') {
-      brandLogo.setAttribute('data', `assets/logo-siglo.png?v=${assetVersion}`);
-    } else {
-      brandLogo.setAttribute('src', `assets/logo-siglo.png?v=${assetVersion}`);
-    }
+    if (brandLogo.tagName === 'OBJECT') brandLogo.setAttribute('data', 'assets/logo-siglo.png?v=' + assetVersion);
+    else brandLogo.setAttribute('src', 'assets/logo-siglo.png?v=' + assetVersion);
   }
 
   document.querySelectorAll('img[src*="icono-siglo.svg"]').forEach((img) => {
-    img.src = `assets/icono-siglo.png?v=${assetVersion}`;
+    img.src = 'assets/icono-siglo.png?v=' + assetVersion;
   });
 
   const favicon = document.querySelector('link[rel="icon"]');
   if (favicon) {
     favicon.type = 'image/png';
-    favicon.href = `assets/icono-siglo.png?v=${assetVersion}`;
+    favicon.href = 'assets/icono-siglo.png?v=' + assetVersion;
   }
 
   const toast = document.getElementById('toast');
@@ -43,9 +34,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2600);
   };
+  window.sigloShowToast = showToast;
+
+  const supabase = window.sigloSupabase;
+  const isLoginPage = document.body.dataset.page === 'login';
+  const form = document.getElementById('loginForm');
+  const email = document.getElementById('email');
+  const password = document.getElementById('password');
+  const error = document.getElementById('loginError');
+  const passwordSetupForm = document.getElementById('passwordSetupForm');
+  const passwordSetupError = document.getElementById('passwordSetupError');
+  const authParams = new URLSearchParams(window.location.search);
+  const authFlowType = String(window.sigloAuthFlowType || '').toLowerCase();
 
   const toggle = document.getElementById('togglePassword');
-  const password = document.getElementById('password');
   if (toggle && password) {
     toggle.addEventListener('click', () => {
       const visible = password.type === 'text';
@@ -54,53 +56,195 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  const supabase = window.sigloSupabase;
-  const isLoginPage = document.body.dataset.page === 'login';
-  const form = document.getElementById('loginForm');
-  const email = document.getElementById('email');
-  const error = document.getElementById('loginError');
-  const authParams = new URLSearchParams(window.location.search);
-  const authErrorCode = authParams.get('error_code');
-  if (isLoginPage && error && authErrorCode === 'otp_expired') {
-    error.textContent = 'Ese enlace de confirmación ya fue usado o expiró. Intenta iniciar sesión normalmente.';
+  function auditAccess(permisos = {}) {
+    return [
+      'auditoria_carga',
+      'auditoria_tecnicos',
+      'auditoria_codigos',
+      'auditoria_documentos',
+      'auditoria_usuarios'
+    ].some(key => permisos?.[key] === true);
   }
 
-  const setLoginBusy = (busy) => {
-    const submit = form?.querySelector('button[type="submit"]');
-    const create = document.getElementById('createAccess');
-    if (submit) submit.disabled = busy;
-    if (create) create.disabled = busy;
-  };
+  function permissionForHref(href) {
+    const path = String(href || '').split('?')[0].split('#')[0].split('/').pop();
+    const map = {
+      'ingresos.html':'ingresos',
+      'despachos.html':'despachos',
+      'salidas.html':'salidas',
+      'devoluciones.html':'devoluciones',
+      'desmonte.html':'desmonte',
+      'prealerta.html':'prealerta',
+      'saldos.html':'saldos',
+      'movimientos.html':'movimientos',
+      'informes.html':'informes',
+      'auditoria-carga-inicial.html':'auditoria_carga',
+      'auditoria-tecnicos.html':'auditoria_tecnicos',
+      'auditoria-codigos.html':'auditoria_codigos',
+      'auditoria-documentos.html':'auditoria_documentos',
+      'auditoria-usuarios.html':'auditoria_usuarios'
+    };
+    return map[path] || null;
+  }
 
-  const rememberEmail = () => {
-    const value = email?.value.trim() || '';
-    if (document.getElementById('remember')?.checked && value) {
-      localStorage.setItem('siglo_remember', value);
-    } else {
-      localStorage.removeItem('siglo_remember');
+  function canAccess(profile, permission) {
+    if (!profile || profile.estado !== 'ACTIVO') return false;
+    if (profile.rol === 'ADMINISTRADOR') return true;
+    if (!permission) return true;
+    return profile.permisos?.[permission] === true;
+  }
+
+  function applyProfileToUi(profile) {
+    window.sigloCurrentUser = profile;
+    document.body.dataset.sigloUserReady = 'true';
+
+    const username = profile.username || profile.nombre || 'Usuario SIGLO';
+    document.querySelectorAll('#userLabel').forEach(el => { el.textContent = username; });
+    document.querySelectorAll('.user-avatar').forEach(el => {
+      el.textContent = String(username).trim().charAt(0).toUpperCase() || 'S';
+    });
+
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href') || '';
+      const file = href.split('?')[0].split('#')[0].split('/').pop();
+
+      if (file === 'auditoria.html') {
+        if (profile.rol !== 'ADMINISTRADOR' && !auditAccess(profile.permisos)) link.hidden = true;
+        return;
+      }
+
+      const permission = permissionForHref(href);
+      if (permission && !canAccess(profile, permission)) link.hidden = true;
+    });
+
+    document.dispatchEvent(new CustomEvent('siglo:user-ready', { detail: profile }));
+  }
+
+  async function loadCurrentProfile() {
+    const { data, error: profileError } = await supabase.rpc('consultar_mi_usuario');
+    if (profileError) throw profileError;
+    return data || null;
+  }
+
+  async function validateAuthenticatedUser() {
+    const profile = await loadCurrentProfile();
+    if (!profile?.registrado) {
+      await supabase.auth.signOut();
+      window.location.replace('index.html?access=unregistered');
+      return null;
     }
-  };
+    if (profile.estado !== 'ACTIVO') {
+      await supabase.auth.signOut();
+      window.location.replace('index.html?access=inactive');
+      return null;
+    }
+    return profile;
+  }
+
+  function currentPageAllowed(profile) {
+    const file = (window.location.pathname.split('/').pop() || 'inicio.html').toLowerCase();
+    if (file === 'inicio.html' || file === '') return true;
+    if (file === 'auditoria.html') return profile.rol === 'ADMINISTRADOR' || auditAccess(profile.permisos);
+    const permission = permissionForHref(file);
+    return permission ? canAccess(profile, permission) : true;
+  }
+
+  function setLoginBusy(busy) {
+    const submit = form?.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = busy;
+  }
+
+  function rememberEmail() {
+    const value = email?.value.trim() || '';
+    if (document.getElementById('remember')?.checked && value) localStorage.setItem('siglo_remember', value);
+    else localStorage.removeItem('siglo_remember');
+  }
+
+  async function showPasswordSetup(session) {
+    if (!form || !passwordSetupForm) return;
+    form.hidden = true;
+    passwordSetupForm.hidden = false;
+
+    const title = document.getElementById('passwordSetupTitle');
+    const help = document.getElementById('passwordSetupHelp');
+    if (authFlowType === 'recovery') {
+      if (title) title.textContent = 'Crea una nueva contraseña';
+      if (help) help.textContent = 'Define la nueva contraseña de tu cuenta SIGLO.';
+    } else {
+      if (title) title.textContent = 'Activa tu acceso a SIGLO';
+      if (help) help.textContent = 'Crea tu contraseña para ' + (session?.user?.email || 'tu cuenta') + '.';
+    }
+  }
 
   if (!supabase) {
     if (error) error.textContent = 'No fue posible conectar con el servicio de autenticación.';
-  } else if (!isLoginPage) {
+    return;
+  }
+
+  if (isLoginPage) {
+    if (error) {
+      if (authParams.get('error_code') === 'otp_expired') {
+        error.textContent = 'Ese enlace ya fue usado o expiró. Solicita uno nuevo.';
+      } else if (authParams.get('access') === 'inactive') {
+        error.textContent = 'Tu usuario está inactivo en SIGLO. Contacta al Administrador.';
+      } else if (authParams.get('access') === 'unregistered') {
+        error.textContent = 'Tu correo no está autorizado en Usuarios de SIGLO.';
+      } else if (authParams.get('access') === 'denied') {
+        error.textContent = 'No tienes permiso para acceder a ese módulo.';
+      }
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session && (authFlowType === 'invite' || authFlowType === 'recovery')) {
+      await showPasswordSetup(session);
+    } else if (session && !authFlowType) {
+      try {
+        const profile = await loadCurrentProfile();
+        if (profile?.registrado && profile.estado === 'ACTIVO') {
+          window.location.replace('inicio.html');
+          return;
+        }
+        await supabase.auth.signOut();
+      } catch (_) {
+        await supabase.auth.signOut();
+      }
+    }
+  } else {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       window.location.replace('index.html');
       return;
     }
-    localStorage.setItem('siglo_user', session.user.email || 'Usuario SIGLO');
+
+    try {
+      const profile = await validateAuthenticatedUser();
+      if (!profile) return;
+
+      if (!currentPageAllowed(profile)) {
+        window.location.replace('inicio.html?access=denied');
+        return;
+      }
+
+      localStorage.setItem('siglo_user', profile.username || profile.correo || 'Usuario SIGLO');
+      applyProfileToUi(profile);
+    } catch (profileError) {
+      console.error('Error validando usuario SIGLO', profileError);
+      await supabase.auth.signOut();
+      window.location.replace('index.html?access=unregistered');
+      return;
+    }
   }
 
-  if (form && supabase) {
+  if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      error.textContent = '';
+      if (error) error.textContent = '';
 
-      const correo = email.value.trim();
-      const clave = password.value.trim();
+      const correo = email?.value.trim() || '';
+      const clave = password?.value || '';
       if (!correo || !clave) {
-        error.textContent = 'Ingresa tu correo y contraseña.';
+        if (error) error.textContent = 'Ingresa tu correo y contraseña.';
         return;
       }
 
@@ -112,58 +256,81 @@ document.addEventListener('DOMContentLoaded', async () => {
       setLoginBusy(false);
 
       if (authError || !data.session) {
-        error.textContent = authError?.message === 'Invalid login credentials'
-          ? 'Correo o contraseña incorrectos.'
-          : (authError?.message || 'No fue posible iniciar sesión.');
+        if (error) {
+          error.textContent = authError?.message === 'Invalid login credentials'
+            ? 'Correo o contraseña incorrectos.'
+            : (authError?.message || 'No fue posible iniciar sesión.');
+        }
         return;
       }
 
-      rememberEmail();
-      localStorage.setItem('siglo_user', data.user?.email || correo);
-      window.location.href = 'inicio.html';
+      try {
+        const profile = await loadCurrentProfile();
+        if (!profile?.registrado) {
+          await supabase.auth.signOut();
+          if (error) error.textContent = 'Tu correo no está autorizado en Usuarios de SIGLO.';
+          return;
+        }
+        if (profile.estado !== 'ACTIVO') {
+          await supabase.auth.signOut();
+          if (error) error.textContent = 'Tu usuario está inactivo en SIGLO.';
+          return;
+        }
+
+        rememberEmail();
+        localStorage.setItem('siglo_user', profile.username || correo);
+        window.location.href = 'inicio.html';
+      } catch (profileError) {
+        console.error(profileError);
+        await supabase.auth.signOut();
+        if (error) error.textContent = 'No fue posible validar los permisos de tu usuario.';
+      }
     });
   }
 
-  document.getElementById('createAccess')?.addEventListener('click', async () => {
-    if (!supabase) return;
+  if (passwordSetupForm) {
+    passwordSetupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (passwordSetupError) passwordSetupError.textContent = '';
 
-    error.textContent = '';
-    const correo = email?.value.trim() || '';
-    const clave = password?.value.trim() || '';
+      const newPassword = document.getElementById('newPassword')?.value || '';
+      const confirmPassword = document.getElementById('confirmPassword')?.value || '';
+      if (newPassword.length < 8) {
+        if (passwordSetupError) passwordSetupError.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        if (passwordSetupError) passwordSetupError.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
 
-    if (!correo || !clave) {
-      error.textContent = 'Escribe el correo y una contraseña para crear el acceso.';
-      return;
-    }
-    if (clave.length < 6) {
-      error.textContent = 'La contraseña debe tener al menos 6 caracteres.';
-      return;
-    }
+      const button = passwordSetupForm.querySelector('button[type="submit"]');
+      if (button) button.disabled = true;
 
-    setLoginBusy(true);
-    const emailRedirectTo = 'https://eyamayai.github.io/SIGLO/index.html';
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: correo,
-      password: clave,
-      options: { emailRedirectTo }
-    });
-    setLoginBusy(false);
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) {
+        if (button) button.disabled = false;
+        if (passwordSetupError) passwordSetupError.textContent = updateError.message || 'No fue posible guardar la contraseña.';
+        return;
+      }
 
-    if (signUpError) {
-      error.textContent = signUpError.message || 'No fue posible crear el acceso.';
-      return;
-    }
+      try {
+        const profile = await loadCurrentProfile();
+        if (!profile?.registrado || profile.estado !== 'ACTIVO') {
+          await supabase.auth.signOut();
+          window.location.replace('index.html?access=unregistered');
+          return;
+        }
+      } catch (_) {
+        await supabase.auth.signOut();
+        window.location.replace('index.html?access=unregistered');
+        return;
+      }
 
-    rememberEmail();
-
-    if (data.session) {
-      localStorage.setItem('siglo_user', data.user?.email || correo);
+      history.replaceState({}, document.title, 'index.html');
       window.location.href = 'inicio.html';
-      return;
-    }
-
-    error.textContent = 'Acceso creado. Revisa tu correo y confirma la cuenta antes de ingresar.';
-  });
+    });
+  }
 
   const remembered = localStorage.getItem('siglo_remember');
   if (remembered && email) {
@@ -173,34 +340,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.getElementById('forgotPassword')?.addEventListener('click', async () => {
-    if (!supabase) return;
+    if (error) error.textContent = '';
     const correo = email?.value.trim() || '';
     if (!correo) {
-      error.textContent = 'Escribe primero tu correo corporativo.';
+      if (error) error.textContent = 'Escribe primero tu correo corporativo.';
       return;
     }
 
     const redirectTo = 'https://eyamayai.github.io/SIGLO/index.html';
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(correo, { redirectTo });
     if (resetError) {
-      error.textContent = resetError.message || 'No fue posible enviar la recuperación.';
+      if (error) error.textContent = resetError.message || 'No fue posible enviar la recuperación.';
       return;
     }
     showToast('Enviamos las instrucciones de recuperación a tu correo.');
   });
 
-  const userLabel = document.getElementById('userLabel');
-  if (userLabel) {
-    const { data: { session } } = supabase
-      ? await supabase.auth.getSession()
-      : { data: { session: null } };
-    const user = session?.user?.email || localStorage.getItem('siglo_user') || 'Usuario SIGLO';
-    userLabel.textContent = user.includes('@') ? user.split('@')[0] : user;
-  }
-
   document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    if (supabase) await supabase.auth.signOut();
+    await supabase.auth.signOut();
     localStorage.removeItem('siglo_user');
     window.location.href = 'index.html';
   });
