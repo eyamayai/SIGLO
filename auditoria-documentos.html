@@ -31,7 +31,7 @@
 
 <section class="audit-card audit-upload">
   <div class="audit-heading">
-    <div><h2>1. Cargar control diario</h2><p>Usa la plantilla con Documento, Fecha y Tipo Documento. Puedes validar cualquier fecha cuando necesites revisar históricos.</p></div>
+    <div><h2>1. Cargar control diario</h2><p>Usa la plantilla con Documento y Fecha. SIGLO identifica automáticamente el tipo del documento cuando lo encuentra.</p></div>
     <div class="audit-actions"><button id="downloadTemplateBtn" class="audit-button" type="button">Descargar plantilla</button></div>
   </div>
   <div class="audit-file-row">
@@ -51,7 +51,7 @@
 
   <section class="audit-card preview-card">
     <div class="preview-heading">
-      <div><h2>Resultado de la validación</h2><p>PROCESADO significa que el mismo documento y tipo ya existen en SIGLO.</p></div>
+      <div><h2>Resultado de la validación</h2><p>PROCESADO significa que el número de documento ya existe en SIGLO.</p></div>
       <div class="audit-actions">
         <select id="statusFilter" class="audit-filter">
           <option value="">Todos</option>
@@ -63,7 +63,7 @@
       </div>
     </div>
     <div class="audit-table-wrap"><table class="audit-table"><thead><tr>
-      <th>Documento</th><th>Fecha</th><th>Tipo documento</th><th>Estado SIGLO</th><th>Fecha SIGLO</th><th>Tipo SIGLO</th><th>Detalle</th>
+      <th>Documento</th><th>Fecha</th><th>Estado SIGLO</th><th>Fecha SIGLO</th><th>Tipo SIGLO</th><th>Detalle</th>
     </tr></thead><tbody id="previewBody"></tbody></table></div>
   </section>
 </section>
@@ -74,5 +74,5 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script><script src="js/app.js?v=20260918-4"></script>
-<script src="js/auditoria-common.js?v=20260921-2"></script><script src="js/auditoria-documentos.js?v=20260921-1"></script>
+<script src="js/auditoria-common.js?v=20260921-2"></script><script src="js/auditoria-documentos.js?v=20260922-1"></script>
 </body></html>
