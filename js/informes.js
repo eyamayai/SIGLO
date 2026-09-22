@@ -274,11 +274,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function aggregateActaRows(rows){
+  function aggregateActaRows(rows,includeWarehouse=false){
     const map=new Map();
 
     rows.forEach(row=>{
-      const key=[row.codigo_sap,row.ubicacion,row.lote].join('|');
+      const key=(includeWarehouse?[row.codigo_sap,row.almacen,row.ubicacion,row.lote]:[row.codigo_sap,row.ubicacion,row.lote]).join('|');
       const current=map.get(key)||{
         codigo_sap:row.codigo_sap,
         descripcion:row.descripcion||'',
@@ -286,6 +286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         lote:row.lote||'',
         cantidad:0,
         segmento:row.segmento||'',
+        almacen:row.almacen||'',
         serialCount:0,
         hasNonSerial:false
       };
@@ -405,7 +406,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       validateSerialReconciliation(group.mainRows,group.serialRows).forEach(msg=>serialMismatch.push(group.sheetName+': '+msg));
     });
 
-    const unclassifiedMain=aggregateActaRows(unclassified);
+    const unclassifiedMain=aggregateActaRows(unclassified,true);
     const unclassifiedSerial=serialRows(unclassified);
     validateSerialReconciliation(unclassifiedMain,unclassifiedSerial).forEach(msg=>serialMismatch.push('NO_CLASIFICADOS: '+msg));
 
@@ -511,10 +512,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         wb,
         'NO_CLASIFICADOS',
         ['CÓDIGO SAP','DESCRIPCIÓN','ALMACÉN','UBICACIÓN','LOTE','CANTIDAD','OBSERVACIÓN'],
-        preparedActas.unclassifiedMain.map(row=>{
-          const source=preparedActas.unclassified.find(x=>x.codigo_sap===row.codigo_sap && x.ubicacion===row.ubicacion && x.lote===row.lote);
-          return [row.codigo_sap,row.descripcion,source?.almacen||'',row.ubicacion,row.lote,row.cantidad,row.segmento];
-        }),
+        preparedActas.unclassifiedMain.map(row=>[row.codigo_sap,row.descripcion,row.almacen,row.ubicacion,row.lote,row.cantidad,row.segmento]),
         [16,48,14,18,16,12,20]
       );
     }
