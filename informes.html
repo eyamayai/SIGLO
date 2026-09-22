@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260921-1">
   <link rel="stylesheet" href="css/styles.css?v=20260918-6">
-  <link rel="stylesheet" href="css/informes.css?v=20260922-3">
+  <link rel="stylesheet" href="css/informes.css?v=20260922-4">
 </head>
 <body class="dashboard-body">
 <div class="app-shell">
@@ -53,6 +53,9 @@
     </button>
     <button class="report-option" data-report="actas_conteo" type="button">
       <span class="report-icon">AC</span><strong>Actas de Conteo</strong><small>Actas separadas por segmento, almacén y anotación</small>
+    </button>
+    <button class="report-option" data-report="modelo_estructura" type="button">
+      <span class="report-icon">ME</span><strong>Modelo Estructura</strong><small>Estructura consolidada y detalle serializado por planilla</small>
     </button>
   </section>
 
@@ -110,8 +113,56 @@
 
     <div class="table-wrap actas-preview-wrap">
       <table class="actas-preview-table">
-        <thead><tr><th>Hoja</th><th>Segmento</th><th>Almacén</th><th>Anotación</th><th>Filas acta</th><th>Seriales</th></tr></thead>
-        <tbody id="actasPreviewBody"><tr class="empty-row"><td colspan="6">Sin distribución preparada.</td></tr></tbody>
+        <thead><tr><th>Planilla</th><th>Hoja</th><th>Segmento</th><th>Almacén</th><th>Anotación</th><th>Filas acta</th><th>Seriales</th></tr></thead>
+        <tbody id="actasPreviewBody"><tr class="empty-row"><td colspan="7">Sin distribución preparada.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+
+  <section id="modelControls" class="report-card actas-card" hidden>
+    <div class="actas-heading">
+      <div class="actas-title-wrap">
+        <span class="step-badge">1</span>
+        <div>
+          <h2>Modelo Estructura</h2>
+          <p>Sube la misma distribución utilizada para Actas de Conteo. SIGLO conservará la misma numeración de planillas y generará dos hojas.</p>
+        </div>
+      </div>
+      <button id="downloadModelTemplateBtn" class="outline-action" type="button">Descargar plantilla</button>
+    </div>
+    <div class="actas-file-row">
+      <label class="actas-file-label">
+        <input id="modelFileInput" type="file" accept=".xlsx,.xls">
+        <div><strong id="modelFileName">Seleccionar Excel</strong><span>Código SAP · Descripción · Anotación</span></div>
+      </label>
+      <button id="prepareModelBtn" class="primary-action" type="button" disabled>Preparar modelo <span>→</span></button>
+    </div>
+    <div id="modelMessage" class="report-message" role="status" aria-live="polite"></div>
+  </section>
+
+  <section id="modelResult" class="report-card actas-result" hidden>
+    <div class="result-heading">
+      <div>
+        <span class="step-badge">2</span>
+        <div><h2>Modelo Estructura preparado</h2><p>La numeración toma únicamente las hojas principales de Actas de Conteo. Las hojas de seriales no generan nuevas planillas.</p></div>
+      </div>
+      <button id="exportModelBtn" class="outline-action" type="button" disabled>Generar Modelo Estructura</button>
+    </div>
+
+    <div class="actas-summary">
+      <div class="actas-kpi"><span>Planillas</span><strong id="modelPlanCount">0</strong></div>
+      <div class="actas-kpi"><span>Filas estructura</span><strong id="modelStructureCount">0</strong></div>
+      <div class="actas-kpi"><span>Seriales</span><strong id="modelSerialCount">0</strong></div>
+      <div class="actas-kpi error"><span>Bloqueos</span><strong id="modelBlockCount">0</strong></div>
+    </div>
+
+    <div id="modelIssues" class="actas-issues" hidden></div>
+
+    <div class="table-wrap actas-preview-wrap">
+      <table class="actas-preview-table">
+        <thead><tr><th>Nro Planilla</th><th>Hoja Acta</th><th>Segmento</th><th>Almacén</th><th>Anotación</th><th>Filas</th><th>Seriales</th></tr></thead>
+        <tbody id="modelPreviewBody"><tr class="empty-row"><td colspan="7">Sin modelo preparado.</td></tr></tbody>
       </table>
     </div>
   </section>
@@ -144,6 +195,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20260918-4"></script>
-<script src="js/informes.js?v=20260922-2"></script>
+<script src="js/informes.js?v=20260922-4"></script>
 </body>
 </html>
