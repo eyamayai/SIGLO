@@ -1,0 +1,6 @@
+.salida-info-grid{grid-template-columns:repeat(3,minmax(140px,1fr))}
+.table-wrap td:last-child{white-space:normal;min-width:220px}
+.result-pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800}
+.result-pill.ready{background:#e8f5ed;color:#237448}
+.result-pill.error{background:#fff0e7;color:#9d5121}
+@media(max-width:800px){.salida-info-grid{grid-template-columns:1fr}}
