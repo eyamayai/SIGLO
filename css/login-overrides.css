@@ -106,3 +106,15 @@
 .password-setup-intro strong{display:block;color:#173b5c;font-size:14px}
 .password-setup-intro span{display:block;margin-top:4px;color:#71869a;font-size:12px;line-height:1.4}
 .password-save-button{margin-top:24px}
+
+.initial-access-link{display:block;margin:10px auto 0;text-align:center}
+#initialAccessForm .password-setup-intro{margin-bottom:14px}
+#initialAccessForm label{margin-top:12px}
+#initialAccessForm .password-save-button{margin-top:18px}
+@media (min-width:1101px) and (max-height:720px){
+  #initialAccessForm .password-setup-intro{margin-bottom:8px;padding:9px 11px}
+  #initialAccessForm label{margin:7px 0 4px}
+  #initialAccessForm .input-wrap input{height:42px}
+  #initialAccessForm .password-save-button{margin-top:12px;height:45px}
+  .initial-access-link{margin-top:7px;font-size:12px}
+}
