@@ -104,21 +104,16 @@
 
           <div id="userMessage" class="audit-message" role="status" aria-live="polite"></div>
 
-          <div id="accessLinkPanel" class="access-link-panel" hidden>
+          <div class="access-link-panel">
             <div>
-              <strong>Enlace de acceso temporal</strong>
-              <span>Compártelo únicamente con este usuario. Le permitirá crear su contraseña sin depender del correo.</span>
-            </div>
-            <div class="access-link-row">
-              <input id="accessLinkValue" type="text" readonly aria-label="Enlace de acceso temporal">
-              <button id="copyAccessLinkBtn" class="audit-button" type="button">Copiar enlace</button>
+              <strong>Acceso inicial sin correo</strong>
+              <span>Los usuarios ACTIVOS crean su contraseña desde “Crear acceso inicial” en el Login, usando el Correo y Username definidos aquí.</span>
             </div>
           </div>
 
           <div class="user-actions">
             <button id="cancelUserBtn" class="audit-button" type="button">Limpiar</button>
-            <button id="manualAccessBtn" class="audit-button manual-access-button" type="button" hidden>Generar enlace de acceso</button>
-            <button id="inviteUserBtn" class="audit-button invite-button" type="button" hidden>Enviar invitación</button>
+            <button id="resetAccessBtn" class="audit-button manual-access-button" type="button" hidden>Reiniciar acceso</button>
             <button id="saveUserBtn" class="audit-button primary" type="submit">Guardar usuario</button>
           </div>
         </form>
@@ -131,7 +126,7 @@
 <div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
-<script src="js/app.js?v=20260922-7"></script>
-<script src="js/auditoria-usuarios.js?v=20260922-3"></script>
+<script src="js/app.js?v=20260923-1"></script>
+<script src="js/auditoria-usuarios.js?v=20260923-1"></script>
 </body>
 </html>
