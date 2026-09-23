@@ -4,11 +4,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const list=document.getElementById('usersList');
   const search=document.getElementById('userSearch');
   const message=document.getElementById('userMessage');
-  const inviteBtn=document.getElementById('inviteUserBtn');
-  const manualAccessBtn=document.getElementById('manualAccessBtn');
-  const accessLinkPanel=document.getElementById('accessLinkPanel');
-  const accessLinkValue=document.getElementById('accessLinkValue');
-  const copyAccessLinkBtn=document.getElementById('copyAccessLinkBtn');
+  const resetAccessBtn=document.getElementById('resetAccessBtn');
   const saveBtn=document.getElementById('saveUserBtn');
 
   let users=[];
@@ -43,7 +39,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   function collectPermissions(){
     const out={};
-    permissionKeys.forEach(key=>{out[key]=Boolean(document.querySelector('[data-permission="'+key+'"]')?.checked);});
+    permissionKeys.forEach(key=>{
+      out[key]=Boolean(document.querySelector('[data-permission="'+key+'"]')?.checked);
+    });
     return out;
   }
 
@@ -72,11 +70,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('authStatus').className='auth-badge no-access';
     document.getElementById('userEmail').disabled=false;
     applyPermissions({},false);
-    inviteBtn.hidden=true;
-    manualAccessBtn.hidden=true;
-    accessLinkPanel.hidden=true;
-    accessLinkValue.value='';
-    saveBtn.textContent='Guardar y enviar invitación';
+    resetAccessBtn.hidden=true;
+    saveBtn.textContent='Guardar usuario';
     [...list.querySelectorAll('.user-row')].forEach(row=>row.classList.remove('active'));
     setMessage('');
   }
@@ -98,16 +93,12 @@ document.addEventListener('DOMContentLoaded',()=>{
     const isAdmin=user.rol==='ADMINISTRADOR';
     applyPermissions(isAdmin?allPermissions():(user.permisos||{}),isAdmin);
 
-    const accessReady=user.auth_estado==='ACTIVO';
-    const hasAuth=Boolean(user.auth_user_id);
-    inviteBtn.hidden=user.estado!=='ACTIVO' || accessReady || hasAuth;
-    inviteBtn.textContent='Enviar invitación';
-    manualAccessBtn.hidden=user.estado!=='ACTIVO' || accessReady;
-    accessLinkPanel.hidden=true;
-    accessLinkValue.value='';
+    resetAccessBtn.hidden=!(user.estado==='ACTIVO' && user.auth_estado==='ACTIVO');
     saveBtn.textContent='Guardar cambios';
 
-    [...list.querySelectorAll('.user-row')].forEach(row=>row.classList.toggle('active',Number(row.dataset.id)===Number(user.id)));
+    [...list.querySelectorAll('.user-row')].forEach(row=>{
+      row.classList.toggle('active',Number(row.dataset.id)===Number(user.id));
+    });
     setMessage('');
   }
 
@@ -157,94 +148,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
   }
 
-  async function invite(email){
-    setMessage('Enviando invitación a '+email+'…');
-    inviteBtn.disabled=true;
-    try{
-      const {data,error}=await supabase.functions.invoke('siglo-admin-users',{
-        body:{action:'invite',email}
-      });
-      if(error) throw error;
-      if(data?.error) throw new Error(data.error);
-      setMessage(data?.message||'Invitación enviada correctamente.','success');
-      await loadUsers(selectedId);
-      return true;
-    }catch(error){
-      console.error('Error enviando invitación',error);
-      let detail=error?.message||'No fue posible enviar la invitación.';
-      let suggestManual=false;
-      try{
-        if(error?.context){
-          const body=await error.context.json();
-          if(body?.error) detail=body.error;
-          suggestManual=Boolean(body?.suggest_manual);
-        }
-      }catch(_){}
-      if(/rate limit/i.test(detail)) detail='Supabase alcanzó temporalmente el límite de correos. Genera un enlace de acceso y compártelo directamente con el usuario.';
-      if(suggestManual || /límite de correos|rate limit/i.test(detail)) manualAccessBtn.hidden=false;
-      setMessage(detail,'error');
-      return false;
-    }finally{
-      inviteBtn.disabled=false;
-    }
-  }
-
-
-  async function generateAccessLink(email){
-    if(!email) return false;
-    setMessage('Generando enlace seguro de acceso para '+email+'…');
-    manualAccessBtn.disabled=true;
-    try{
-      const {data,error}=await supabase.functions.invoke('siglo-admin-users',{
-        body:{action:'activation_link',email}
-      });
-      if(error) throw error;
-      if(data?.error) throw new Error(data.error);
-      if(!data?.activation_link) throw new Error('Supabase no devolvió el enlace de acceso.');
-
-      accessLinkValue.value=data.activation_link;
-      accessLinkPanel.hidden=false;
-      setMessage('Enlace generado correctamente. Compártelo únicamente con este usuario.','success');
-      await loadUsers(selectedId);
-      accessLinkPanel.hidden=false;
-      accessLinkValue.value=data.activation_link;
-      return true;
-    }catch(error){
-      console.error('Error generando enlace de acceso',error);
-      let detail=error?.message||'No fue posible generar el enlace de acceso.';
-      try{
-        if(error?.context){
-          const body=await error.context.json();
-          if(body?.error) detail=body.error;
-        }
-      }catch(_){}
-      setMessage(detail,'error');
-      return false;
-    }finally{
-      manualAccessBtn.disabled=false;
-    }
-  }
-
-  manualAccessBtn.addEventListener('click',async()=>{
-    const user=users.find(u=>Number(u.id)===Number(selectedId));
-    if(!user) return;
-    await generateAccessLink(user.correo);
-  });
-
-  copyAccessLinkBtn.addEventListener('click',async()=>{
-    const link=accessLinkValue.value.trim();
-    if(!link) return;
-    try{
-      await navigator.clipboard.writeText(link);
-      setMessage('Enlace copiado. Envíalo únicamente al usuario correspondiente.','success');
-    }catch(_){
-      accessLinkValue.focus();
-      accessLinkValue.select();
-      document.execCommand('copy');
-      setMessage('Enlace copiado. Envíalo únicamente al usuario correspondiente.','success');
-    }
-  });
-
   document.getElementById('newUserBtn').addEventListener('click',clearEditor);
   document.getElementById('cancelUserBtn').addEventListener('click',clearEditor);
   search.addEventListener('input',renderList);
@@ -257,7 +160,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
   document.getElementById('toggleAllOperational').addEventListener('click',()=>{
-    const inputs=operationalKeys.map(key=>document.querySelector('[data-permission="'+key+'"]')).filter(Boolean);
+    const inputs=operationalKeys
+      .map(key=>document.querySelector('[data-permission="'+key+'"]'))
+      .filter(Boolean);
     const shouldCheck=inputs.some(input=>!input.checked);
     inputs.forEach(input=>{input.checked=shouldCheck;});
   });
@@ -290,25 +195,53 @@ document.addEventListener('DOMContentLoaded',()=>{
       const {data,error}=await supabase.rpc('guardar_usuario_siglo',{p_payload:payload});
       if(error) throw error;
       selectedId=data?.id||Number(id)||null;
-      setMessage(isNew?'Usuario creado correctamente.':'Cambios guardados correctamente.','success');
       await loadUsers(selectedId);
 
       if(isNew && payload.estado==='ACTIVO'){
-        await invite(payload.correo);
+        setMessage('Usuario creado. Ya puede usar “Crear acceso inicial” en el Login con su Correo y Username.','success');
+      }else{
+        setMessage('Cambios guardados correctamente.','success');
       }
     }catch(error){
       console.error('Error guardando usuario',error);
       setMessage(error.message||'No fue posible guardar el usuario.','error');
     }finally{
       saveBtn.disabled=false;
-      saveBtn.textContent=isNew?'Guardar y enviar invitación':'Guardar cambios';
+      saveBtn.textContent=isNew?'Guardar usuario':'Guardar cambios';
     }
   });
 
-  inviteBtn.addEventListener('click',async()=>{
+  resetAccessBtn.addEventListener('click',async()=>{
     const user=users.find(u=>Number(u.id)===Number(selectedId));
     if(!user) return;
-    await invite(user.correo);
+
+    resetAccessBtn.disabled=true;
+    setMessage('Reiniciando el acceso de '+user.username+'…');
+
+    try{
+      const {data,error}=await supabase.functions.invoke('siglo-admin-users',{
+        body:{action:'reset_initial_access',email:user.correo}
+      });
+      if(error){
+        let detail=error.message||'No fue posible reiniciar el acceso.';
+        try{
+          if(error.context){
+            const body=await error.context.json();
+            if(body?.error) detail=body.error;
+          }
+        }catch(_){}
+        throw new Error(detail);
+      }
+      if(data?.error) throw new Error(data.error);
+
+      await loadUsers(selectedId);
+      setMessage('Acceso reiniciado. El usuario debe usar “Crear acceso inicial” para definir una nueva contraseña.','success');
+    }catch(error){
+      console.error('Error reiniciando acceso',error);
+      setMessage(error.message||'No fue posible reiniciar el acceso.','error');
+    }finally{
+      resetAccessBtn.disabled=false;
+    }
   });
 
   document.addEventListener('siglo:user-ready',()=>loadUsers().catch(error=>{
