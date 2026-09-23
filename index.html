@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260917-3">
   <link rel="stylesheet" href="css/styles.css?v=20260922-2">
-  <link rel="stylesheet" href="css/login-overrides.css?v=20260918-1">
+  <link rel="stylesheet" href="css/login-overrides.css?v=20260923-1">
 </head>
 <body data-page="login">
   <main class="login-shell">
@@ -81,6 +81,42 @@
 
           <button class="primary-button" type="submit">Ingresar <span>→</span></button>
           <p id="loginError" class="form-error" role="alert"></p>
+          <button class="text-link initial-access-link" id="createInitialAccess" type="button">Crear acceso inicial</button>
+        </form>
+
+        <form id="initialAccessForm" class="login-form" novalidate hidden>
+          <div class="password-setup-intro">
+            <strong>Crear acceso inicial</strong>
+            <span>Disponible únicamente para usuarios previamente autorizados por el Administrador de SIGLO.</span>
+          </div>
+
+          <label for="initialEmail">Correo corporativo</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input id="initialEmail" type="email" autocomplete="email" placeholder="tu.correo@empresa.com" required>
+          </div>
+
+          <label for="initialUsername">Username</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <input id="initialUsername" type="text" autocomplete="username" placeholder="Username asignado por el Administrador" required>
+          </div>
+
+          <label for="initialPassword">Contraseña</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input id="initialPassword" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
+          </div>
+
+          <label for="initialPasswordConfirm">Confirmar contraseña</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input id="initialPasswordConfirm" type="password" autocomplete="new-password" placeholder="Repite la contraseña" required>
+          </div>
+
+          <button class="primary-button password-save-button" type="submit">Crear acceso <span>→</span></button>
+          <p id="initialAccessError" class="form-error" role="alert"></p>
+          <button class="text-link initial-access-link" id="backToLogin" type="button">Volver a iniciar sesión</button>
         </form>
 
         <form id="passwordSetupForm" class="login-form" novalidate hidden>
@@ -125,6 +161,6 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js?v=20260918-1"></script>
-  <script src="js/app.js?v=20260922-7"></script>
+  <script src="js/app.js?v=20260923-1"></script>
 </body>
 </html>
