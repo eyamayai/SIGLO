@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const assetVersion = '20260922-7';
+  const assetVersion = '20260923-1';
 
   const assetStyle = document.createElement('style');
   assetStyle.textContent =
@@ -44,6 +44,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const error = document.getElementById('loginError');
   const passwordSetupForm = document.getElementById('passwordSetupForm');
   const passwordSetupError = document.getElementById('passwordSetupError');
+  const initialAccessForm = document.getElementById('initialAccessForm');
+  const initialAccessError = document.getElementById('initialAccessError');
   const authParams = new URLSearchParams(window.location.search);
   const authFlowType = String(window.sigloAuthFlowType || '').toLowerCase();
   const authSetupRequested = authParams.get('auth') === 'setup';
@@ -299,6 +301,97 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  document.getElementById('createInitialAccess')?.addEventListener('click', () => {
+    if (!form || !initialAccessForm) return;
+    if (initialAccessError) initialAccessError.textContent = '';
+    const initialEmail = document.getElementById('initialEmail');
+    if (initialEmail && email?.value) initialEmail.value = email.value.trim();
+    form.hidden = true;
+    if (passwordSetupForm) passwordSetupForm.hidden = true;
+    initialAccessForm.hidden = false;
+  });
+
+  document.getElementById('backToLogin')?.addEventListener('click', () => {
+    if (!form || !initialAccessForm) return;
+    initialAccessForm.hidden = true;
+    form.hidden = false;
+    if (initialAccessError) initialAccessError.textContent = '';
+  });
+
+  if (initialAccessForm) {
+    initialAccessForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (initialAccessError) initialAccessError.textContent = '';
+
+      const correo = document.getElementById('initialEmail')?.value.trim().toLowerCase() || '';
+      const username = document.getElementById('initialUsername')?.value.trim() || '';
+      const clave = document.getElementById('initialPassword')?.value || '';
+      const confirmacion = document.getElementById('initialPasswordConfirm')?.value || '';
+
+      if (!correo || !username || !clave || !confirmacion) {
+        if (initialAccessError) initialAccessError.textContent = 'Completa todos los campos.';
+        return;
+      }
+      if (clave.length < 8) {
+        if (initialAccessError) initialAccessError.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+        return;
+      }
+      if (clave !== confirmacion) {
+        if (initialAccessError) initialAccessError.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
+
+      const button = initialAccessForm.querySelector('button[type="submit"]');
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Creando acceso…';
+      }
+
+      try {
+        const { data, error: accessError } = await supabase.functions.invoke('siglo-initial-access', {
+          body: { email: correo, username, password: clave }
+        });
+
+        if (accessError) {
+          let detail = accessError.message || 'No fue posible crear el acceso.';
+          try {
+            if (accessError.context) {
+              const body = await accessError.context.json();
+              if (body?.error) detail = body.error;
+            }
+          } catch (_) {}
+          throw new Error(detail);
+        }
+        if (data?.error) throw new Error(data.error);
+
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: correo,
+          password: clave
+        });
+        if (signInError || !signInData.session) {
+          throw new Error(signInError?.message || 'El acceso fue creado, pero no fue posible iniciar sesión.');
+        }
+
+        const profile = await loadCurrentProfile();
+        if (!profile?.registrado || profile.estado !== 'ACTIVO') {
+          await supabase.auth.signOut();
+          throw new Error('El usuario no está habilitado para ingresar a SIGLO.');
+        }
+
+        localStorage.setItem('siglo_user', profile.username || correo);
+        window.location.href = 'inicio.html';
+      } catch (accessError) {
+        console.error('Error creando acceso inicial', accessError);
+        if (initialAccessError) initialAccessError.textContent = accessError.message || 'No fue posible crear el acceso inicial.';
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = 'Crear acceso <span>→</span>';
+        }
+      }
+    });
+  }
+
   if (passwordSetupForm) {
     passwordSetupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -357,26 +450,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (remember) remember.checked = true;
   }
 
-  document.getElementById('forgotPassword')?.addEventListener('click', async () => {
-    if (error) error.textContent = '';
-    const correo = email?.value.trim() || '';
-    if (!correo) {
-      if (error) error.textContent = 'Escribe primero tu correo corporativo.';
-      return;
+  document.getElementById('forgotPassword')?.addEventListener('click', () => {
+    if (error) {
+      error.textContent = 'Solicita al Administrador reiniciar tu acceso. Después usa “Crear acceso inicial” para definir una nueva contraseña.';
     }
-
-    const redirectTo = 'https://eyamayai.github.io/SIGLO/index.html?auth=setup';
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(correo, { redirectTo });
-    if (resetError) {
-      if (error) {
-        const raw=String(resetError.message||'');
-        error.textContent=/rate limit/i.test(raw)
-          ? 'Se alcanzó temporalmente el límite de correos de Supabase. Espera a que se libere el cupo o solicita al Administrador un enlace de acceso.'
-          : (raw || 'No fue posible enviar la recuperación.');
-      }
-      return;
-    }
-    showToast('Enviamos las instrucciones de recuperación a tu correo.');
   });
 
   document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
