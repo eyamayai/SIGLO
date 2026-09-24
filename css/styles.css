@@ -108,3 +108,7 @@
   }
   .sidebar-bottom{margin-top:auto!important}
 }
+
+
+/* Respeto global del atributo hidden */
+[hidden]{display:none!important}
