@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const assetVersion = '20260923-1';
+  const assetVersion = '20260925-2';
 
   const assetStyle = document.createElement('style');
   assetStyle.textContent =
@@ -59,6 +59,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  function ensureConsumptionsNav() {
+    document.querySelectorAll('.sidebar nav').forEach(nav => {
+      if (nav.querySelector('a[href="consumos.html"]')) return;
+      const dispatch = nav.querySelector('a[href="despachos.html"]');
+      if (!dispatch) return;
+      const link = document.createElement('a');
+      link.className = 'nav-link' + ((window.location.pathname.split('/').pop() || '').toLowerCase() === 'consumos.html' ? ' active' : '');
+      link.href = 'consumos.html';
+      link.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/><path d="M4 4h16v16H4z"/></svg>Consumos';
+      dispatch.insertAdjacentElement('afterend', link);
+    });
+  }
+  ensureConsumptionsNav();
+
   function auditAccess(permisos = {}) {
     return [
       'auditoria_carga',
@@ -73,6 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const map = {
       'ingresos.html':'ingresos',
       'despachos.html':'despachos',
+      'consumos.html':'consumos',
       'salidas.html':'salidas',
       'devoluciones.html':'devoluciones',
       'desmonte.html':'desmonte',
