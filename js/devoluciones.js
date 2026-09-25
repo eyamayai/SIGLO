@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     registerBtn.disabled=false;bar.classList.remove('error');bar.classList.add('ready');
     title.textContent='Devolución lista para registrar';
-    help.textContent='SIGLO validará que todo el material tenga un despacho pendiente antes de modificar el inventario.';
+    help.textContent='SIGLO cerrará el saldo reconocido y recibirá también cualquier excedente no serializado como devolución con responsable no identificado.';
   }
 
   destinationSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
@@ -443,7 +443,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     devolucionRegistrada=true;registerBtn.innerHTML='Registrado ✓';
-    processMessage.textContent=`Devolución ${data?.documento||payload.documento} registrada · destino ${data?.destino||payload.destino} · ${data?.movimientos||0} movimiento(s).`;
+    const extras=[];
+     if(Number(data?.regularizaciones_tecnico||0)>0) extras.push(`${data.regularizaciones_tecnico} regularización(es) de técnico`);
+     if(Number(data?.unidades_sin_responsable||0)>0) extras.push(`${data.unidades_sin_responsable} unidad(es) sin responsable identificado`);
+     processMessage.textContent=`Devolución ${data?.documento||payload.documento} registrada · destino ${data?.destino||payload.destino} · ${data?.movimientos||0} movimiento(s)${extras.length?' · '+extras.join(' · '):''}.`;
     processMessage.className='process-message success';
     validateRegistration();
   });
