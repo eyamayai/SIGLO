@@ -65,6 +65,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  function movementLabel(value) {
+    const map={
+      'REGULARIZACION_TECNICO':'REGULARIZACIÓN TÉCNICO',
+      'DEVOLUCION_SIN_RESPONSABLE':'DEVOLUCIÓN SIN RESPONSABLE',
+      'DEVOLUCION':'DEVOLUCIÓN'
+    };
+    return map[value]||String(value||'').replaceAll('_',' ');
+  }
+
   function renderKpis(kpis = {}) {
     document.getElementById('kpiMovTotal').textContent = numberFormat.format(Number(kpis.movimientos_total || 0));
     document.getElementById('kpiIngresos').textContent = numberFormat.format(Number(kpis.movimientos_ingreso || 0));
@@ -85,13 +94,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     body.innerHTML = rows.map(row => {
       const movementClass = row.tipo_movimiento === 'INGRESO'
         ? 'in'
-        : (row.tipo_movimiento === 'DEVOLUCION'
+        : (['DEVOLUCION','DEVOLUCION_SIN_RESPONSABLE'].includes(row.tipo_movimiento)
           ? 'return'
+          : (row.tipo_movimiento === 'REGULARIZACION_TECNICO'
+            ? 'initial'
           : (row.tipo_movimiento === 'DESMONTE'
             ? 'dismantle'
             : (row.tipo_movimiento === 'PREALERTA'
               ? 'prealert'
-              : (row.tipo_movimiento === 'CARGA INICIAL' ? 'initial' : 'out'))));
+              : (row.tipo_movimiento === 'CARGA INICIAL' ? 'initial' : 'out')))));
       const statusClass = row.estado_inventario === 'Disponible'
         ? 'available'
         : ((row.estado_inventario === 'Garantía' || row.estado_inventario === 'Inversa')
@@ -100,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return `<tr>
         <td>${escapeHtml(displayDate(row.fecha_documento || row.fecha_registro))}</td>
         <td class="document-cell">${escapeHtml(row.documento)}</td>
-        <td><span class="move-pill ${movementClass}">${escapeHtml(row.tipo_movimiento)}</span></td>
+        <td><span class="move-pill ${movementClass}">${escapeHtml(movementLabel(row.tipo_movimiento))}</span></td>
         <td class="code-cell">${escapeHtml(row.codigo_sap)}</td>
         <td class="description-cell">${escapeHtml(row.descripcion)}</td>
         <td class="serial-cell">${escapeHtml(row.serial || '—')}</td>
