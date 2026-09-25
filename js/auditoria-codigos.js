@@ -1,9 +1,16 @@
 document.addEventListener('DOMContentLoaded',async()=>{
- const A=window.SigloAudit,supabase=window.sigloSupabase,input=document.getElementById('excelInput'),validateBtn=document.getElementById('validateBtn'),registerBtn=document.getElementById('registerBtn'),message=document.getElementById('auditMessage');
+ const A=window.SigloAudit,supabase=window.sigloSupabase,input=document.getElementById('excelInput'),validateBtn=document.getElementById('validateBtn'),registerBtn=document.getElementById('registerBtn'),replaceBtn=document.getElementById('replaceMasterBtn'),message=document.getElementById('auditMessage');
  let file=null,rows=null,validation=null,registered=false,master=[];
 
  document.getElementById('downloadTemplateBtn').addEventListener('click',()=>A.downloadTemplate('codigos'));
- input.addEventListener('change',()=>{file=input.files?.[0]||null;rows=null;validation=null;registered=false;document.getElementById('previewSection').hidden=true;document.getElementById('fileName').textContent=file?.name||'Seleccionar Excel';validateBtn.disabled=!file;message.textContent='';});
+ input.addEventListener('change',()=>{file=input.files?.[0]||null;rows=null;validation=null;registered=false;document.getElementById('previewSection').hidden=true;document.getElementById('fileName').textContent=file?.name||'Seleccionar Excel';validateBtn.disabled=!file;replaceBtn.disabled=!file;message.textContent='';});
+
+ async function readRows(){
+   const wb=await A.readWorkbook(file);
+   const parsed=A.sheetRows(wb,'CODIGOS_SAP',{codigo_sap:['Código SAP','Codigo SAP'],dominio:['Dominion'],descripcion:['Descripción','Descripcion'],topologia:['Topología','Topologia'],lote:['Lote']}).map(r=>({...r,topologia:String(r.topologia).toUpperCase(),lote:String(r.lote).toUpperCase()}));
+   if(!parsed.length)throw new Error('La hoja CODIGOS_SAP está vacía.');
+   return parsed;
+ }
 
  async function loadMaster(){
    const {data,error}=await supabase.rpc('consultar_maestra_codigos');
@@ -35,12 +42,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
  validateBtn.addEventListener('click',async()=>{
    validateBtn.disabled=true;validateBtn.textContent='Validando…';message.textContent='Comparando códigos con la maestra actual…';message.className='audit-message';
    try{
-     const wb=await A.readWorkbook(file);
-     rows=A.sheetRows(wb,'CODIGOS_SAP',{codigo_sap:['Código SAP','Codigo SAP'],dominio:['Dominion'],descripcion:['Descripción','Descripcion'],topologia:['Topología','Topologia'],lote:['Lote']}).map(r=>({...r,topologia:String(r.topologia).toUpperCase(),lote:String(r.lote).toUpperCase()}));
-     if(!rows.length)throw new Error('La hoja CODIGOS_SAP está vacía.');
+     rows=await readRows();
      const {data,error}=await supabase.rpc('validar_maestra_codigos',{p_rows:rows});if(error)throw error;render(data);message.textContent='Validación terminada.';message.className='audit-message success';
    }catch(e){message.textContent=e.message||'No fue posible validar.';message.className='audit-message error';document.getElementById('previewSection').hidden=true;}
-   finally{validateBtn.disabled=false;validateBtn.textContent='Validar archivo';}
+   finally{validateBtn.disabled=!file;validateBtn.textContent='Validar archivo';}
  });
  registerBtn.addEventListener('click',async()=>{
    updateRegister();if(registerBtn.disabled||!rows)return;const old=registerBtn.textContent;registerBtn.disabled=true;registerBtn.textContent='Actualizando…';
@@ -48,5 +53,29 @@ document.addEventListener('DOMContentLoaded',async()=>{
    if(error){registerBtn.textContent=old;registered=false;updateRegister();const bar=document.querySelector('.audit-register-bar');bar.classList.remove('ready');bar.classList.add('error');document.getElementById('registerTitle').textContent='No se pudo actualizar la maestra';document.getElementById('registerHelp').textContent=error.message;return;}
    registered=true;registerBtn.textContent='Actualizado ✓';message.textContent='Maestra Códigos SAP actualizada correctamente.';message.className='audit-message success';updateRegister();await loadMaster();
  });
+
+ replaceBtn.addEventListener('click',async()=>{
+   if(!file)return;
+   const oldText=replaceBtn.textContent;
+   try{
+     replaceBtn.disabled=true;validateBtn.disabled=true;registerBtn.disabled=true;
+     message.textContent='Preparando reemplazo completo de la maestra…';message.className='audit-message';
+     const replaceRows=await readRows();
+     const currentCount=master.length;
+     const ok=window.confirm(`Esta acción reemplazará completamente la Maestra de Códigos SAP actual (${currentCount} registros) por los ${replaceRows.length} registros del archivo seleccionado.\n\nInventarios, saldos y movimientos NO serán eliminados.\n\n¿Deseas continuar?`);
+     if(!ok){message.textContent='Reemplazo cancelado. La maestra actual no fue modificada.';message.className='audit-message';return;}
+     replaceBtn.textContent='Reemplazando…';
+     const {data,error}=await supabase.rpc('reemplazar_maestra_codigos',{p_rows:replaceRows});
+     if(error)throw error;
+     rows=null;validation=null;registered=false;document.getElementById('previewSection').hidden=true;
+     message.textContent=`Maestra reemplazada correctamente: ${data?.procesados||replaceRows.length} combinaciones, ${data?.saps||0} códigos SAP.`;message.className='audit-message success';
+     await loadMaster();
+   }catch(e){
+     message.textContent=e.message||'No fue posible reemplazar la maestra. La información anterior se conserva.';message.className='audit-message error';
+   }finally{
+     replaceBtn.textContent=oldText;replaceBtn.disabled=!file;validateBtn.disabled=!file;
+   }
+ });
+
  await loadMaster();
 });
