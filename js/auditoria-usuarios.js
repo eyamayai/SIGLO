@@ -11,11 +11,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   let selectedId=null;
 
   const permissionKeys=[
-    'ingresos','despachos','salidas','devoluciones','desmonte','prealerta',
+    'ingresos','despachos','consumos','salidas','devoluciones','desmonte','prealerta',
     'saldos','movimientos','informes',
     'auditoria_carga','auditoria_tecnicos','auditoria_codigos','auditoria_documentos'
   ];
-  const operationalKeys=['ingresos','despachos','salidas','devoluciones','desmonte','prealerta','saldos','movimientos','informes'];
+  const operationalKeys=['ingresos','despachos','consumos','salidas','devoluciones','desmonte','prealerta','saldos','movimientos','informes'];
 
   const esc=value=>String(value??'')
     .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
