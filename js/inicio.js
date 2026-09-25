@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const map={
       'INGRESO':['IN','registró el ingreso',''],
       'DESPACHO':['DES','registró el despacho','out'],
+      'CONSUMO':['CON','registró consumos','return'],
       'SALIDA':['SAL','procesó la salida','out'],
       'DEVOLUCION':['DEV','registró la devolución','return'],
       'DESMONTE':['DSM','registró Desmonte','desmonte'],
