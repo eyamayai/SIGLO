@@ -99,7 +99,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
     registered=true;registerBtn.textContent='Registrado ✓';message.textContent=`Carga ${data?.documento||''} registrada · ${data?.nuevos||0} registro(s) nuevo(s).`;message.className='audit-message success';updateRegister();
   });
-});
 
   resultFilter?.addEventListener('change',renderRows);
 
@@ -131,3 +130,4 @@ document.addEventListener('DOMContentLoaded',()=>{
     const stamp=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota'}).format(new Date()).replaceAll('-','');
     XLSX.writeFile(wb,`SIGLO_Novedades_Carga_Inicial_${stamp}.xlsx`);
   });
+});
