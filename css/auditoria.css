@@ -11,3 +11,14 @@
 @media(max-width:800px){.app-shell{grid-template-columns:1fr}.audit-main{padding:20px 16px}.audit-heading,.preview-heading,.master-toolbar,.audit-register-bar{align-items:stretch;flex-direction:column}.audit-actions .audit-button{flex:1}.audit-register-bar .audit-button{width:100%}}
 @media(max-width:520px){.audit-summary{grid-template-columns:1fr}}
 .audit-filter{height:38px;border:1px solid #cad9e5;border-radius:9px;padding:0 10px;background:#fff;color:#1d344a;font:inherit;font-size:12px}
+
+.preview-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.preview-tools .audit-filter{min-width:180px}
+.audit-button.export-issues{border-color:#d07a32;color:#9a5118;background:#fff8f1}
+.audit-button.export-issues:hover:not(:disabled){background:#ffefe0}
+.audit-kpi{cursor:default}
+@media(max-width:800px){
+  .preview-tools{width:100%;justify-content:stretch}
+  .preview-tools .audit-filter,.preview-tools .audit-button{width:100%}
+  .preview-tools .count-chip{align-self:flex-start}
+}
