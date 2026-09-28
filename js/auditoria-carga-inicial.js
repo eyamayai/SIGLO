@@ -3,11 +3,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   const input=document.getElementById('excelInput'), validateBtn=document.getElementById('validateBtn');
   const registerBtn=document.getElementById('registerBtn'), message=document.getElementById('auditMessage');
   const preview=document.getElementById('previewSection'), body=document.getElementById('previewBody');
-  let file=null, payload=null, validation=null, registered=false;
+  const resultFilter=document.getElementById('resultFilter'), exportIssuesBtn=document.getElementById('exportIssuesBtn');
+  let file=null, payload=null, validation=null, registered=false, allRows=[];
 
   document.getElementById('downloadTemplateBtn').addEventListener('click',()=>A.downloadTemplate('carga-inicial'));
   input.addEventListener('change',()=>{
-    file=input.files?.[0]||null; payload=null; validation=null; registered=false; preview.hidden=true;
+    file=input.files?.[0]||null; payload=null; validation=null; registered=false; allRows=[]; preview.hidden=true;
+    resultFilter.value='TODOS'; exportIssuesBtn.disabled=true;
     document.getElementById('fileName').textContent=file?.name||'Seleccionar Excel';
     validateBtn.disabled=!file; message.textContent=''; message.className='audit-message';
   });
@@ -21,23 +23,40 @@ document.addEventListener('DOMContentLoaded',()=>{
     lote:['Lote'],almacen:['Almacén','Almacen'],ubicacion:['Ubicación','Ubicacion'],tipo:['Tipo'],cantidad:['Cantidad']
   };}
 
+  function rowsForFilter(){
+    const filter=resultFilter.value||'TODOS';
+    if(filter==='TODOS') return allRows;
+    if(filter==='NOVEDADES') return allRows.filter(r=>['CONFLICTO','ERROR'].includes(String(r.resultado||'').toUpperCase()));
+    return allRows.filter(r=>String(r.resultado||'').toUpperCase()===filter);
+  }
+
+  function renderRows(){
+    const rows=rowsForFilter();
+    document.getElementById('rowCount').textContent=rows.length===allRows.length
+      ? `${rows.length} fila${rows.length===1?'':'s'}`
+      : `${rows.length} de ${allRows.length} filas`;
+    body.innerHTML=rows.length?rows.map(r=>`<tr>
+      <td>${A.escapeHtml(r._grupo)}</td><td>${A.escapeHtml(r.serial||'—')}</td><td><strong>${A.escapeHtml(r.codigo_sap)}</strong></td>
+      <td>${A.escapeHtml(r.dominio)}</td><td class="description">${A.escapeHtml(r.descripcion)}</td><td>${A.escapeHtml(r.lote)}</td>
+      <td>${A.escapeHtml(r.almacen)}</td><td>${A.escapeHtml(r.ubicacion)}</td><td>${A.escapeHtml(r.tipo)}</td><td>${A.escapeHtml(r.cantidad||1)}</td>
+      <td><span class="result-pill ${A.resultClass(r.resultado)}">${A.escapeHtml(r.resultado)}</span></td><td>${A.escapeHtml(r.detalle)}</td>
+    </tr>`).join(''):'<tr class="empty-row"><td colspan="12">No hay filas para este filtro.</td></tr>';
+  }
+
   function render(v){
     validation=v; const s=v.resumen||{};
     document.getElementById('kpiNew').textContent=s.nuevos||0;
     document.getElementById('kpiSame').textContent=s.coinciden||0;
     document.getElementById('kpiConflict').textContent=s.conflictos||0;
     document.getElementById('kpiError').textContent=s.errores||0;
-    const rows=[
+    allRows=[
       ...(v.serializados||[]).map(r=>({...r,_grupo:'SERIALIZADO',cantidad:1})),
       ...(v.no_serializados||[]).map(r=>({...r,_grupo:'NO SERIALIZADO',serial:'—'}))
     ];
-    document.getElementById('rowCount').textContent=`${rows.length} fila${rows.length===1?'':'s'}`;
-    body.innerHTML=rows.length?rows.map(r=>`<tr>
-      <td>${A.escapeHtml(r._grupo)}</td><td>${A.escapeHtml(r.serial||'—')}</td><td><strong>${A.escapeHtml(r.codigo_sap)}</strong></td>
-      <td>${A.escapeHtml(r.dominio)}</td><td class="description">${A.escapeHtml(r.descripcion)}</td><td>${A.escapeHtml(r.lote)}</td>
-      <td>${A.escapeHtml(r.almacen)}</td><td>${A.escapeHtml(r.ubicacion)}</td><td>${A.escapeHtml(r.tipo)}</td><td>${A.escapeHtml(r.cantidad||1)}</td>
-      <td><span class="result-pill ${A.resultClass(r.resultado)}">${A.escapeHtml(r.resultado)}</span></td><td>${A.escapeHtml(r.detalle)}</td>
-    </tr>`).join(''):'<tr class="empty-row"><td colspan="12">Sin filas para mostrar.</td></tr>';
+    const issues=allRows.filter(r=>['CONFLICTO','ERROR'].includes(String(r.resultado||'').toUpperCase()));
+    exportIssuesBtn.disabled=issues.length===0;
+    resultFilter.value=issues.length?'NOVEDADES':'TODOS';
+    renderRows();
     preview.hidden=false; updateRegister();
   }
 
@@ -81,3 +100,34 @@ document.addEventListener('DOMContentLoaded',()=>{
     registered=true;registerBtn.textContent='Registrado ✓';message.textContent=`Carga ${data?.documento||''} registrada · ${data?.nuevos||0} registro(s) nuevo(s).`;message.className='audit-message success';updateRegister();
   });
 });
+
+  resultFilter?.addEventListener('change',renderRows);
+
+  exportIssuesBtn?.addEventListener('click',()=>{
+    const issues=allRows.filter(r=>['CONFLICTO','ERROR'].includes(String(r.resultado||'').toUpperCase()));
+    if(!issues.length) return;
+    if(!window.XLSX){message.textContent='No se pudo cargar el generador de Excel.';message.className='audit-message error';return;}
+    const data=issues.map(r=>({
+      'Grupo':r._grupo,
+      'Serial':r.serial==='—'?'':r.serial||'',
+      'Código SAP':r.codigo_sap||'',
+      'Dominion':r.dominio||'',
+      'Descripción':r.descripcion||'',
+      'Lote':r.lote||'',
+      'Almacén':r.almacen||'',
+      'Ubicación':r.ubicacion||'',
+      'Tipo':r.tipo||'',
+      'Cantidad':r.cantidad||1,
+      'Resultado':r.resultado||'',
+      'Detalle':r.detalle||''
+    }));
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.json_to_sheet(data);
+    ws['!cols']=[
+      {wch:18},{wch:24},{wch:14},{wch:18},{wch:45},{wch:15},
+      {wch:12},{wch:16},{wch:14},{wch:12},{wch:14},{wch:70}
+    ];
+    XLSX.utils.book_append_sheet(wb,ws,'NOVEDADES');
+    const stamp=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota'}).format(new Date()).replaceAll('-','');
+    XLSX.writeFile(wb,`SIGLO_Novedades_Carga_Inicial_${stamp}.xlsx`);
+  });
