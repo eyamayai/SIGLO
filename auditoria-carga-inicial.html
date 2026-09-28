@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-14">
-<link rel="stylesheet" href="css/styles.css?v=20260924-1"><link rel="stylesheet" href="css/auditoria.css?v=20260918-1">
+<link rel="stylesheet" href="css/styles.css?v=20260924-1"><link rel="stylesheet" href="css/auditoria.css?v=20260928-1">
 </head><body class="dashboard-body"><div class="app-shell">
 <aside class="sidebar">
   <div class="sidebar-brand"><img src="assets/icono-siglo.png?v=20260918-14" alt="Icono SIGLO"><strong>SIGLO</strong></div>
@@ -48,7 +48,21 @@
   </div>
 
   <section class="audit-card preview-card">
-    <div class="preview-heading"><div><h2>Vista previa</h2><p>Coincide no se duplica. Conflicto o Error bloquean toda la carga.</p></div><span id="rowCount" class="count-chip">0 filas</span></div>
+    <div class="preview-heading">
+      <div><h2>Vista previa</h2><p>Coincide no se duplica. Conflicto o Error bloquean toda la carga.</p></div>
+      <div class="preview-tools">
+        <select id="resultFilter" class="audit-filter" aria-label="Filtrar por resultado">
+          <option value="TODOS">Todos los resultados</option>
+          <option value="NOVEDADES">Solo novedades</option>
+          <option value="NUEVO">Nuevos</option>
+          <option value="COINCIDE">Coinciden</option>
+          <option value="CONFLICTO">Conflictos</option>
+          <option value="ERROR">Errores</option>
+        </select>
+        <button id="exportIssuesBtn" class="audit-button export-issues" type="button" disabled>Exportar novedades</button>
+        <span id="rowCount" class="count-chip">0 filas</span>
+      </div>
+    </div>
     <div class="audit-table-wrap"><table class="audit-table"><thead><tr>
       <th>Grupo</th><th>Serial</th><th>Código SAP</th><th>Dominion</th><th>Descripción</th><th>Lote</th><th>Almacén</th><th>Ubicación</th><th>Tipo</th><th>Cantidad</th><th>Resultado</th><th>Detalle</th>
     </tr></thead><tbody id="previewBody"></tbody></table></div>
@@ -65,5 +79,5 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script><script src="js/app.js?v=20260925-2"></script>
-<script src="js/auditoria-common.js?v=20260918-1"></script><script src="js/auditoria-carga-inicial.js?v=20260918-1"></script>
+<script src="js/auditoria-common.js?v=20260918-1"></script><script src="js/auditoria-carga-inicial.js?v=20260928-1"></script>
 </body></html>
