@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const map={
       'REGULARIZACION_TECNICO':'REGULARIZACIÓN TÉCNICO',
       'DEVOLUCION_SIN_RESPONSABLE':'DEVOLUCIÓN SIN RESPONSABLE',
+      'DEVOLUCION_PRE_SIGLO':'DEVOLUCIÓN PRE-SIGLO',
       'DEVOLUCION':'DEVOLUCIÓN'
     };
     return map[value]||String(value||'').replaceAll('_',' ');
@@ -94,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     body.innerHTML = rows.map(row => {
       const movementClass = row.tipo_movimiento === 'INGRESO'
         ? 'in'
-        : (['DEVOLUCION','DEVOLUCION_SIN_RESPONSABLE'].includes(row.tipo_movimiento)
+        : (['DEVOLUCION','DEVOLUCION_SIN_RESPONSABLE','DEVOLUCION_PRE_SIGLO'].includes(row.tipo_movimiento)
           ? 'return'
           : (row.tipo_movimiento === 'REGULARIZACION_TECNICO'
             ? 'initial'
