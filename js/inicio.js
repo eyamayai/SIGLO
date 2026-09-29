@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 
   function renderActivity(rows){
-    const visible=(Array.isArray(rows)?rows:[]).slice(0,6);
+    const visible=Array.isArray(rows)?rows:[];
     if(!visible.length){
       activityList.innerHTML='<div class="empty-dashboard">No hay actividad registrada en este periodo.</div>';
       return;
@@ -114,9 +114,17 @@ document.addEventListener('DOMContentLoaded',()=>{
       document.getElementById('kpiEntries').textContent=k.ingresos_hoy||0;
       document.getElementById('kpiOuts').textContent=k.salidas_hoy||0;
       document.getElementById('kpiAlerts').textContent=k.alertas_activas||0;
+      const formatDate=value=>{
+        if(!value) return '';
+        const parts=String(value).slice(0,10).split('-');
+        return parts.length===3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : String(value);
+      };
+      const total=Number(data?.actividad_total??(data?.actividad||[]).length);
+      const desde=formatDate(data?.periodo_desde);
+      const hasta=formatDate(data?.periodo_hasta);
       document.getElementById('activitySubtitle').textContent=days===1
-        ? 'Operaciones procesadas hoy'
-        : 'Operaciones procesadas en los últimos '+days+' días';
+        ? `Operaciones procesadas hoy · ${total} operación${total===1?'':'es'}`
+        : `${desde} al ${hasta} · ${total} operación${total===1?'':'es'}`;
 
       renderActivity(data?.actividad||[]);
       renderAlerts(data?.alertas||[]);
