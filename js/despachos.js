@@ -190,8 +190,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (digits >= 6) return true;
 
       // Algunos equipos usan seriales tipo MAC/hexadecimal, por ejemplo E4BFFAD442FC.
-      // Se admiten si son suficientemente largos y combinan letras hexadecimales con dígitos.
-      return hexadecimal && compact.length >= 10 && digits >= 2;
+      if (hexadecimal && compact.length >= 10 && digits >= 2) return true;
+
+      // Otros equipos usan seriales alfanuméricos largos no hexadecimales,
+      // por ejemplo W8WJ08NGSHVX. Se exige longitud y mezcla de letras/dígitos.
+      const letters = (compact.match(/[A-Z]/gi) || []).length;
+      return compact.length >= 10 && digits >= 2 && letters >= 4;
     });
     const expected = Math.max(0, Math.round(quantity));
     return expected ? candidates.slice(-expected) : [];
