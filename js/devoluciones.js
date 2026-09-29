@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const destinationEffect = document.getElementById('destinationEffect');
   const desmonteLocationWrap = document.getElementById('returnDesmonteLocationWrap');
   const desmonteLocationSelect = document.getElementById('returnDesmonteLocation');
+  const desmonteSegmentWrap = document.getElementById('returnDesmonteSegmentWrap');
+  const desmonteSegmentSelect = document.getElementById('returnDesmonteSegment');
   const librePlacementWrap = document.getElementById('returnLibrePlacementWrap');
   const libreWarehouseSelect = document.getElementById('returnLibreWarehouse');
   const libreLocationSelect = document.getElementById('returnLibreLocation');
@@ -62,6 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
       libreLocationSelect.innerHTML='<option value="">Seleccionar…</option>'+locationCatalog
         .map(item=>`<option value="${escapeHtml(item.ubicacion)}">${escapeHtml(item.ubicacion)} · ${escapeHtml(item.segmento)}</option>`)
         .join('');
+      const segmentos=[...new Set(locationCatalog.map(item=>String(item.segmento||'').trim()).filter(Boolean))].sort();
+      desmonteSegmentSelect.innerHTML='<option value="">Automático</option>'+segmentos
+        .map(seg=>`<option value="${escapeHtml(seg)}">${escapeHtml(seg)}</option>`).join('');
 
       catalogStatus.textContent = `Catálogo listo · ${catalog.length} códigos SAP cargados`;
       catalogStatus.className = 'catalog-status ready';
@@ -353,7 +358,9 @@ document.addEventListener('DOMContentLoaded', () => {
     destinationEffect.className='destination-effect';
     if(value==='LIBRE'){
       desmonteLocationWrap.hidden=true;
+      desmonteSegmentWrap.hidden=true;
       desmonteLocationSelect.value='';
+      desmonteSegmentSelect.value='';
       librePlacementWrap.hidden=!needsPlacement;
       destinationEffect.classList.add('libre');
       destinationEffect.textContent=needsPlacement
@@ -362,15 +369,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }else if(value==='DESMONTE'){
       librePlacementWrap.hidden=true;
       desmonteLocationWrap.hidden=false;
+      desmonteSegmentWrap.hidden=false;
       const ubicacion=desmonteLocationSelect.value;
+      const segmentoManual=desmonteSegmentSelect.value;
       destinationEffect.classList.add('desmonte');
       destinationEffect.textContent=ubicacion
-        ? 'Desmonte: material → Garantía / Dañado · Stock 4 · NOVALORADO · A221 · '+ubicacion+'. El saldo queda separado como DESMONTE.'
-        : 'Desmonte: selecciona QMINTIC o QQ01Q1 para definir la ubicación de todo el PDF.';
+        ? 'Desmonte: material → Garantía / Dañado · Stock 4 · NOVALORADO · A221 · '+ubicacion+'. El Segmento se conserva/infiere'+(segmentoManual?' o usa manualmente '+segmentoManual:'')+'.'
+        : 'Desmonte: selecciona QMINTIC o QQ01Q1. El Segmento se conserva o se infiere; usa el selector manual solo si hace falta.';
     }else{
       desmonteLocationWrap.hidden=true;
+      desmonteSegmentWrap.hidden=true;
       librePlacementWrap.hidden=true;
       desmonteLocationSelect.value='';
+      desmonteSegmentSelect.value='';
       destinationEffect.textContent='Selecciona Libre o Desmonte para ver el resultado.';
     }
   }
@@ -425,6 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   destinationSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
   desmonteLocationSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
+  desmonteSegmentSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
   libreWarehouseSelect?.addEventListener('change',validateRegistration);
   libreLocationSelect?.addEventListener('change',()=>{updateLibreSegment();validateRegistration();});
 
@@ -481,6 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
       cedula:currentMetadata.cedula||'',
       destino:destinationSelect.value,
       ubicacion_desmonte:destinationSelect.value==='DESMONTE'?desmonteLocationSelect.value:'',
+      segmento_desmonte:destinationSelect.value==='DESMONTE'?desmonteSegmentSelect.value:'',
       almacen_libre:destinationSelect.value==='LIBRE'?libreWarehouseSelect.value:'',
       ubicacion_libre:destinationSelect.value==='LIBRE'?libreLocationSelect.value:'',
       seriales:currentClassification.serializados.map(row=>({serial:row.serial,codigo_sap:row.codigo_sap,dominio:row.dominio})),
@@ -522,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
     processMessage.textContent='';processMessage.className='process-message';resultsSection.hidden=true;
     currentMetadata={};currentClassification=null;
     currentAnalysis={seriales_pre_siglo:0,unidades_pre_siglo:0,unidades_sin_responsable:0,requiere_ubicacion_libre:false,bloqueos:[],hallazgos:[]};
-    devolucionRegistrada=false;destinationSelect.value='';desmonteLocationSelect.value='';libreWarehouseSelect.value='';libreLocationSelect.value='';libreSegment.textContent='Segmento: —';
+    devolucionRegistrada=false;destinationSelect.value='';desmonteLocationSelect.value='';desmonteSegmentSelect.value='';libreWarehouseSelect.value='';libreLocationSelect.value='';libreSegment.textContent='Segmento: —';
     updatePreSigloNotice();updateDestinationEffect();updateProcessButton();dropZone.scrollIntoView({behavior:'smooth',block:'center'});
   });
 
