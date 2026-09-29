@@ -13,12 +13,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const destinationEffect = document.getElementById('destinationEffect');
   const desmonteLocationWrap = document.getElementById('returnDesmonteLocationWrap');
   const desmonteLocationSelect = document.getElementById('returnDesmonteLocation');
+  const librePlacementWrap = document.getElementById('returnLibrePlacementWrap');
+  const libreWarehouseSelect = document.getElementById('returnLibreWarehouse');
+  const libreLocationSelect = document.getElementById('returnLibreLocation');
+  const libreSegment = document.getElementById('returnLibreSegment');
+  const preSigloNotice = document.getElementById('preSigloNotice');
   const registerBtn = document.getElementById('registerReturnBtn');
 
   let currentFile = null;
   let catalogMap = new Map();
   let currentMetadata = {};
   let currentClassification = null;
+  let currentAnalysis = {seriales_pre_siglo:0,unidades_pre_siglo:0,unidades_sin_responsable:0,requiere_ubicacion_libre:false,bloqueos:[],hallazgos:[]};
+  let locationCatalog = [];
   let devolucionRegistrada = false;
 
   if (window.pdfjsLib) {
@@ -47,6 +54,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       catalogMap = new Map(catalog.map(item => [normalizeCode(item.codigo_sap), item]));
+
+      if (supabase) {
+        const {data:locations,error:locationError}=await supabase.rpc('consultar_catalogo_ubicaciones');
+        if(!locationError && Array.isArray(locations)) locationCatalog=locations;
+      }
+      libreLocationSelect.innerHTML='<option value="">Seleccionar…</option>'+locationCatalog
+        .map(item=>`<option value="${escapeHtml(item.ubicacion)}">${escapeHtml(item.ubicacion)} · ${escapeHtml(item.segmento)}</option>`)
+        .join('');
+
       catalogStatus.textContent = `Catálogo listo · ${catalog.length} códigos SAP cargados`;
       catalogStatus.className = 'catalog-status ready';
       updateProcessButton();
@@ -276,9 +292,12 @@ document.addEventListener('DOMContentLoaded', () => {
     body.innerHTML=rows.map(row=>`<tr>${columns.map(key=>`<td>${escapeHtml(row[key])}</td>`).join('')}</tr>`).join('');
   }
 
-  function renderResults(metadata,classification){
-    currentMetadata={...metadata}; currentClassification=classification; devolucionRegistrada=false;
-    destinationSelect.value='';
+  function renderResults(metadata,classification,analysis){
+    currentMetadata={...metadata}; currentClassification=classification;
+    currentAnalysis=analysis||{seriales_pre_siglo:0,unidades_pre_siglo:0,unidades_sin_responsable:0,requiere_ubicacion_libre:false,bloqueos:[],hallazgos:[]};
+    devolucionRegistrada=false;
+    destinationSelect.value=''; libreWarehouseSelect.value=''; libreLocationSelect.value=''; libreSegment.textContent='Segmento: —';
+    updatePreSigloNotice();
     updateDestinationEffect();
 
     document.getElementById('metaDocumento').textContent=metadata.documento||'No detectado';
@@ -297,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!metadata.cedula) messages.push(metadata.cedulaLookupMessage||'No se encontró la cédula del técnico en la base de datos.');
     messages.push(...classification.serialWarnings);
     classification.revisar.forEach(item=>messages.push(`${item.codigo_sap}/${item.dominio}: Código SAP sin topología configurada.`));
+    (currentAnalysis.bloqueos||[]).forEach(item=>messages.push(item.detalle||'Error de validación contra el inventario.'));
 
     const reviewCard=document.getElementById('reviewCard');
     document.getElementById('reviewMessages').innerHTML=messages.map(m=>`<div class="review-message"><strong>Bloqueo:</strong> ${escapeHtml(m)}</div>`).join('');
@@ -308,15 +328,39 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsSection.scrollIntoView({behavior:'smooth',block:'start'});
   }
 
+  function updatePreSigloNotice(){
+    const seriales=Number(currentAnalysis?.seriales_pre_siglo||0);
+    const unidades=Number(currentAnalysis?.unidades_pre_siglo||0);
+    const sinResponsable=Number(currentAnalysis?.unidades_sin_responsable||0);
+    const parts=[];
+    if(seriales>0) parts.push(`${seriales} serial(es) PRE-SIGLO`);
+    if(unidades>0) parts.push(`${unidades} unidad(es) no serializada(s) PRE-SIGLO`);
+    if(sinResponsable>0) parts.push(`${sinResponsable} unidad(es) sin responsable identificado`);
+    preSigloNotice.hidden=parts.length===0;
+    preSigloNotice.innerHTML=parts.length
+      ? `<strong>Clasificación especial detectada:</strong> ${escapeHtml(parts.join(' · '))}`
+      : '';
+  }
+
+  function updateLibreSegment(){
+    const selected=locationCatalog.find(item=>String(item.ubicacion)===libreLocationSelect.value);
+    libreSegment.textContent='Segmento: '+(selected?.segmento||'—');
+  }
+
   function updateDestinationEffect(){
     const value=destinationSelect.value;
+    const needsPlacement=Boolean(currentAnalysis?.requiere_ubicacion_libre);
     destinationEffect.className='destination-effect';
     if(value==='LIBRE'){
       desmonteLocationWrap.hidden=true;
       desmonteLocationSelect.value='';
+      librePlacementWrap.hidden=!needsPlacement;
       destinationEffect.classList.add('libre');
-      destinationEffect.textContent='Libre: serializados → Disponible / Bueno. El material regresa a la ubicación de origen.';
+      destinationEffect.textContent=needsPlacement
+        ? 'Libre: el material con historial regresa a su ubicación de origen; el material PRE-SIGLO usará el Almacén y Ubicación seleccionados.'
+        : 'Libre: el material con historial regresa a su ubicación de origen.';
     }else if(value==='DESMONTE'){
+      librePlacementWrap.hidden=true;
       desmonteLocationWrap.hidden=false;
       const ubicacion=desmonteLocationSelect.value;
       destinationEffect.classList.add('desmonte');
@@ -325,6 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : 'Desmonte: selecciona QMINTIC o QQ01Q1 para definir la ubicación de todo el PDF.';
     }else{
       desmonteLocationWrap.hidden=true;
+      librePlacementWrap.hidden=true;
       desmonteLocationSelect.value='';
       destinationEffect.textContent='Selecciona Libre o Desmonte para ver el resultado.';
     }
@@ -348,6 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
       +(currentClassification?.serialWarnings?.length||0)+(currentClassification?.revisar?.length||0);
     const destino=destinationSelect.value;
     const ubicacionDesmonte=desmonteLocationSelect.value;
+    const requiereLibre=Boolean(currentAnalysis?.requiere_ubicacion_libre);
+    const almacenLibre=libreWarehouseSelect.value;
+    const ubicacionLibre=libreLocationSelect.value;
 
     if(!material){
       registerBtn.disabled=true;bar.classList.remove('ready','error');
@@ -365,6 +413,10 @@ document.addEventListener('DOMContentLoaded', () => {
       registerBtn.disabled=true;bar.classList.remove('ready','error');
       title.textContent='Selecciona la ubicación de Desmonte';help.textContent='Elige QMINTIC o QQ01Q1. La ubicación aplica a todo el PDF.';return;
     }
+    if(destino==='LIBRE'&&requiereLibre&&(!almacenLibre||!ubicacionLibre)){
+      registerBtn.disabled=true;bar.classList.remove('ready','error');
+      title.textContent='Ubica el material PRE-SIGLO';help.textContent='Selecciona Almacén y Ubicación para el material que entra por primera vez a SIGLO.';return;
+    }
 
     registerBtn.disabled=false;bar.classList.remove('error');bar.classList.add('ready');
     title.textContent='Devolución lista para registrar';
@@ -373,6 +425,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   destinationSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
   desmonteLocationSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
+  libreWarehouseSelect?.addEventListener('change',validateRegistration);
+  libreLocationSelect?.addEventListener('change',()=>{updateLibreSegment();validateRegistration();});
 
   processPdfBtn?.addEventListener('click',async()=>{
     if(!currentFile)return;
@@ -384,7 +438,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const items=extractItems(text);
       if(!items.length) throw new Error('No se detectaron materiales en el PDF.');
       const classification=classify(items);
-      renderResults(metadata,classification);
+      const supabase=window.sigloSupabase;
+      const analysisPayload={
+        cedula:metadata.cedula||'',
+        seriales:classification.serializados.map(row=>({serial:row.serial,codigo_sap:row.codigo_sap,dominio:row.dominio})),
+        no_serializados:classification.noSerializados.map(row=>({codigo_sap:row.codigo_sap,dominio:row.dominio,cantidad:Number(row.cantidad||0)}))
+      };
+      const {data:analysis,error:analysisError}=await supabase.rpc('analizar_devolucion',{p_payload:analysisPayload});
+      if(analysisError) throw analysisError;
+      renderResults(metadata,classification,analysis);
       const warnings=[];
       if(!metadata.documento) warnings.push('documento no detectado');
       if(!metadata.nombre) warnings.push('técnico no detectado');
@@ -419,6 +481,8 @@ document.addEventListener('DOMContentLoaded', () => {
       cedula:currentMetadata.cedula||'',
       destino:destinationSelect.value,
       ubicacion_desmonte:destinationSelect.value==='DESMONTE'?desmonteLocationSelect.value:'',
+      almacen_libre:destinationSelect.value==='LIBRE'?libreWarehouseSelect.value:'',
+      ubicacion_libre:destinationSelect.value==='LIBRE'?libreLocationSelect.value:'',
       seriales:currentClassification.serializados.map(row=>({serial:row.serial,codigo_sap:row.codigo_sap,dominio:row.dominio})),
       no_serializados:currentClassification.noSerializados.map(row=>({codigo_sap:row.codigo_sap,dominio:row.dominio,cantidad:Number(row.cantidad||0)}))
     };
@@ -445,6 +509,8 @@ document.addEventListener('DOMContentLoaded', () => {
     devolucionRegistrada=true;registerBtn.innerHTML='Registrado ✓';
     const extras=[];
      if(Number(data?.regularizaciones_tecnico||0)>0) extras.push(`${data.regularizaciones_tecnico} regularización(es) de técnico`);
+     if(Number(data?.seriales_pre_siglo||0)>0) extras.push(`${data.seriales_pre_siglo} serial(es) PRE-SIGLO`);
+     if(Number(data?.unidades_pre_siglo||0)>0) extras.push(`${data.unidades_pre_siglo} unidad(es) PRE-SIGLO`);
      if(Number(data?.unidades_sin_responsable||0)>0) extras.push(`${data.unidades_sin_responsable} unidad(es) sin responsable identificado`);
      processMessage.textContent=`Devolución ${data?.documento||payload.documento} registrada · destino ${data?.destino||payload.destino} · ${data?.movimientos||0} movimiento(s)${extras.length?' · '+extras.join(' · '):''}.`;
     processMessage.className='process-message success';
@@ -454,8 +520,10 @@ document.addEventListener('DOMContentLoaded', () => {
   clearBtn?.addEventListener('click',()=>{
     currentFile=null;pdfInput.value='';selectedFile.textContent='Ningún archivo seleccionado';
     processMessage.textContent='';processMessage.className='process-message';resultsSection.hidden=true;
-    currentMetadata={};currentClassification=null;devolucionRegistrada=false;destinationSelect.value='';desmonteLocationSelect.value='';
-    updateDestinationEffect();updateProcessButton();dropZone.scrollIntoView({behavior:'smooth',block:'center'});
+    currentMetadata={};currentClassification=null;
+    currentAnalysis={seriales_pre_siglo:0,unidades_pre_siglo:0,unidades_sin_responsable:0,requiere_ubicacion_libre:false,bloqueos:[],hallazgos:[]};
+    devolucionRegistrada=false;destinationSelect.value='';desmonteLocationSelect.value='';libreWarehouseSelect.value='';libreLocationSelect.value='';libreSegment.textContent='Segmento: —';
+    updatePreSigloNotice();updateDestinationEffect();updateProcessButton();dropZone.scrollIntoView({behavior:'smooth',block:'center'});
   });
 
   loadCatalog();
