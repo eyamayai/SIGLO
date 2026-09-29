@@ -181,7 +181,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function serialCandidates(materialRegion, quantity) {
     const raw = materialRegion.match(/\b[A-Z0-9][A-Z0-9-]{7,30}\b/gi) || [];
-    const candidates = raw.filter(token => (token.match(/\d/g) || []).length >= 6);
+    const candidates = raw.filter(token => {
+      const digits = (token.match(/\d/g) || []).length;
+      const compact = token.replaceAll('-', '');
+      const hexadecimal = /^[A-F0-9]+$/i.test(compact);
+
+      // Seriales alfanuméricos habituales: alta presencia de dígitos.
+      if (digits >= 6) return true;
+
+      // Algunos equipos usan seriales tipo MAC/hexadecimal, por ejemplo E4BFFAD442FC.
+      // Se admiten si son suficientemente largos y combinan letras hexadecimales con dígitos.
+      return hexadecimal && compact.length >= 10 && digits >= 2;
+    });
     const expected = Math.max(0, Math.round(quantity));
     return expected ? candidates.slice(-expected) : [];
   }
