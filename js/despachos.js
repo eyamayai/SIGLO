@@ -105,6 +105,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function pageToLines(items) {
     const rows = [];
+    const serieHeader = items.find(item => String(item.str || '').trim().toUpperCase() === 'SERIE');
+    const cantidadHeader = items.find(item => String(item.str || '').trim().toUpperCase() === 'CANTIDAD');
+    const serieX = Number(serieHeader?.transform?.[4]);
+    const cantidadX = Number(cantidadHeader?.transform?.[4]);
+    const hasSeriesColumn = Number.isFinite(serieX) && Number.isFinite(cantidadX) && cantidadX > serieX;
+
     for (const item of items) {
       const text = String(item.str || '').trim();
       if (!text) continue;
@@ -115,8 +121,19 @@ document.addEventListener('DOMContentLoaded', () => {
         row = { y, items: [] };
         rows.push(row);
       }
-      row.items.push({ x, text });
+
+      const upper = text.toUpperCase();
+      const isSeriesValue = hasSeriesColumn
+        && upper !== 'SERIE'
+        && x >= serieX - 4
+        && x < cantidadX - 8;
+
+      row.items.push({
+        x,
+        text: isSeriesValue ? `[[SERIE:${text}]]` : text
+      });
     }
+
     return rows
       .sort((a, b) => b.y - a.y)
       .map(row => row.items.sort((a, b) => a.x - b.x).map(item => item.text).join(' '))
@@ -180,29 +197,49 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function serialCandidates(materialRegion, quantity) {
-    const raw = materialRegion.match(/\b[A-Z0-9][A-Z0-9-]{7,30}\b/gi) || [];
-    const candidates = raw.filter(token => {
-      const digits = (token.match(/\d/g) || []).length;
-      const compact = token.replaceAll('-', '');
+    const expected = Math.max(0, Math.round(quantity));
+    if (!expected) return [];
+
+    const isLikelySerial = token => {
+      const cleanToken = String(token || '').replace(/^[,;:]+|[,;:]+$/g, '');
+      const digits = (cleanToken.match(/\d/g) || []).length;
+      const compact = cleanToken.replaceAll('-', '');
       const hexadecimal = /^[A-F0-9]+$/i.test(compact);
 
-      // Seriales alfanuméricos habituales: alta presencia de dígitos.
       if (digits >= 6) return true;
-
-      // Algunos equipos usan seriales tipo MAC/hexadecimal, por ejemplo E4BFFAD442FC.
       if (hexadecimal && compact.length >= 10 && digits >= 2) return true;
 
-      // Otros equipos usan seriales alfanuméricos largos no hexadecimales,
-      // por ejemplo W8WJ08NGSHVX. Se exige longitud y mezcla de letras/dígitos.
       const letters = (compact.match(/[A-Z]/gi) || []).length;
       return compact.length >= 10 && digits >= 2 && letters >= 4;
+    };
+
+    // Primera opción: usar exclusivamente lo que el PDF ubica físicamente
+    // en la columna "Serie". Esto evita confundir modelos de producto
+    // (por ejemplo CGA2121CLC) con seriales reales.
+    const positioned = [...materialRegion.matchAll(/\[\[SERIE:([^\]]+)\]\]/gi)]
+      .flatMap(match => String(match[1] || '').split(/[\s,;]+/))
+      .map(token => token.replace(/^[,;:]+|[,;:]+$/g, ''))
+      .filter(token => token && isLikelySerial(token));
+
+    if (positioned.length >= expected) {
+      return positioned.slice(0, expected);
+    }
+
+    // Respaldo para plantillas antiguas donde PDF.js no conserve la columna.
+    const raw = materialRegion.match(/\b[A-Z0-9][A-Z0-9-]{7,30}\b/gi) || [];
+    const fallback = raw
+      .map(token => token.replace(/^[,;:]+|[,;:]+$/g, ''))
+      .filter(token => isLikelySerial(token));
+
+    const combined = [...positioned];
+    fallback.forEach(token => {
+      if (!combined.includes(token)) combined.push(token);
     });
-    const expected = Math.max(0, Math.round(quantity));
-    return expected ? candidates.slice(-expected) : [];
+    return combined.slice(-expected);
   }
 
   function cleanDescription(prefix, serials) {
-    let description = prefix;
+    let description = prefix.replace(/\[\[SERIE:[^\]]+\]\]/gi, ' ');
     serials.forEach(serial => {
       description = description.replaceAll(serial, ' ');
     });
