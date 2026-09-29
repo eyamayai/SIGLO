@@ -161,8 +161,26 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
-  function serialCandidates(prefix, quantity) {
-    const raw = prefix.match(/\b[A-Z0-9][A-Z0-9-]{7,30}\b/gi) || [];
+  function materialDataRegion(segment) {
+    const markers = [
+      /\n\s*[0-9a-f]{8,}\|/i,
+      /\n\s*Este\s+c[oó]digo\s+es\s+[uú]nico/i,
+      /\n\s*CC:\s*\d+/i,
+      /\n\s*Nombre:/i,
+      /\n\s*Bandeja:/i,
+      /\n\s*DOMINION\s+COLOMBIA\s+SAS/i,
+      /\n\s*P[aá]gina:/i
+    ];
+    let end = segment.length;
+    markers.forEach(re => {
+      const match = re.exec(segment);
+      if (match && match.index < end) end = match.index;
+    });
+    return segment.slice(0, end).trim();
+  }
+
+  function serialCandidates(materialRegion, quantity) {
+    const raw = materialRegion.match(/\b[A-Z0-9][A-Z0-9-]{7,30}\b/gi) || [];
     const candidates = raw.filter(token => (token.match(/\d/g) || []).length >= 6);
     const expected = Math.max(0, Math.round(quantity));
     return expected ? candidates.slice(-expected) : [];
@@ -191,18 +209,19 @@ document.addEventListener('DOMContentLoaded', () => {
     headers.forEach((header, index) => {
       const end = index + 1 < headers.length ? headers[index + 1].index : text.length;
       const segment = text.slice(header.end, end);
-      const quantityMatch = findQuantityMatch(segment);
+      const materialRegion = materialDataRegion(segment);
+      const quantityMatch = findQuantityMatch(materialRegion);
       if (!quantityMatch) return;
 
       const cantidad = Number(quantityMatch[1].replace(',', '.'));
       const unidad = quantityMatch[2];
       const valor = Number(quantityMatch[3].replaceAll(',', ''));
-      const prefix = segment.slice(0, quantityMatch.index).trim();
       const config = catalogMap.get(normalizeCode(header.codigo_sap));
       const topologia = normalizeTopology(config?.topologia);
       const isSerial = topologia.includes('CON PERFIL DE SERIE') && !topologia.includes('SIN PERFIL DE SERIE');
-      const serials = isSerial ? serialCandidates(prefix, cantidad) : [];
-      const detalle = cleanDescription(prefix, serials);
+      const serials = isSerial ? serialCandidates(materialRegion, cantidad) : [];
+      const detailSource = materialRegion.replace(quantityMatch[0], ' ');
+      const detalle = cleanDescription(detailSource, serials);
 
       items.push({
         dominio: header.dominio,
@@ -344,6 +363,8 @@ document.addEventListener('DOMContentLoaded', () => {
       help.textContent = 'La salida ya fue aplicada al inventario y almacenada en la base de datos.';
       return;
     }
+
+    registerDispatchBtn.innerHTML = 'Registrar despacho <span>→</span>';
 
     const seriales = currentClassification?.serializados?.length || 0;
     const noSerializados = currentClassification?.noSerializados?.length || 0;
@@ -502,6 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentMetadata = {};
     currentClassification = null;
     despachoRegistrado = false;
+    registerDispatchBtn.innerHTML = 'Registrar despacho <span>→</span>';
     updateProcessButton();
     dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
