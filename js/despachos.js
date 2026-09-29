@@ -154,17 +154,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function extractMetadata(text) {
-    const documento = text.match(/RHAC1\s*\/\s*DES\s*\/\s*\d+/i)?.[0]?.replace(/\s/g, '') || '';
-    const cedula = text.match(/CC:\s*(\d+)/i)?.[1] || '';
+    // El marcado [[SERIE:...]] solo sirve para distinguir columnas de la tabla.
+    // Para metadatos restauramos el texto original, porque CC, nombre o fecha
+    // pueden coincidir horizontalmente con la columna Serie.
+    const metadataText = text.replace(/\[\[SERIE:([^\]]+)\]\]/gi, '$1');
 
-    const nombreMatch = text.match(
+    const documento = metadataText.match(/RHAC1\s*\/\s*DES\s*\/\s*\d+/i)?.[0]?.replace(/\s/g, '') || '';
+    const cedula = metadataText.match(/CC:\s*(\d+)/i)?.[1] || '';
+
+    const nombreMatch = metadataText.match(
       /Nombre:\s*([\s\S]*?)(?=\s*(?:Bandeja:|Fecha\s+env[ií]o:|RHAC1\s*\/\s*DES\s*\/\s*\d+|DOMINION\s+COLOMBIA\s+SAS|$))/i
     );
     const nombre = (nombreMatch?.[1] || '')
       .replace(/\s+/g, ' ')
       .trim();
 
-    const fecha = text.match(/Fecha\s+env[ií]o:\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/i)?.[1] || '';
+    const fecha = metadataText.match(/Fecha\s+env[ií]o:\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/i)?.[1] || '';
     return { documento, cedula, nombre, fecha };
   }
 
