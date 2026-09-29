@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-13">
   <link rel="stylesheet" href="css/styles.css?v=20260924-1">
-  <link rel="stylesheet" href="css/devoluciones.css?v=20260921-2">
+  <link rel="stylesheet" href="css/devoluciones.css?v=20260929-1">
 </head>
 <body class="dashboard-body">
   <div class="app-shell">
@@ -100,6 +100,28 @@
               <option value="QQ01Q1">QQ01Q1</option>
             </select>
           </label>
+          <div id="returnLibrePlacementWrap" class="pre-siglo-placement" hidden>
+            <div class="placement-title">
+              <strong>Ubicación para material PRE-SIGLO</strong>
+              <small>Solo se aplicará al material que no tenía historia previa en SIGLO.</small>
+            </div>
+            <label>
+              <span>Almacén</span>
+              <select id="returnLibreWarehouse">
+                <option value="">Seleccionar…</option>
+                <option value="A221">A221</option>
+                <option value="U020">U020</option>
+              </select>
+            </label>
+            <label>
+              <span>Ubicación</span>
+              <select id="returnLibreLocation">
+                <option value="">Seleccionar…</option>
+              </select>
+            </label>
+            <div id="returnLibreSegment" class="placement-segment">Segmento: —</div>
+          </div>
+          <div id="preSigloNotice" class="pre-siglo-notice" hidden></div>
           <div id="destinationEffect" class="destination-effect">Selecciona Libre o Desmonte para ver el resultado.</div>
         </section>
 
@@ -111,12 +133,12 @@
 
         <div class="result-grid">
           <section class="return-card result-card">
-            <div class="table-heading"><div><h3>Material serializado</h3><p>Debe existir y estar Despachado. Si cambió de técnico, SIGLO regulariza automáticamente el responsable.</p></div></div>
+            <div class="table-heading"><div><h3>Material serializado</h3><p>Si existe debe estar Despachado. Si no existe, puede incorporarse como devolución PRE-SIGLO.</p></div></div>
             <div class="table-wrap"><table><thead><tr><th>Serial</th><th>Código SAP</th><th>Dominion</th></tr></thead>
               <tbody id="serialBody"><tr class="empty-row"><td colspan="3">Sin registros</td></tr></tbody></table></div>
           </section>
           <section class="return-card result-card">
-            <div class="table-heading"><div><h3>Material no serializado</h3><p>SIGLO recibe toda la cantidad. El excedente sin saldo asociado se registra como devolución con responsable no identificado.</p></div></div>
+            <div class="table-heading"><div><h3>Material no serializado</h3><p>SIGLO recibe toda la cantidad y diferencia devolución normal, PRE-SIGLO y material sin responsable identificado.</p></div></div>
             <div class="table-wrap"><table><thead><tr><th>Código SAP</th><th>Dominion</th><th>Cantidad</th></tr></thead>
               <tbody id="noSerialBody"><tr class="empty-row"><td colspan="3">Sin registros</td></tr></tbody></table></div>
           </section>
@@ -142,6 +164,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js?v=20260918-1"></script>
   <script src="js/app.js?v=20260925-2"></script>
-  <script src="js/devoluciones.js?v=20260921-3"></script>
+  <script src="js/devoluciones.js?v=20260929-1"></script>
 </body>
 </html>
