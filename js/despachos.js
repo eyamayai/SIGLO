@@ -229,19 +229,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // en la columna "Serie". Esto evita confundir modelos de producto
     // (por ejemplo CGA2121CLC) con seriales reales.
     const positionedStopwords = new Set(['SERIE','UNIDAD','UNID','CANTIDAD','VALORIZADO']);
-    const positioned = [...materialRegion.matchAll(/\[\[SERIE:([^\]]+)\]\]/gi)]
+    const positionedPieces = [...materialRegion.matchAll(/\[\[SERIE:([^\]]+)\]\]/gi)]
       .flatMap(match => String(match[1] || '').split(/[\s,;]+/))
       .map(token => token.replace(/^[,;:]+|[,;:]+$/g, ''))
       .filter(token => {
         if (!token) return false;
         const compact = token.replaceAll('-', '').toUpperCase();
-        return /^[A-Z0-9-]{5,40}$/i.test(token)
+        return /^[A-Z0-9-]{2,40}$/i.test(token)
           && /[A-Z0-9]/i.test(compact)
           && !positionedStopwords.has(compact);
       });
 
-    if (positioned.length >= expected) {
-      return positioned.slice(0, expected);
+    const positioned = [];
+    for (const piece of positionedPieces) {
+      if (
+        positioned.length
+        && /-$/.test(positioned[positioned.length - 1])
+        && /^[A-Z0-9]{2,30}$/i.test(piece)
+      ) {
+        positioned[positioned.length - 1] += piece;
+      } else {
+        positioned.push(piece);
+      }
+    }
+
+    const validPositioned = positioned.filter(token => {
+      const compact = token.replaceAll('-', '');
+      return compact.length >= 5;
+    });
+
+    if (validPositioned.length >= expected) {
+      return validPositioned.slice(0, expected);
     }
 
     // Respaldo para plantillas antiguas donde PDF.js no conserve la columna.
