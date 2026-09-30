@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260921-3';
+  const VERSION = '20260930-1';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -221,8 +221,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
+  function normalizeSerialBreaks(value){
+    return String(value||'')
+      // Algunos PDF sustituyen visualmente el guion por caracteres especiales.
+      .replace(/[\uFFFE\uFFFD\u00AD\u2010\u2011\u2012\u2013\u2212]/g,'-')
+      // Reconstruye seriales partidos en dos renglones, por ejemplo:
+      // 0370042E8ZCC- + salto de línea + 00017.
+      .replace(/([A-Z0-9]{5,30})-\s+([A-Z0-9]{2,30})/gi,'$1-$2');
+  }
+
   function serialCandidates(prefix,quantity){
-    const raw=prefix.match(/\b[A-Z0-9][A-Z0-9-]{4,30}\b/gi)||[];
+    const normalizedPrefix=normalizeSerialBreaks(prefix);
+    const raw=normalizedPrefix.match(/\b[A-Z0-9][A-Z0-9-]{4,40}\b/gi)||[];
     const candidates=raw.filter(token => {
       const clean=token.replace(/[^A-Z0-9]/gi,'');
       return clean.length>=5 && /\d/.test(clean);
@@ -232,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function cleanDescription(prefix,serials){
-    let description=prefix;
+    let description=normalizeSerialBreaks(prefix);
     serials.forEach(serial=>{description=description.replaceAll(serial,' ');});
     return description.replace(/[,;]+\s*$/g,'').replace(/\s+/g,' ').trim();
   }
