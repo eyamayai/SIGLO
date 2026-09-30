@@ -201,7 +201,14 @@ document.addEventListener('DOMContentLoaded', () => {
     return segment.slice(0, end).trim();
   }
 
+  function normalizeSerialBreaks(value) {
+    return String(value || '')
+      .replace(/[\uFFFE\uFFFD\u00AD\u2010\u2011\u2012\u2013\u2212]/g, '-')
+      .replace(/([A-Z0-9]{5,30})-\s+([A-Z0-9]{2,30})/gi, '$1-$2');
+  }
+
   function serialCandidates(materialRegion, quantity) {
+    materialRegion = normalizeSerialBreaks(materialRegion);
     const expected = Math.max(0, Math.round(quantity));
     if (!expected) return [];
 
