@@ -228,10 +228,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Primera opción: usar exclusivamente lo que el PDF ubica físicamente
     // en la columna "Serie". Esto evita confundir modelos de producto
     // (por ejemplo CGA2121CLC) con seriales reales.
+    const positionedStopwords = new Set(['SERIE','UNIDAD','UNID','CANTIDAD','VALORIZADO']);
     const positioned = [...materialRegion.matchAll(/\[\[SERIE:([^\]]+)\]\]/gi)]
       .flatMap(match => String(match[1] || '').split(/[\s,;]+/))
       .map(token => token.replace(/^[,;:]+|[,;:]+$/g, ''))
-      .filter(token => token && isLikelySerial(token));
+      .filter(token => {
+        if (!token) return false;
+        const compact = token.replaceAll('-', '').toUpperCase();
+        return /^[A-Z0-9-]{5,40}$/i.test(token)
+          && /[A-Z0-9]/i.test(compact)
+          && !positionedStopwords.has(compact);
+      });
 
     if (positioned.length >= expected) {
       return positioned.slice(0, expected);
