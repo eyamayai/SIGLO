@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260930-2';
+  const VERSION = '20260930-3';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -121,8 +121,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if(hasSerieColumn && Number.isFinite(serieY) && y < serieY-2 && x>=serieX-4 && x<umedX-6){
         // Algunos PDF unen el final del serial con la palabra "Unidad".
-        text=text.replace(/(Unidad|Unid\.?)$/i,'').trim();
-        if(text) text=`[[SERIE:${text}]]`;
+        // Separamos ambos, pero conservamos la unidad para que la cantidad siga siendo detectable.
+        const joinedUnit=text.match(/^(.*?)(Unidad|Unid\.?)$/i);
+        if(joinedUnit && joinedUnit[1].trim()){
+          text=`[[SERIE:${joinedUnit[1].trim()}]] ${joinedUnit[2]}`;
+        }else{
+          text=`[[SERIE:${text}]]`;
+        }
       }
 
       let row=rows.find(r=>Math.abs(r.y-y)<=2.2);
@@ -282,6 +287,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if(positioned.length>=expected && expected>0) return positioned.slice(0,expected);
+
+    // Respaldo para PDF donde no se logre conservar la columna Serie:
+    // serial terminado en guion + Unidad/Cantidad/Valor + continuación en la línea siguiente.
+    const splitAcrossColumns=normalized.match(
+      /\b([A-Z0-9]{5,30}-)\s*(?:Unidad|Unid\.?)\s+\d+(?:[.,]\d+)?\s+[\d,.]+(?:\.\d{2}|,\d{2})[\s\S]{0,100}?\b([A-Z0-9]{2,30})\b/i
+    );
+    if(splitAcrossColumns){
+      const rebuiltSerial=splitAcrossColumns[1]+splitAcrossColumns[2];
+      if(!positioned.includes(rebuiltSerial)) positioned.unshift(rebuiltSerial);
+      if(positioned.length>=expected && expected>0) return positioned.slice(0,expected);
+    }
 
     const plain=normalized.replace(/\[\[SERIE:([^\]]+)\]\]/gi,' $1 ');
     const raw=plain.match(/\b[A-Z0-9][A-Z0-9-]{4,40}\b/gi)||[];
