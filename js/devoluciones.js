@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260930-1';
+  const VERSION = '20260930-2';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -107,10 +107,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function pageToLines(items){
     const rows=[];
+    const serieHeader=items.find(item=>String(item.str||'').trim().toUpperCase()==='SERIE');
+    const umedHeader=items.find(item=>String(item.str||'').trim().toUpperCase()==='UMED');
+    const serieX=Number(serieHeader?.transform?.[4]);
+    const serieY=Number(serieHeader?.transform?.[5]);
+    const umedX=Number(umedHeader?.transform?.[4]);
+    const hasSerieColumn=Number.isFinite(serieX)&&Number.isFinite(umedX)&&umedX>serieX;
+
     for (const item of items){
-      const text=String(item.str||'').trim();
+      let text=String(item.str||'').trim();
       if(!text) continue;
       const x=item.transform?.[4]??0, y=item.transform?.[5]??0;
+
+      if(hasSerieColumn && Number.isFinite(serieY) && y < serieY-2 && x>=serieX-4 && x<umedX-6){
+        // Algunos PDF unen el final del serial con la palabra "Unidad".
+        text=text.replace(/(Unidad|Unid\.?)$/i,'').trim();
+        if(text) text=`[[SERIE:${text}]]`;
+      }
+
       let row=rows.find(r=>Math.abs(r.y-y)<=2.2);
       if(!row){row={y,items:[]};rows.push(row);}
       row.items.push({x,text});
@@ -223,26 +237,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function normalizeSerialBreaks(value){
     return String(value||'')
-      // Algunos PDF sustituyen visualmente el guion por caracteres especiales.
-      .replace(/[\uFFFE\uFFFD\u00AD\u2010\u2011\u2012\u2013\u2212]/g,'-')
-      // Reconstruye seriales partidos en dos renglones, por ejemplo:
-      // 0370042E8ZCC- + salto de línea + 00017.
-      .replace(/([A-Z0-9]{5,30})-\s+([A-Z0-9]{2,30})/gi,'$1-$2');
+      .replace(/[\uFFFE\uFFFD\u00AD\u2010\u2011\u2012\u2013\u2212]/g,'-');
   }
 
-  function serialCandidates(prefix,quantity){
-    const normalizedPrefix=normalizeSerialBreaks(prefix);
-    const raw=normalizedPrefix.match(/\b[A-Z0-9][A-Z0-9-]{4,40}\b/gi)||[];
-    const candidates=raw.filter(token => {
+  function materialDataRegion(segment){
+    const markers=[
+      /\n\s*Firma\s+Resp\./i,
+      /\n\s*Firma\s+T[eé]cnico/i,
+      /\n\s*DOMINION\s+COLOMBIA\s+SAS/i,
+      /\n\s*Calle\s+94A/i,
+      /\n\s*P[aá]gina:/i
+    ];
+    let end=segment.length;
+    markers.forEach(re=>{
+      const match=re.exec(segment);
+      if(match&&match.index<end) end=match.index;
+    });
+    return segment.slice(0,end).trim();
+  }
+
+  function serialCandidates(materialRegion,quantity){
+    const expected=Math.max(0,Math.round(quantity||0));
+    const normalized=normalizeSerialBreaks(materialRegion);
+
+    const pieces=[...normalized.matchAll(/\[\[SERIE:([^\]]+)\]\]/gi)]
+      .map(m=>String(m[1]||'').trim())
+      .filter(Boolean);
+
+    const rebuilt=[];
+    for(const pieceRaw of pieces){
+      const piece=pieceRaw.replace(/(Unidad|Unid\.?)$/i,'').trim();
+      if(!piece) continue;
+
+      if(rebuilt.length && /-$/.test(rebuilt[rebuilt.length-1]) && /^[A-Z0-9]{2,30}$/i.test(piece)){
+        rebuilt[rebuilt.length-1]+=piece;
+      }else{
+        rebuilt.push(piece);
+      }
+    }
+
+    const positioned=rebuilt.filter(token=>{
       const clean=token.replace(/[^A-Z0-9]/gi,'');
       return clean.length>=5 && /\d/.test(clean);
     });
-    const expected=Math.max(0,Math.round(quantity||0));
-    return expected ? candidates.slice(-expected) : candidates.slice(-1);
+
+    if(positioned.length>=expected && expected>0) return positioned.slice(0,expected);
+
+    const plain=normalized.replace(/\[\[SERIE:([^\]]+)\]\]/gi,' $1 ');
+    const raw=plain.match(/\b[A-Z0-9][A-Z0-9-]{4,40}\b/gi)||[];
+    const fallback=raw.filter(token=>{
+      const clean=token.replace(/[^A-Z0-9]/gi,'');
+      return clean.length>=5 && /\d/.test(clean);
+    });
+
+    const combined=[...positioned];
+    fallback.forEach(token=>{if(!combined.includes(token)) combined.push(token);});
+    return expected ? combined.slice(-expected) : combined.slice(-1);
   }
 
   function cleanDescription(prefix,serials){
-    let description=normalizeSerialBreaks(prefix);
+    let description=normalizeSerialBreaks(prefix)
+      .replace(/\[\[SERIE:[^\]]+\]\]/gi,' ');
     serials.forEach(serial=>{description=description.replaceAll(serial,' ');});
     return description.replace(/[,;]+\s*$/g,'').replace(/\s+/g,' ').trim();
   }
@@ -258,14 +313,15 @@ document.addEventListener('DOMContentLoaded', () => {
     headers.forEach((header,index)=>{
       const end=index+1<headers.length?headers[index+1].index:text.length;
       const segment=text.slice(header.end,end);
-      const quantityMatch=findQuantity(segment);
+      const materialRegion=materialDataRegion(segment);
+      const quantityMatch=findQuantity(materialRegion);
       if(!quantityMatch) return;
       const cantidad=quantityMatch.cantidad;
-      const prefix=segment.slice(0,quantityMatch.index).trim();
+      const prefix=materialRegion.slice(0,quantityMatch.index).trim();
       const config=catalogMap.get(normalizeCode(header.codigo_sap));
       const topologia=normalizeTopology(config?.topologia);
       const isSerial=topologia.includes('CON PERFIL DE SERIE')&&!topologia.includes('SIN PERFIL DE SERIE');
-      const serials=isSerial?serialCandidates(prefix,cantidad):[];
+      const serials=isSerial?serialCandidates(materialRegion,cantidad):[];
       items.push({
         dominio:header.dominio,
         codigo_sap:normalizeCode(header.codigo_sap),
