@@ -16,11 +16,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   function aliasesSerial(){return{
     serial:['Serial'],codigo_sap:['Código SAP','Codigo SAP'],dominio:['Dominion'],descripcion:['Descripción','Descripcion'],
-    lote:['Lote'],almacen:['Almacén','Almacen'],ubicacion:['Ubicación','Ubicacion'],tipo:['Tipo']
+    lote:['Lote'],almacen:['Almacén','Almacen'],ubicacion:['Ubicación','Ubicacion'],segmento:{names:['Segmento'],optional:true},tipo:['Tipo']
   };}
   function aliasesSaldo(){return{
     codigo_sap:['Código SAP','Codigo SAP'],dominio:['Dominion'],descripcion:['Descripción','Descripcion'],
-    lote:['Lote'],almacen:['Almacén','Almacen'],ubicacion:['Ubicación','Ubicacion'],tipo:['Tipo'],cantidad:['Cantidad']
+    lote:['Lote'],almacen:['Almacén','Almacen'],ubicacion:['Ubicación','Ubicacion'],segmento:{names:['Segmento'],optional:true},tipo:['Tipo'],cantidad:['Cantidad']
   };}
 
   function rowsForFilter(){
@@ -38,9 +38,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     body.innerHTML=rows.length?rows.map(r=>`<tr>
       <td>${A.escapeHtml(r._grupo)}</td><td>${A.escapeHtml(r.serial||'—')}</td><td><strong>${A.escapeHtml(r.codigo_sap)}</strong></td>
       <td>${A.escapeHtml(r.dominio)}</td><td class="description">${A.escapeHtml(r.descripcion)}</td><td>${A.escapeHtml(r.lote)}</td>
-      <td>${A.escapeHtml(r.almacen)}</td><td>${A.escapeHtml(r.ubicacion)}</td><td>${A.escapeHtml(r.tipo)}</td><td>${A.escapeHtml(r.cantidad||1)}</td>
+      <td>${A.escapeHtml(r.almacen)}</td><td>${A.escapeHtml(r.ubicacion)}</td><td>${A.escapeHtml(r.segmento||"—")}</td><td>${A.escapeHtml(r.tipo)}</td><td>${A.escapeHtml(r.cantidad||1)}</td>
       <td><span class="result-pill ${A.resultClass(r.resultado)}">${A.escapeHtml(r.resultado)}</span></td><td>${A.escapeHtml(r.detalle)}</td>
-    </tr>`).join(''):'<tr class="empty-row"><td colspan="12">No hay filas para este filtro.</td></tr>';
+    </tr>`).join(''):'<tr class="empty-row"><td colspan="13">No hay filas para este filtro.</td></tr>';
   }
 
   function render(v){
@@ -115,6 +115,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       'Lote':r.lote||'',
       'Almacén':r.almacen||'',
       'Ubicación':r.ubicacion||'',
+      'Segmento':r.segmento||'',
       'Tipo':r.tipo||'',
       'Cantidad':r.cantidad||1,
       'Resultado':r.resultado||'',
@@ -124,7 +125,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const ws=XLSX.utils.json_to_sheet(data);
     ws['!cols']=[
       {wch:18},{wch:24},{wch:14},{wch:18},{wch:45},{wch:15},
-      {wch:12},{wch:16},{wch:14},{wch:12},{wch:14},{wch:70}
+      {wch:12},{wch:16},{wch:18},{wch:14},{wch:12},{wch:14},{wch:70}
     ];
     XLSX.utils.book_append_sheet(wb,ws,'NOVEDADES');
     const stamp=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota'}).format(new Date()).replaceAll('-','');
