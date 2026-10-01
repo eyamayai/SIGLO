@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20261001-2';
+  const VERSION = '20261001-3';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -43,14 +43,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadCatalog() {
     try {
-      const locationResponse = await fetch(`data/Ubicaciones.json?v=${VERSION}`, { cache: 'no-store' });
-      if (!locationResponse.ok) throw new Error(`Ubicaciones.json · HTTP ${locationResponse.status}`);
-      locations = await locationResponse.json();
-
       const supabase = window.sigloSupabase;
+
       if (supabase) {
-        const { data, error } = await supabase.rpc('consultar_catalogo_codigos');
-        if (!error && Array.isArray(data) && data.length) catalog = data;
+        const [codesResult, locationsResult] = await Promise.all([
+          supabase.rpc('consultar_catalogo_codigos'),
+          supabase.rpc('consultar_catalogo_ubicaciones')
+        ]);
+
+        if (!codesResult.error && Array.isArray(codesResult.data) && codesResult.data.length) {
+          catalog = codesResult.data;
+        }
+
+        if (!locationsResult.error && Array.isArray(locationsResult.data) && locationsResult.data.length) {
+          locations = locationsResult.data;
+        }
+      }
+
+      if (!locations.length) {
+        const locationResponse = await fetch(`data/Ubicaciones.json?v=${VERSION}`, { cache: 'no-store' });
+        if (!locationResponse.ok) throw new Error(`Ubicaciones.json · HTTP ${locationResponse.status}`);
+        locations = await locationResponse.json();
       }
 
       if (!catalog.length) {
@@ -58,6 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!topologyResponse.ok) throw new Error(`CodigosSAP.json · HTTP ${topologyResponse.status}`);
         catalog = await topologyResponse.json();
       }
+
+      locations = [...locations].sort((a,b) => String(a.ubicacion||'').localeCompare(String(b.ubicacion||''), 'es'));
 
       catalogMap = new Map(catalog.map(item => [normalizeCode(item.codigo_sap), item]));
       locationMap = new Map(locations.map(item => [normalizeCode(item.ubicacion), String(item.segmento || '').trim()]));
