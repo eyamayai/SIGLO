@@ -29,17 +29,18 @@ window.SigloAudit = (() => {
     const wb = XLSX.utils.book_new();
 
     if (kind === 'carga-inicial') {
-      const serialHeaders = ['Serial','Código SAP','Dominion','Descripción','Lote','Almacén','Ubicación','Tipo'];
-      const saldoHeaders = ['Código SAP','Dominion','Descripción','Lote','Almacén','Ubicación','Tipo','Cantidad'];
-      XLSX.utils.book_append_sheet(wb, buildSheet(serialHeaders,[24,14,18,42,14,12,18,14]), 'SERIALIZADOS');
-      XLSX.utils.book_append_sheet(wb, buildSheet(saldoHeaders,[14,18,42,14,12,18,14,14]), 'NO_SERIALIZADOS');
+      const serialHeaders = ['Serial','Código SAP','Dominion','Descripción','Lote','Almacén','Ubicación','Segmento','Tipo'];
+      const saldoHeaders = ['Código SAP','Dominion','Descripción','Lote','Almacén','Ubicación','Segmento','Tipo','Cantidad'];
+      XLSX.utils.book_append_sheet(wb, buildSheet(serialHeaders,[24,14,18,42,14,12,18,18,14]), 'SERIALIZADOS');
+      XLSX.utils.book_append_sheet(wb, buildSheet(saldoHeaders,[14,18,42,14,12,18,18,14,14]), 'NO_SERIALIZADOS');
       addInstructions(wb,[
         'No cambies los nombres de las hojas ni de las columnas.',
         'Lote: VALORADO o NOVALORADO.',
         'Almacén: A221 o U020.',
         'Tipo: LIBRE o DESMONTE.',
-        'Serial debe tratarse como texto. Centro, Segmento, Estado y Topología los calcula SIGLO.',
-        'En NO_SERIALIZADOS debe existir una sola fila por combinación SAP + Almacén + Lote + Ubicación + Tipo.'
+        'Serial debe tratarse como texto. Centro, Estado y Topología los calcula SIGLO.',
+        'Segmento es opcional. Para DESMONTE en QQ01Q1, diligéncialo solo cuando SIGLO no pueda inferirlo. Valores: CPES, CORPORATIVO o RED EXTERNA.',
+        'En NO_SERIALIZADOS debe existir una sola fila por combinación SAP + Almacén + Lote + Ubicación + Segmento + Tipo.'
       ]);
       XLSX.writeFile(wb,'SIGLO_Plantilla_Carga_Inicial.xlsx');
       return;
@@ -87,15 +88,17 @@ window.SigloAudit = (() => {
     },{});
 
     const resolved = {};
-    Object.entries(aliases).forEach(([field, names]) => {
+    Object.entries(aliases).forEach(([field, spec]) => {
+      const names = Array.isArray(spec) ? spec : (spec?.names || []);
+      const optional = !Array.isArray(spec) && Boolean(spec?.optional);
       const match = names.map(normalizeHeader).find(name => available[name]);
-      if (!match) throw new Error(`Falta la columna "${names[0]}" en la hoja ${sheetName}.`);
-      resolved[field] = available[match];
+      if (!match && !optional) throw new Error(`Falta la columna "${names[0]}" en la hoja ${sheetName}.`);
+      resolved[field] = match ? available[match] : null;
     });
 
     return raw.map(row => {
       const out = {};
-      Object.entries(resolved).forEach(([field,col]) => { out[field] = text(row[col]); });
+      Object.entries(resolved).forEach(([field,col]) => { out[field] = col ? text(row[col]) : ''; });
       return out;
     }).filter(row => Object.values(row).some(Boolean));
   }
