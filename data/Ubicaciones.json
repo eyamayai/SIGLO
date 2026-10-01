@@ -1,10 +1,14 @@
 [
   {
+    "ubicacion": "AA01A1",
+    "segmento": "CPES"
+  },
+  {
     "ubicacion": "AA01A2",
     "segmento": "CPES"
   },
   {
-    "ubicacion": "AA01A1",
+    "ubicacion": "AA01A3",
     "segmento": "CPES"
   },
   {
@@ -20,7 +24,7 @@
     "segmento": "CPES"
   },
   {
-    "ubicacion": "BB10B3",
+    "ubicacion": "BB01B1",
     "segmento": "CPES"
   },
   {
@@ -28,11 +32,11 @@
     "segmento": "CPES"
   },
   {
-    "ubicacion": "BB01B1",
+    "ubicacion": "BB01B3",
     "segmento": "CPES"
   },
   {
-    "ubicacion": "BB02B3",
+    "ubicacion": "BB02B1",
     "segmento": "CPES"
   },
   {
@@ -40,7 +44,11 @@
     "segmento": "CPES"
   },
   {
-    "ubicacion": "BB02B1",
+    "ubicacion": "BB02B3",
+    "segmento": "CPES"
+  },
+  {
+    "ubicacion": "BB10B3",
     "segmento": "CPES"
   },
   {
@@ -56,6 +64,10 @@
     "segmento": "CORPORATIVO"
   },
   {
+    "ubicacion": "CC01C4",
+    "segmento": "CORPORATIVO"
+  },
+  {
     "ubicacion": "DD01D1",
     "segmento": "RED EXTERNA"
   },
@@ -66,10 +78,6 @@
   {
     "ubicacion": "DD01D3",
     "segmento": "RED EXTERNA"
-  },
-  {
-    "ubicacion": "CC01C4",
-    "segmento": "CORPORATIVO"
   },
   {
     "ubicacion": "DD01D4",
