@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-10">
   <link rel="stylesheet" href="css/styles.css?v=20260924-1">
-  <link rel="stylesheet" href="css/ingresos.css?v=20260918-10">
+  <link rel="stylesheet" href="css/ingresos.css?v=20261001-1">
 </head>
 <body class="dashboard-body">
   <div class="app-shell">
@@ -46,7 +46,7 @@
         <div class="dashboard-title">
           <div class="breadcrumb"><a href="inicio.html">Inicio</a><span>›</span><strong>Ingresos</strong></div>
           <h1>Ingresos</h1>
-          <p>Procesa el PDF de ingreso, completa los datos obligatorios y prepara el registro de inventario.</p>
+          <p>Procesa el PDF de ingreso o transferencia interna, completa los datos obligatorios y prepara el registro de inventario.</p>
         </div>
         <div class="user-chip">
           <div class="user-avatar">S</div>
@@ -59,7 +59,7 @@
           <div>
             <span class="step-badge">1</span>
             <h2>Cargar ingreso</h2>
-            <p>El PDF se analiza primero. Procesarlo no guarda información en la base de datos.</p>
+            <p>Acepta documentos RHAC1/ING y RHAC1/INT. Procesar el PDF no guarda información en la base de datos.</p>
           </div>
         </div>
 
@@ -94,6 +94,7 @@
 
         <div class="pdf-info-grid">
           <div class="info-box"><span>Documento</span><strong id="metaDocumento">—</strong></div>
+          <div class="info-box"><span>Tipo de documento</span><strong id="metaTipoDocumento">—</strong></div>
           <div class="info-box"><span>Fecha</span><strong id="metaFecha">—</strong></div>
           <div class="info-box"><span>Almacén del PDF</span><strong id="metaAlmacenPdf">—</strong></div>
           <div class="info-box"><span>Responsable almacén</span><strong id="metaResponsable">—</strong></div>
@@ -207,6 +208,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js?v=20260918-1"></script>
   <script src="js/app.js?v=20260925-2"></script>
-  <script src="js/ingresos.js?v=20260918-11"></script>
+  <script src="js/ingresos.js?v=20261001-1"></script>
 </body>
 </html>
