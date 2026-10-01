@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260918-11';
+  const VERSION = '20261001-1';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -158,12 +158,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function extractMetadata(text) {
-    const documento = text.match(/RHAC1\s*\/\s*ING\s*\/\s*\d+/i)?.[0]?.replace(/\s/g, '') || '';
+    const documentMatch = text.match(/RHAC1\s*\/\s*(ING|INT)\s*\/\s*\d+/i);
+    const documento = documentMatch?.[0]?.replace(/\s/g, '') || '';
+    const subtipo = documentMatch?.[1]?.toUpperCase() || '';
+    const tipoDocumento = subtipo === 'INT' ? 'TRANSFERENCIA INTERNA' : (subtipo === 'ING' ? 'INGRESO' : 'NO DETECTADO');
     const fecha = text.match(/Fecha\s+(\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2})/i)?.[1] || '';
     const almacenPdf = text.match(/Almac[eé]n\s+(.+?)\s+Fecha\s+/i)?.[1]?.trim() || '';
     const responsable = text.match(/Resp\.?Almac[eé]n\s+(.+?)(?:\n|Material\s+Serie)/i)?.[1]?.trim() || '';
     const observacion = text.match(/Observaciones\s+(.+?)\s+Resp\.?Almac[eé]n/i)?.[1]?.trim() || '';
-    return { documento, fecha, almacenPdf, responsable, observacion };
+    return { documento, subtipo, tipoDocumento, fecha, almacenPdf, responsable, observacion };
   }
 
   function parseColombianNumber(value) {
@@ -563,6 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentMetadata = { ...metadata };
     ingresoRegistrado = false;
     document.getElementById('metaDocumento').textContent = metadata.documento || 'No detectado';
+    document.getElementById('metaTipoDocumento').textContent = metadata.tipoDocumento || 'No detectado';
     document.getElementById('metaFecha').textContent = metadata.fecha || 'No detectada';
     document.getElementById('metaAlmacenPdf').textContent = metadata.almacenPdf || 'No detectado';
     document.getElementById('metaResponsable').textContent = metadata.responsable || 'No detectado';
@@ -669,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
         processMessage.textContent = `PDF procesado con ${partes.join(' y ')}. Corrige la revisión requerida antes de registrar.`;
         processMessage.className = 'process-message error';
       } else {
-        processMessage.textContent = `PDF procesado correctamente · ${parsed.products.length} registro(s) preparados. Completa los datos obligatorios.`;
+        processMessage.textContent = `PDF procesado correctamente · ${metadata.tipoDocumento === 'TRANSFERENCIA INTERNA' ? 'Transferencia interna · ' : ''}${parsed.products.length} registro(s) preparados. Completa los datos obligatorios.`;
         processMessage.className = 'process-message success';
       }
     } catch (error) {
@@ -727,7 +731,9 @@ document.addEventListener('DOMContentLoaded', () => {
       fecha: currentMetadata.fecha || null,
       almacen_pdf: currentMetadata.almacenPdf || null,
       responsable_almacen: currentMetadata.responsable || null,
-      observacion: currentMetadata.observacion || null,
+      observacion: currentMetadata.subtipo === 'INT'
+        ? ['Transferencia interna recibida', currentMetadata.observacion].filter(Boolean).join(' · ')
+        : (currentMetadata.observacion || null),
       items
     };
 
