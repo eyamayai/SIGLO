@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20261001-1';
+  const VERSION = '20261001-2';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -202,20 +202,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (material && serie && umed && cantidad) {
         const control = row.items.find(item => /^Control$/i.test(item.text));
         const valor = row.items.find(item => /^Valor$/i.test(item.text));
-        const materialMax = (material.x + serie.x) / 2;
-        const serieMax = (serie.x + umed.x) / 2;
-        const unitMax = (umed.x + cantidad.x) / 2;
+        // Los encabezados están alineados al inicio de cada columna.
+        // Usar puntos medios recortaba descripciones largas en documentos INT.
+        const materialMax = serie.x - 6;
+        const serieMin = serie.x - 6;
+        const serieMax = umed.x - 6;
+        const unitMin = umed.x - 6;
+        const unitMax = cantidad.x - 6;
+        const quantityMin = cantidad.x - 6;
         const quantityMax = control
-          ? (cantidad.x + control.x) / 2
-          : (valor ? (cantidad.x + valor.x) / 2 : cantidad.x + 95);
+          ? control.x - 6
+          : (valor ? valor.x - 6 : cantidad.x + 95);
 
         return {
           materialMax,
-          serieMin: materialMax,
+          serieMin,
           serieMax,
-          unitMin: serieMax,
+          unitMin,
           unitMax,
-          quantityMin: unitMax,
+          quantityMin,
           quantityMax
         };
       }
