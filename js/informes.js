@@ -215,13 +215,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     ws['!cols']=[{wch:18},{wch:52},{wch:28}];
     XLSX.utils.book_append_sheet(wb,ws,'DISTRIBUCION');
 
+    const scopeInstruction = target==='modelo'
+      ? 'La matriz define el alcance del Modelo Estructura. Los códigos con inventario físico que no aparezcan en ella se excluirán del Excel y solo generarán una advertencia informativa.'
+      : 'Los códigos con inventario físico que no aparezcan en esta matriz se exportarán en NO_CLASIFICADOS.';
+
     const instructions=XLSX.utils.aoa_to_sheet([
-      ['SIGLO · Actas de Conteo'],
+      [target==='modelo' ? 'SIGLO · Modelo Estructura' : 'SIGLO · Actas de Conteo'],
       ['Pegue la distribución enviada por el cliente en la hoja DISTRIBUCION.'],
       ['Columnas obligatorias: CÓDIGO SAP, DESCRIPCIÓN y ANOTACIÓN.'],
       ['Un Código SAP puede repetirse solo si conserva exactamente la misma ANOTACIÓN.'],
       ['Si un Código SAP aparece con anotaciones diferentes, SIGLO bloqueará la generación hasta corregirlo.'],
-      ['Los códigos con inventario físico que no aparezcan en esta matriz se exportarán en NO_CLASIFICADOS.']
+      [scopeInstruction]
     ]);
     instructions['!cols']=[{wch:105}];
     XLSX.utils.book_append_sheet(wb,instructions,'INSTRUCCIONES');
@@ -580,10 +584,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modelData=buildModelStructure(preparedModel);
     preparedModel.modelData=modelData;
 
+    const modelSerialMismatch=preparedModel.serialMismatch
+      .filter(item=>!String(item).startsWith('NO_CLASIFICADOS:'));
+
     const blockCount=
       preparedModel.conflicts.length+
-      preparedModel.unclassifiedCodes.length+
-      preparedModel.serialMismatch.length;
+      modelSerialMismatch.length;
 
     document.getElementById('modelPlanCount').textContent=preparedModel.groups.length;
     document.getElementById('modelStructureCount').textContent=modelData.structure.length;
@@ -609,9 +615,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       issues.push('<div class="actas-issue error"><strong>Conflicto '+escapeHtml(item.codigo_sap)+':</strong> aparece con más de una anotación. Corrige la matriz.</div>');
     });
     if(preparedModel.unclassifiedCodes.length){
-      issues.push('<div class="actas-issue error"><strong>Sin planilla:</strong> '+preparedModel.unclassifiedCodes.length+' Código(s) SAP con inventario no aparecen en la matriz. Modelo Estructura requiere que todo el inventario exportado tenga Nro Planilla.</div>');
+      issues.push('<div class="actas-issue"><strong>Fuera del alcance:</strong> '+preparedModel.unclassifiedCodes.length+' Código(s) SAP tienen inventario físico en SIGLO, pero no están incluidos en la matriz del cliente. No se incluirán en el Modelo Estructura.</div>');
     }
-    preparedModel.serialMismatch.forEach(item=>{
+    modelSerialMismatch.forEach(item=>{
       issues.push('<div class="actas-issue error"><strong>Seriales:</strong> '+escapeHtml(item)+'</div>');
     });
     if(preparedModel.matrixWithoutStock.length){
@@ -626,9 +632,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     modelResult.hidden=false;
 
     if(blockCount>0){
-      setModelMessage('El Modelo Estructura tiene bloqueos. Corrige la matriz o las diferencias antes de exportar.','error');
+      setModelMessage('El Modelo Estructura tiene bloqueos dentro del alcance solicitado. Corrige la matriz o las diferencias antes de exportar.','error');
     }else{
-      setModelMessage('Modelo preparado correctamente con '+preparedModel.groups.length+' planilla(s).','success');
+      const outsideScope=preparedModel.unclassifiedCodes.length;
+      setModelMessage(
+        'Modelo preparado correctamente con '+preparedModel.groups.length+' planilla(s).'+
+        (outsideScope ? ' '+outsideScope+' Código(s) SAP fuera del alcance serán omitidos del Excel.' : ''),
+        'success'
+      );
     }
   }
 
