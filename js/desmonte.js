@@ -104,11 +104,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     return rows.sort((a,b)=>b.y-a.y).map(r=>r.items.sort((a,b)=>a.x-b.x).map(i=>i.text).join(' ')).join('\n');
   }
   async function extractPdfText(file){
-    const data=await file.arrayBuffer();
-    const pdf=await window.pdfjsLib.getDocument({data}).promise;
-    const pages=[];
-    for(let n=1;n<=pdf.numPages;n++){const p=await pdf.getPage(n);const c=await p.getTextContent();pages.push(pageToLines(c.items));}
-    return pages.join('\n');
+    if(!window.pdfjsLib) throw new Error('No fue posible cargar el lector PDF.');
+    if(file.size>15*1024*1024) throw new Error('El PDF supera 15 MB. Reduce el archivo antes de procesarlo.');
+
+    const buffer=await file.arrayBuffer();
+    let loadingTask=null;
+    let pdf=null;
+    let text='';
+
+    try{
+      loadingTask=window.pdfjsLib.getDocument({
+        data:new Uint8Array(buffer),
+        disableFontFace:true,
+        useSystemFonts:true,
+        isEvalSupported:false,
+        enableXfa:false,
+        verbosity:0
+      });
+      pdf=await loadingTask.promise;
+
+      if(pdf.numPages>25) throw new Error('El PDF supera 25 páginas. Divide el documento antes de procesarlo.');
+
+      for(let n=1;n<=pdf.numPages;n++){
+        const page=await pdf.getPage(n);
+        try{
+          const content=await page.getTextContent({
+            disableCombineTextItems:false,
+            includeMarkedContent:false
+          });
+          if(text) text+='\n';
+          text+=pageToLines(content.items);
+        }finally{
+          try{page.cleanup();}catch(_){}
+        }
+      }
+
+      return text;
+    }finally{
+      if(pdf){
+        try{pdf.cleanup();}catch(_){}
+        try{await pdf.destroy();}catch(_){}
+      }else if(loadingTask){
+        try{await loadingTask.destroy();}catch(_){}
+      }
+    }
   }
   function pdfMeta(text){
     const documento=(text.match(/RHAC1\s*\/\s*ING\s*\/\s*[A-Z0-9-]+/i)?.[0]||'').replace(/\s/g,'');
@@ -170,7 +209,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function makePdfPayload(file){
-    const [text,master]=await Promise.all([extractPdfText(file),loadMasterMap()]);
+    // Primero terminamos y liberamos PDF.js; después consultamos la Maestra.
+    // Evita picos de memoria al procesar PDFs en navegadores con poca RAM disponible.
+    const text=await extractPdfText(file);
+    const master=await loadMasterMap();
     const meta=pdfMeta(text);
     const parsed=extractPdfItems(text);
     if(!parsed.raw.length)throw new Error('No se detectaron materiales en el PDF.');
@@ -280,8 +322,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(!currentFile||source!=='PDF'||!await ensureSession())return;
     processPdfBtn.disabled=true;processPdfBtn.textContent='Procesando…';processMessage.textContent='Leyendo PDF y validando con las maestras…';processMessage.className='process-message';
     try{const payload=await makePdfPayload(currentFile);await validatePayload(payload);processMessage.textContent='PDF procesado. Revisa el resultado antes de registrar.';processMessage.className='process-message success';resultsSection.scrollIntoView({behavior:'smooth',block:'start'});}
-    catch(e){processMessage.textContent=e.message||'No fue posible procesar el PDF.';processMessage.className='process-message error';resultsSection.hidden=true;}
-    finally{processPdfBtn.textContent='Procesar PDF →';processPdfBtn.disabled=!currentFile;}
+    catch(e){
+      console.error('Error procesando PDF de Desmonte',e);
+      processMessage.textContent=e.message||'No fue posible procesar el PDF.';
+      processMessage.className='process-message error';
+      resultsSection.hidden=true;
+    }
+    finally{
+      processPdfBtn.textContent='Procesar PDF →';
+      processPdfBtn.disabled=!currentFile;
+    }
   });
 
   processExcelBtn.addEventListener('click',async()=>{
