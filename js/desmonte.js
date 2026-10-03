@@ -92,63 +92,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     XLSX.writeFile(wb,'SIGLO_Plantilla_Desmonte.xlsx');
   });
 
-  function pageToLines(items){
+  function pageToRows(items){
     const rows=[];
     for(const item of items){
-      const text=String(item.str||'').trim();if(!text)continue;
-      const x=item.transform?.[4]??0,y=item.transform?.[5]??0;
-      let row=rows.find(r=>Math.abs(r.y-y)<=2.2);
+      const text=String(item.str||'').trim();
+      if(!text)continue;
+      const x=item.transform?.[4]??0;
+      const y=item.transform?.[5]??0;
+      let row=rows.find(entry=>Math.abs(entry.y-y)<=2.2);
       if(!row){row={y,items:[]};rows.push(row);}
       row.items.push({x,text});
     }
-    return rows.sort((a,b)=>b.y-a.y).map(r=>r.items.sort((a,b)=>a.x-b.x).map(i=>i.text).join(' ')).join('\n');
-  }
-  async function extractPdfText(file){
-    if(!window.pdfjsLib) throw new Error('No fue posible cargar el lector PDF.');
-    if(file.size>15*1024*1024) throw new Error('El PDF supera 15 MB. Reduce el archivo antes de procesarlo.');
-
-    const buffer=await file.arrayBuffer();
-    let loadingTask=null;
-    let pdf=null;
-    let text='';
-
-    try{
-      loadingTask=window.pdfjsLib.getDocument({
-        data:new Uint8Array(buffer),
-        disableFontFace:true,
-        useSystemFonts:true,
-        isEvalSupported:false,
-        enableXfa:false,
-        verbosity:0
+    return rows
+      .sort((a,b)=>b.y-a.y)
+      .map(row=>{
+        row.items.sort((a,b)=>a.x-b.x);
+        return {...row,text:row.items.map(item=>item.text).join(' ')};
       });
-      pdf=await loadingTask.promise;
-
-      if(pdf.numPages>25) throw new Error('El PDF supera 25 páginas. Divide el documento antes de procesarlo.');
-
-      for(let n=1;n<=pdf.numPages;n++){
-        const page=await pdf.getPage(n);
-        try{
-          const content=await page.getTextContent({
-            disableCombineTextItems:false,
-            includeMarkedContent:false
-          });
-          if(text) text+='\n';
-          text+=pageToLines(content.items);
-        }finally{
-          try{page.cleanup();}catch(_){}
-        }
-      }
-
-      return text;
-    }finally{
-      if(pdf){
-        try{pdf.cleanup();}catch(_){}
-        try{await pdf.destroy();}catch(_){}
-      }else if(loadingTask){
-        try{await loadingTask.destroy();}catch(_){}
-      }
-    }
   }
+
+  async function extractPdf(file){
+    if(!window.pdfjsLib)throw new Error('No se pudo cargar el lector PDF del navegador.');
+    const data=await file.arrayBuffer();
+    const pdf=await window.pdfjsLib.getDocument({data}).promise;
+    const rows=[];
+    for(let pageNumber=1;pageNumber<=pdf.numPages;pageNumber+=1){
+      const page=await pdf.getPage(pageNumber);
+      const content=await page.getTextContent();
+      rows.push(...pageToRows(content.items));
+    }
+    return {rows,text:rows.map(row=>row.text).join('\n')};
+  }
+
   function pdfMeta(text){
     const documento=(text.match(/RHAC1\s*\/\s*ING\s*\/\s*[A-Z0-9-]+/i)?.[0]||'').replace(/\s/g,'');
     const trabajador=(text.match(/(?:^|\n)\s*Trabajador\s+([^\n]+)/i)?.[1]||'').replace(/\s+C\.\s*Bandeja.*$/i,'').replace(/\s+/g,' ').trim();
@@ -157,46 +132,163 @@ document.addEventListener('DOMContentLoaded', async () => {
     const responsable=text.match(/Resp\.Almac[eé]n\s+([^\n]+)/i)?.[1]?.trim()||'';
     return {documento,trabajador,fecha,almacen,responsable};
   }
-  function serialCandidates(prefix,quantity){
-    const raw=prefix.match(/\b[A-Z0-9][A-Z0-9-]{4,30}\b/gi)||[];
-    const candidates=raw.filter(t=>{const c=t.replace(/[^A-Z0-9]/gi,'');return c.length>=5&&/\d/.test(c);});
-    const expected=Math.max(0,Math.round(quantity||0));
-    return expected?candidates.slice(-expected):candidates.slice(-1);
-  }
-  function findQuantity(segment){
-    const quantityFirst=/(\d+(?:[.,]\d+)?)\s+(?:Unidad|Unidades|Pieza|Piezas)\s+([\d,.]+(?:\.\d{2}|,\d{2}))/gi;
-    let m=quantityFirst.exec(segment);
-    if(m){
-      const q=parseNum(m[1]);
-      if(Number.isFinite(q)) return {cantidad:q,index:m.index};
-    }
 
-    const unitFirst=/(?:Unidad|Unidades|Pieza|Piezas)\s+(\d+(?:[.,]\d+)?)\s+([\d,.]+(?:\.\d{2}|,\d{2}))/gi;
-    m=unitFirst.exec(segment);
-    if(m){
-      const q=parseNum(m[1]);
-      if(Number.isFinite(q)) return {cantidad:q,index:m.index};
-    }
-
-    const genericUnitFirst=/\b[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+\s+(\d+(?:[.,]\d+)?)\s+([\d,.]+(?:\.\d{2}|,\d{2}))/g;
-    m=genericUnitFirst.exec(segment);
-    if(m){
-      const q=parseNum(m[1]);
-      if(Number.isFinite(q)) return {cantidad:q,index:m.index};
-    }
-    return null;
+  function cleanSerialValue(value){
+    return String(value??'').trim().replace(/\s+/g,'').replace(/^[,;:]+|[,;:]+$/g,'');
   }
-  function extractPdfItems(text){
-    const headers=[...text.matchAll(/\[([^/\]]+)\/([^\]]+)\]/g)].map(m=>({index:m.index,end:m.index+m[0].length,dominio:m[1].trim(),sap:m[2].trim()}));
-    const seriales=[],no_serializados=[],raw=[];
-    headers.forEach((h,i)=>{
-      const end=i+1<headers.length?headers[i+1].index:text.length;
-      const seg=text.slice(h.end,end),q=findQuantity(seg);if(!q)return;
-      const prefix=seg.slice(0,q.index).trim();
-      const candidates=serialCandidates(prefix,q.cantidad);
-      raw.push({codigo_sap:h.sap,dominio_documento:h.dominio,cantidad:q.cantidad,serials:candidates});
+
+  function isValidSerial(value){
+    const serial=cleanSerialValue(value);
+    return serial!=='-'&&(serial.match(/[A-Za-z0-9]/g)||[]).length>=5;
+  }
+
+  function parseColombianNumber(value){
+    const raw=String(value||'').replace(/\s+/g,'').replaceAll('.','').replace(',','.');
+    const number=Number(raw);
+    return Number.isFinite(number)?number:0;
+  }
+
+  function findColumnLayout(rows,startIndex){
+    for(let index=startIndex-1;index>=Math.max(0,startIndex-45);index-=1){
+      const row=rows[index];
+      const material=row.items.find(item=>/^Material$/i.test(item.text));
+      const serie=row.items.find(item=>/^Serie$/i.test(item.text));
+      const umed=row.items.find(item=>/^UMed$/i.test(item.text));
+      const cantidad=row.items.find(item=>/^Cantidad$/i.test(item.text));
+      if(material&&serie&&umed&&cantidad){
+        const control=row.items.find(item=>/^Control$/i.test(item.text));
+        const valor=row.items.find(item=>/^Valor$/i.test(item.text));
+        return {
+          materialMax:serie.x-6,
+          serieMin:serie.x-6,
+          serieMax:umed.x-6,
+          unitMin:umed.x-6,
+          unitMax:cantidad.x-6,
+          quantityMin:cantidad.x-6,
+          quantityMax:control?control.x-6:(valor?valor.x-6:cantidad.x+95)
+        };
+      }
+    }
+    return {materialMax:270,serieMin:270,serieMax:330,unitMin:330,unitMax:405,quantityMin:405,quantityMax:510};
+  }
+
+  function extractSerialsByRow(block,layout){
+    const candidates=[];
+    block.forEach(row=>{
+      const fragments=row.items
+        .filter(item=>item.x>=layout.serieMin&&item.x<layout.serieMax)
+        .map(item=>item.text)
+        .filter(Boolean);
+      if(!fragments.length)return;
+      const serial=cleanSerialValue(fragments.join(''));
+      if(isValidSerial(serial))candidates.push(serial);
     });
-    return {raw,seriales,no_serializados};
+    return candidates;
+  }
+
+  function extractPdfItems(rows){
+    const starts=[];
+    const headerRegex=/\[([^/\]]+)\/([^\]]+)\]/;
+    rows.forEach((row,index)=>{
+      const match=row.text.match(headerRegex);
+      if(match)starts.push({index,match});
+    });
+
+    const raw=[];
+    starts.forEach((start,position)=>{
+      const endIndex=position+1<starts.length?starts[position+1].index:rows.length;
+      const rawBlock=rows.slice(start.index,endIndex);
+      const footerIndex=rawBlock.findIndex(row=>
+        /Firma Resp\.|Firma Técnico|DOMINION COLOMBIA SAS|Calle 94A|Bogot[aá]|NIT:|P[aá]gina:/i.test(row.text)
+      );
+      const block=footerIndex>=0?rawBlock.slice(0,footerIndex):rawBlock;
+      if(!block.length)return;
+
+      const layout=findColumnLayout(rows,start.index);
+      const quantityParts=[];
+      block.forEach((row,rowIndex)=>{
+        row.items.forEach(item=>{
+          if(item.x>=layout.quantityMin&&item.x<layout.quantityMax&&rowIndex===0){
+            quantityParts.push(item.text);
+          }
+        });
+      });
+
+      const cantidad=parseColombianNumber(quantityParts.join(' '));
+      const serials=extractSerialsByRow(block,layout);
+
+      raw.push({
+        codigo_sap:String(start.match[2]||'').trim(),
+        dominio_documento:String(start.match[1]||'').trim(),
+        cantidad:Math.max(1,Math.round(cantidad||serials.length||1)),
+        serials
+      });
+    });
+
+    return raw;
+  }
+
+  async function makePdfPayload(file){
+    processMessage.textContent='Leyendo PDF…';
+    const parsedPdf=await extractPdf(file);
+    const meta=pdfMeta(parsedPdf.text);
+
+    processMessage.textContent='Consultando Maestra de Códigos SAP…';
+    const master=await loadMasterMap();
+
+    const raw=extractPdfItems(parsedPdf.rows);
+    if(!raw.length)throw new Error('No se detectaron materiales en el PDF.');
+
+    const seriales=[];
+    const no_serializados=[];
+
+    for(const item of raw){
+      const options=master.get(String(item.codigo_sap))||[];
+      const nv=options.find(x=>upper(x.lote)==='NOVALORADO');
+      const top=upper(nv?.topologia||options[0]?.topologia||'');
+
+      if(top==='SIN PERFIL DE SERIE'){
+        no_serializados.push({
+          codigo_sap:item.codigo_sap,
+          dominio_documento:item.dominio_documento,
+          cantidad:item.cantidad,
+          fecha:meta.fecha,
+          segmento_manual:''
+        });
+      }else{
+        const expected=Math.max(1,Math.round(item.cantidad||1));
+        const detected=item.serials.slice(0,expected);
+        detected.forEach(serial=>seriales.push({
+          serial,
+          codigo_sap:item.codigo_sap,
+          dominio_documento:item.dominio_documento,
+          fecha:meta.fecha,
+          segmento_manual:''
+        }));
+        for(let miss=detected.length;miss<expected;miss+=1){
+          seriales.push({
+            serial:'',
+            codigo_sap:item.codigo_sap,
+            dominio_documento:item.dominio_documento,
+            fecha:meta.fecha,
+            segmento_manual:''
+          });
+        }
+      }
+    }
+
+    return {
+      fuente:'PDF',
+      documento:meta.documento,
+      fecha_documento:meta.fecha,
+      almacen_pdf:meta.almacen,
+      responsable_almacen:meta.responsable,
+      tecnico_pdf:meta.trabajador,
+      archivo:file.name,
+      seriales,
+      no_serializados,
+      _meta:meta
+    };
   }
 
   async function loadMasterMap(){
@@ -206,33 +298,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const bySap=new Map();
     list.forEach(r=>{const a=bySap.get(String(r.codigo_sap))||[];a.push(r);bySap.set(String(r.codigo_sap),a);});
     return bySap;
-  }
-
-  async function makePdfPayload(file){
-    // Primero terminamos y liberamos PDF.js; después consultamos la Maestra.
-    // Evita picos de memoria al procesar PDFs en navegadores con poca RAM disponible.
-    const text=await extractPdfText(file);
-    const master=await loadMasterMap();
-    const meta=pdfMeta(text);
-    const parsed=extractPdfItems(text);
-    if(!parsed.raw.length)throw new Error('No se detectaron materiales en el PDF.');
-    const seriales=[],no_serializados=[];
-    for(const item of parsed.raw){
-      const options=master.get(String(item.codigo_sap))||[];
-      const nv=options.find(x=>upper(x.lote)==='NOVALORADO');
-      const top=upper(nv?.topologia||options[0]?.topologia||'');
-      if(top==='SIN PERFIL DE SERIE'){
-        no_serializados.push({codigo_sap:item.codigo_sap,dominio_documento:item.dominio_documento,cantidad:item.cantidad,fecha:meta.fecha,segmento_manual:''});
-      }else{
-        const expected=Math.round(item.cantidad||0);
-        const detected=item.serials.slice(-expected);
-        detected.forEach(serial=>seriales.push({serial,codigo_sap:item.codigo_sap,dominio_documento:item.dominio_documento,fecha:meta.fecha,segmento_manual:''}));
-        for(let miss=detected.length;miss<expected;miss++){
-          seriales.push({serial:'',codigo_sap:item.codigo_sap,dominio_documento:item.dominio_documento,fecha:meta.fecha,segmento_manual:''});
-        }
-      }
-    }
-    return {fuente:'PDF',documento:meta.documento,fecha_documento:meta.fecha,almacen_pdf:meta.almacen,responsable_almacen:meta.responsable,tecnico_pdf:meta.trabajador,archivo:file.name,seriales,no_serializados,_meta:meta};
   }
 
   function excelRows(wb){
@@ -253,6 +318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function validatePayload(payload){
+    processMessage.textContent='Validando con SIGLO…';
     const {data,error}=await supabase.rpc('validar_desmonte',{p_payload:payload});
     if(error)throw error;
     currentPayload=payload;currentValidation=data;renderValidation();
