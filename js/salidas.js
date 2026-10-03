@@ -11,12 +11,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultsSection=document.getElementById('resultsSection');
   const clearBtn=document.getElementById('clearBtn');
   const registerBtn=document.getElementById('registerBtn');
+  const destinationSelect=document.getElementById('destinationSelect');
+  const destinationHint=document.getElementById('destinationHint');
 
   let currentFile=null;
   let catalog=[];
   let catalogMap=new Map();
   let currentPayload=null;
   let currentValidation=null;
+  let currentMetadata=null;
+  let currentClassification=null;
   let registered=false;
 
   if(window.pdfjsLib){
@@ -72,6 +76,10 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsSection.hidden=true;
     currentPayload=null;
     currentValidation=null;
+    currentMetadata=null;
+    currentClassification=null;
+    destinationSelect.value='';
+    updateDestinationHint();
     registered=false;
     updateProcessButton();
   }
@@ -264,6 +272,36 @@ document.addEventListener('DOMContentLoaded', () => {
     return {serializados,noSerializados:[...noSerialMap.values()],revisar,warnings};
   }
 
+  function updateDestinationHint(){
+    const value=destinationSelect.value;
+    if(value==='DESMONTE'){
+      destinationHint.textContent='El material pasará a DESMONTE · Dañado · Garantía y quedará disponible para Prealerta.';
+      destinationHint.className='desmonte';
+    }else if(value==='TRASLADO'){
+      destinationHint.textContent='El material saldrá de LIBRE y quedará trazado como Trasladado.';
+      destinationHint.className='traslado';
+    }else{
+      destinationHint.textContent='Selecciona un destino para completar la validación.';
+      destinationHint.className='';
+    }
+  }
+
+  async function revalidateCurrentSalida(){
+    if(!currentPayload || !currentMetadata || !currentClassification) return;
+    currentPayload.destino_operativo=destinationSelect.value;
+    registered=false;
+    processMessage.textContent='Actualizando validación según el destino seleccionado…';
+    processMessage.className='process-message';
+
+    const {data,error}=await supabase.rpc('validar_salida',{p_payload:currentPayload});
+    if(error) throw error;
+
+    currentValidation=data||{};
+    renderValidation(currentMetadata,currentClassification,currentValidation);
+    processMessage.textContent='Destino actualizado. Revisa la validación antes de registrar.';
+    processMessage.className='process-message success';
+  }
+
   function renderValidation(metadata,classification,validation){
     currentValidation=validation;
     document.getElementById('metaDocumento').textContent=metadata.documento||'No detectado';
@@ -315,18 +353,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const help=document.getElementById('registerHelp');
 
     bar.classList.remove('ready','error');
+    const destino=currentPayload?.destino_operativo||'';
     if(registered){
       bar.classList.add('ready');
-      title.textContent='Salida registrada';
-      help.textContent='El material fue retirado del inventario disponible y quedó trazado como Trasladado.';
+      title.textContent=destino==='DESMONTE'?'Salida a Desmonte registrada':'Salida registrada';
+      help.textContent=destino==='DESMONTE'
+        ? 'El material salió de LIBRE e ingresó a DESMONTE como Garantía / Dañado.'
+        : 'El material fue retirado del inventario disponible y quedó trazado como Trasladado.';
     }else if(errors>0){
       bar.classList.add('error');
       title.textContent='Salida bloqueada';
-      help.textContent='Corrige los errores antes de registrar.';
+      help.textContent=destino
+        ? 'Corrige los errores antes de registrar.'
+        : 'Selecciona el destino operativo para completar la validación.';
     }else{
       bar.classList.add('ready');
-      title.textContent='Salida lista para registrar';
-      help.textContent='Al registrar, los serializados pasarán a Trasladado y los no serializados descontarán saldo LIBRE.';
+      if(destino==='DESMONTE'){
+        title.textContent='Salida a Desmonte lista para registrar';
+        help.textContent='El material saldrá de LIBRE e ingresará a DESMONTE como Garantía / Dañado, quedando disponible para Prealerta.';
+      }else{
+        title.textContent='Salida lista para registrar';
+        help.textContent='Al registrar, los serializados pasarán a Trasladado y los no serializados descontarán saldo LIBRE.';
+      }
     }
 
     resultsSection.hidden=false;
@@ -349,11 +397,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const items=extractItems(text);
       const classification=classify(items);
 
+      currentMetadata=metadata;
+      currentClassification=classification;
       currentPayload={
         documento:metadata.documento,
         subtipo:metadata.subtipo,
         fecha:metadata.fecha,
         archivo:currentFile.name,
+        destino_operativo:destinationSelect.value,
         seriales:classification.serializados,
         no_serializados:classification.noSerializados
       };
@@ -387,14 +438,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const {data,error}=await supabase.rpc('registrar_salida',{p_payload:currentPayload});
       if(error) throw error;
       registered=true;
-      const metadata={
+      renderValidation(currentMetadata||{
         documento:currentPayload.documento,
         subtipo:currentPayload.subtipo,
         fecha:currentPayload.fecha
-      };
-      const classification={warnings:[],revisar:[]};
-      renderValidation(metadata,classification,currentValidation||{});
-      processMessage.textContent='Salida '+(data?.documento||currentPayload.documento)+' registrada · '+(data?.movimientos||0)+' movimiento(s).';
+      },currentClassification||{warnings:[],revisar:[]},currentValidation||{});
+      processMessage.textContent=(data?.destino_operativo==='DESMONTE'?'Salida a Desmonte ':'Salida ')+(data?.documento||currentPayload.documento)+' registrada · '+(data?.movimientos||0)+' movimiento(s).';
       processMessage.className='process-message success';
     }catch(error){
       console.error('Error registrando salida',error);
@@ -406,10 +455,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  destinationSelect.addEventListener('change',async()=>{
+    updateDestinationHint();
+    if(!currentPayload) return;
+    try{
+      destinationSelect.disabled=true;
+      await revalidateCurrentSalida();
+    }catch(error){
+      console.error('Error actualizando destino de salida',error);
+      processMessage.textContent=error.message||'No fue posible actualizar la validación del destino.';
+      processMessage.className='process-message error';
+    }finally{
+      destinationSelect.disabled=false;
+    }
+  });
+
   clearBtn.addEventListener('click',()=>{
     currentFile=null;
     currentPayload=null;
     currentValidation=null;
+    currentMetadata=null;
+    currentClassification=null;
+    destinationSelect.value='';
+    updateDestinationHint();
     registered=false;
     pdfInput.value='';
     selectedFile.textContent='Ningún archivo seleccionado';
@@ -420,5 +488,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo({top:0,behavior:'smooth'});
   });
 
+  updateDestinationHint();
   loadCatalog();
 });
