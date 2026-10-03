@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const parsedPdf=await extractPdf(file);
     const meta=pdfMeta(parsedPdf.text);
 
-    processMessage.textContent='Consultando Maestra de Códigos SAP…';
+    processMessage.textContent='Consultando catálogo de topologías…';
     const master=await loadMasterMap();
 
     const raw=extractPdfItems(parsedPdf.rows);
@@ -292,11 +292,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function loadMasterMap(){
-    const {data,error}=await supabase.rpc('consultar_maestra_codigos');
+    // Desmonte solo necesita conocer la topología para separar serializados y no serializados.
+    // No debe depender de consultar_maestra_codigos(), porque esa RPC pertenece a Auditoría.
+    const {data,error}=await supabase.rpc('consultar_catalogo_codigos');
     if(error)throw error;
     const list=Array.isArray(data)?data:[];
     const bySap=new Map();
-    list.forEach(r=>{const a=bySap.get(String(r.codigo_sap))||[];a.push(r);bySap.set(String(r.codigo_sap),a);});
+    list.forEach(r=>{
+      const key=String(r.codigo_sap||'').trim();
+      if(!key)return;
+      const rows=bySap.get(key)||[];
+      rows.push(r);
+      bySap.set(key,rows);
+    });
     return bySap;
   }
 
