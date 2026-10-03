@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260922-1">
   <link rel="stylesheet" href="css/styles.css?v=20260924-1">
   <link rel="stylesheet" href="css/despachos.css?v=20260918-9">
-  <link rel="stylesheet" href="css/salidas.css?v=20260922-1">
+  <link rel="stylesheet" href="css/salidas.css?v=20261003-1">
 </head>
 <body class="dashboard-body">
 <div class="app-shell">
@@ -87,17 +87,17 @@
       </div>
 
       <div class="result-grid">
-        <section class="dispatch-card result-card">
+        <section class="dispatch-card result-card salida-result-card salida-serial-card">
           <div class="table-heading"><div><h3>Material serializado</h3><p>Solo puede salir si está LIBRE · Disponible.</p></div></div>
-          <div class="table-wrap"><table>
+          <div class="table-wrap salida-table-wrap"><table class="salida-table salida-serial-table">
             <thead><tr><th>Serial</th><th>Código SAP</th><th>Dominion</th><th>Resultado</th><th>Detalle</th></tr></thead>
             <tbody id="serialBody"><tr class="empty-row"><td colspan="5">Sin registros</td></tr></tbody>
           </table></div>
         </section>
 
-        <section class="dispatch-card result-card">
+        <section class="dispatch-card result-card salida-result-card salida-quantity-card">
           <div class="table-heading"><div><h3>Material no serializado</h3><p>Descuento por Código SAP + Dominion sobre saldos LIBRE, del más antiguo al más reciente.</p></div></div>
-          <div class="table-wrap"><table>
+          <div class="table-wrap salida-table-wrap"><table class="salida-table salida-quantity-table">
             <thead><tr><th>Código SAP</th><th>Dominion</th><th>Cantidad</th><th>Disponible</th><th>Resultado</th><th>Detalle</th></tr></thead>
             <tbody id="noSerialBody"><tr class="empty-row"><td colspan="6">Sin registros</td></tr></tbody>
           </table></div>
