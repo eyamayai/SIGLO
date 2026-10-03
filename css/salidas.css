@@ -1,6 +1,84 @@
 .salida-info-grid{grid-template-columns:repeat(3,minmax(140px,1fr))}
-.table-wrap td:last-child{white-space:normal;min-width:220px}
+
+/* Salidas: tablas inferiores sin desbordamiento horizontal */
+.dashboard-main.dispatch-main,
+.results-section,
+.result-grid,
+.salida-result-card{min-width:0;max-width:100%}
+
+.result-grid{
+  grid-template-columns:minmax(0,1fr);
+  gap:14px;
+}
+
+.salida-result-card{
+  overflow:hidden;
+}
+
+.salida-table-wrap{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+}
+
+.salida-table{
+  width:100%;
+  table-layout:fixed;
+}
+
+.salida-table th,
+.salida-table td{
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:normal;
+  vertical-align:middle;
+  line-height:1.35;
+}
+
+.salida-table td:last-child{
+  min-width:0;
+}
+
+/* Serializados */
+.salida-serial-table th:nth-child(1),
+.salida-serial-table td:nth-child(1){width:22%}
+.salida-serial-table th:nth-child(2),
+.salida-serial-table td:nth-child(2){width:14%}
+.salida-serial-table th:nth-child(3),
+.salida-serial-table td:nth-child(3){width:16%}
+.salida-serial-table th:nth-child(4),
+.salida-serial-table td:nth-child(4){width:14%}
+.salida-serial-table th:nth-child(5),
+.salida-serial-table td:nth-child(5){width:34%}
+
+/* No serializados */
+.salida-quantity-table th:nth-child(1),
+.salida-quantity-table td:nth-child(1){width:15%}
+.salida-quantity-table th:nth-child(2),
+.salida-quantity-table td:nth-child(2){width:16%}
+.salida-quantity-table th:nth-child(3),
+.salida-quantity-table td:nth-child(3){width:11%}
+.salida-quantity-table th:nth-child(4),
+.salida-quantity-table td:nth-child(4){width:12%}
+.salida-quantity-table th:nth-child(5),
+.salida-quantity-table td:nth-child(5){width:14%}
+.salida-quantity-table th:nth-child(6),
+.salida-quantity-table td:nth-child(6){width:32%}
+
 .result-pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800}
 .result-pill.ready{background:#e8f5ed;color:#237448}
 .result-pill.error{background:#fff0e7;color:#9d5121}
-@media(max-width:800px){.salida-info-grid{grid-template-columns:1fr}}
+
+@media(max-width:900px){
+  .salida-info-grid{grid-template-columns:1fr}
+  .salida-table th,.salida-table td{padding:9px 8px;font-size:12px}
+  .salida-table th{font-size:11px}
+}
+
+@media(max-width:620px){
+  .salida-table th,.salida-table td{padding:8px 6px;font-size:11px}
+  .salida-serial-table th:nth-child(5),
+  .salida-serial-table td:nth-child(5){width:30%}
+  .salida-quantity-table th:nth-child(6),
+  .salida-quantity-table td:nth-child(6){width:28%}
+}
