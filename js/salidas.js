@@ -86,15 +86,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function pageToLines(items){
     const rows=[];
+    const serieHeader=items.find(item=>String(item.str||'').trim().toUpperCase()==='SERIE');
+    const umedHeader=items.find(item=>String(item.str||'').trim().toUpperCase()==='UMED');
+    const serieX=Number(serieHeader?.transform?.[4]);
+    const serieY=Number(serieHeader?.transform?.[5]);
+    const umedX=Number(umedHeader?.transform?.[4]);
+    const hasSerieColumn=Number.isFinite(serieX)&&Number.isFinite(umedX)&&umedX>serieX;
+
     for(const item of items){
-      const text=String(item.str||'').trim();
+      let text=String(item.str||'').trim();
       if(!text) continue;
       const x=item.transform?.[4]??0;
       const y=item.transform?.[5]??0;
+
+      if(hasSerieColumn && Number.isFinite(serieY) && y<serieY-2 && x>=serieX-4 && x<umedX-6){
+        const joinedUnit=text.match(/^(.*?)(Unidad|Unidades|Unid\.?|Und)$/i);
+        if(joinedUnit && joinedUnit[1].trim()){
+          text=`[[SERIE:${joinedUnit[1].trim()}]] ${joinedUnit[2]}`;
+        }else{
+          text=`[[SERIE:${text}]]`;
+        }
+      }
+
       let row=rows.find(r=>Math.abs(r.y-y)<=2.2);
       if(!row){row={y,items:[]};rows.push(row);}
       row.items.push({x,text});
     }
+
     return rows.sort((a,b)=>b.y-a.y)
       .map(row=>row.items.sort((a,b)=>a.x-b.x).map(i=>i.text).join(' '))
       .join('\n');
@@ -137,14 +155,48 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function serialCandidates(prefix,quantity){
-    const raw=prefix.match(/\b[A-Z0-9][A-Z0-9-]{7,32}\b/gi)||[];
-    const candidates=raw.filter(token=>(token.match(/\d/g)||[]).length>=5);
     const expected=Math.max(0,Math.round(quantity));
-    return expected?candidates.slice(-expected):[];
+    if(!expected) return [];
+
+    const pieces=[...prefix.matchAll(/\[\[SERIE:([^\]]+)\]\]/gi)]
+      .flatMap(match=>String(match[1]||'').split(/[\s,;]+/))
+      .map(token=>token.replace(/^[,;:]+|[,;:]+$/g,''))
+      .filter(Boolean);
+
+    const rebuilt=[];
+    for(const piece of pieces){
+      if(rebuilt.length && /-$/.test(rebuilt[rebuilt.length-1]) && /^[A-Z0-9]{2,30}$/i.test(piece)){
+        rebuilt[rebuilt.length-1]+=piece;
+      }else{
+        rebuilt.push(piece);
+      }
+    }
+
+    const positioned=rebuilt.filter(token=>{
+      const compact=token.replace(/[^A-Z0-9]/gi,'');
+      return compact.length>=5;
+    });
+
+    if(positioned.length>=expected) return positioned.slice(0,expected);
+
+    // Respaldo para PDFs antiguos que no conserven bien la posición de columnas.
+    const plain=prefix.replace(/\[\[SERIE:([^\]]+)\]\]/gi,' $1 ');
+    const raw=plain.match(/\b[A-Z0-9][A-Z0-9-]{7,32}\b/gi)||[];
+    const fallback=raw.filter(token=>{
+      const compact=token.replaceAll('-','');
+      const digits=(compact.match(/\d/g)||[]).length;
+      const letters=(compact.match(/[A-Z]/gi)||[]).length;
+      if(digits>=5) return true;
+      return compact.length>=10 && digits>=2 && letters>=4;
+    });
+
+    const combined=[...positioned];
+    fallback.forEach(token=>{if(!combined.includes(token)) combined.push(token);});
+    return combined.slice(-expected);
   }
 
   function cleanDescription(prefix,serials){
-    let value=prefix;
+    let value=prefix.replace(/\[\[SERIE:[^\]]+\]\]/gi,' ');
     serials.forEach(serial=>{value=value.replaceAll(serial,' ');});
     return value.replace(/\s+/g,' ').replace(/[,;]+\s*$/g,'').trim();
   }
