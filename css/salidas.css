@@ -82,3 +82,62 @@
   .salida-quantity-table th:nth-child(6),
   .salida-quantity-table td:nth-child(6){width:28%}
 }
+
+
+/* Selector de destino operativo */
+.salida-destination-card{
+  margin-top:14px;
+  padding:18px 20px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(280px,420px);
+  gap:22px;
+  align-items:center;
+}
+.salida-destination-copy h3{
+  margin:0 0 6px;
+  font-size:17px;
+  color:#21364a;
+}
+.salida-destination-copy h3 span{color:#b54747}
+.salida-destination-copy p{
+  margin:0;
+  color:#7a8c9e;
+  font-size:12px;
+  line-height:1.45;
+}
+.salida-destination-control{
+  display:grid;
+  gap:6px;
+}
+.salida-destination-control label{
+  color:#5f7488;
+  font-size:12px;
+  font-weight:700;
+}
+.salida-destination-control select{
+  width:100%;
+  min-width:0;
+  height:42px;
+  border:1px solid #cbd9e5;
+  border-radius:9px;
+  background:#fff;
+  padding:0 12px;
+  color:#22394e;
+  font:inherit;
+  outline:none;
+}
+.salida-destination-control select:focus{
+  border-color:#1781d3;
+  box-shadow:0 0 0 3px rgba(23,129,211,.08);
+}
+.salida-destination-control small{
+  color:#8495a5;
+  font-size:11px;
+  line-height:1.35;
+}
+.salida-destination-control small.desmonte{color:#8a5a12}
+.salida-destination-control small.traslado{color:#2b6f9d}
+
+@media(max-width:900px){
+  .salida-destination-card{grid-template-columns:1fr}
+}
