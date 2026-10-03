@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260922-1">
   <link rel="stylesheet" href="css/styles.css?v=20260924-1">
   <link rel="stylesheet" href="css/despachos.css?v=20260918-9">
-  <link rel="stylesheet" href="css/salidas.css?v=20261003-1">
+  <link rel="stylesheet" href="css/salidas.css?v=20261003-2">
 </head>
 <body class="dashboard-body">
 <div class="app-shell">
@@ -80,6 +80,22 @@
         <div class="info-box"><span>Fecha</span><strong id="metaFecha">—</strong></div>
       </div>
 
+      <section class="dispatch-card salida-destination-card">
+        <div class="salida-destination-copy">
+          <h3>Destino de la salida <span>*</span></h3>
+          <p>Define qué ocurrirá con el material LIBRE después de registrar este documento.</p>
+        </div>
+        <div class="salida-destination-control">
+          <label for="destinationSelect">Destino operativo</label>
+          <select id="destinationSelect">
+            <option value="">Seleccionar...</option>
+            <option value="TRASLADO">Traslado a otra bodega</option>
+            <option value="DESMONTE">Desmonte / Garantía</option>
+          </select>
+          <small id="destinationHint">Selecciona un destino para completar la validación.</small>
+        </div>
+      </section>
+
       <div class="summary-grid">
         <div class="summary-card"><span>Serializados</span><strong id="countSerializados">0</strong><small>seriales detectados</small></div>
         <div class="summary-card"><span>No serializados</span><strong id="countNoSerializados">0</strong><small>códigos SAP</small></div>
@@ -124,6 +140,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20260925-2"></script>
-<script src="js/salidas.js?v=20261003-1"></script>
+<script src="js/salidas.js?v=20261003-2"></script>
 </body>
 </html>
