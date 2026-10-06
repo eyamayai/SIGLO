@@ -53,7 +53,7 @@
       <div id="pdfDropZone" class="drop-zone" tabindex="0">
         <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14a2 2 0 0 0 2-2v-3"/><path d="M3 15v3a2 2 0 0 0 2 2"/></svg></div>
         <h3>Arrastra el PDF de Ingreso Cliente aquí</h3>
-        <p>Debe contener el nombre del técnico y los materiales.</p>
+        <p>El técnico es informativo. SIGLO validará los materiales y su configuración.</p>
         <button id="selectPdfBtn" class="outline-action" type="button">Seleccionar PDF</button>
         <input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden>
         <div id="pdfFileName" class="selected-file">Ningún archivo seleccionado</div>
@@ -63,7 +63,7 @@
 
     <div id="excelPanel" class="source-panel" hidden>
       <div class="template-row">
-        <div><strong>Plantilla de Desmonte</strong><p>Columnas: FECHA · CEDULA · SERIE · CODIGO. Los nombres y el Dominion salen de las maestras.</p></div>
+        <div><strong>Plantilla de Desmonte</strong><p>Obligatorias: FECHA · SERIE · CODIGO. CEDULA es opcional e informativa.</p></div>
         <button id="downloadExcelTemplateBtn" class="outline-action" type="button">Descargar plantilla</button>
       </div>
       <div id="excelDropZone" class="drop-zone" tabindex="0">
@@ -119,6 +119,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20260925-2"></script>
-<script src="js/desmonte.js?v=20261003-3"></script>
+<script src="js/desmonte.js?v=20261006-1"></script>
 </body>
 </html>
