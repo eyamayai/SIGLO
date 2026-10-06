@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const y=item.transform?.[5]??0;
 
       if(hasSerieColumn && Number.isFinite(serieY) && y<serieY-2 && x>=serieX-4 && x<umedX-6){
-        const joinedUnit=text.match(/^(.*?)(Unidad|Unidades|Unid\.?|Und)$/i);
+        const joinedUnit=text.match(/^(.*?)(Unidad|Unidades|Unid\.?|Und|Pieza|Piezas)$/i);
         if(joinedUnit && joinedUnit[1].trim()){
           text=`[[SERIE:${joinedUnit[1].trim()}]] ${joinedUnit[2]}`;
         }else{
@@ -150,8 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function findQuantity(segment){
     const patterns=[
-      {re:/(Unidad|Unidades|Und|UND)\s*(\d+(?:[.,]\d+)?)\s+([\d.,]+)/i,quantityGroup:2},
-      {re:/(\d+(?:[.,]\d+)?)\s+(Unidad|Unidades|Und|UND)\s+([\d.,]+)/i,quantityGroup:1}
+      {re:/(Unidad|Unidades|Und|UND|Pieza|Piezas)\s*(\d+(?:[.,]\d+)?)\s+([\d.,]+)/i,quantityGroup:2},
+      {re:/(\d+(?:[.,]\d+)?)\s+(Unidad|Unidades|Und|UND|Pieza|Piezas)\s+([\d.,]+)/i,quantityGroup:1}
     ];
     for(const pattern of patterns){
       const match=pattern.re.exec(segment);
