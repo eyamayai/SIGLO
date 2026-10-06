@@ -77,14 +77,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('downloadExcelTemplateBtn').addEventListener('click',()=>{
     if(!window.XLSX)return;
     const wb=XLSX.utils.book_new();
-    const ws=XLSX.utils.aoa_to_sheet([['FECHA','CEDULA','SERIE','CODIGO']]);
-    ws['!cols']=[{wch:18},{wch:18},{wch:24},{wch:14}];
+    const ws=XLSX.utils.aoa_to_sheet([['FECHA','SERIE','CODIGO','CEDULA']]);
+    ws['!cols']=[{wch:18},{wch:24},{wch:14},{wch:18}];
     XLSX.utils.book_append_sheet(wb,ws,'DESMONTE');
     const ins=XLSX.utils.aoa_to_sheet([
       ['SIGLO · Plantilla Desmonte'],
-      ['No cambies los encabezados FECHA, CEDULA, SERIE y CODIGO.'],
+      ['Columnas obligatorias: FECHA, SERIE y CODIGO. CEDULA es opcional e informativa.'],
       ['El Excel admite únicamente equipos serializados.'],
-      ['Nombre del técnico, descripción, topología y Dominion NOVALORADO se consultan en las Maestras.'],
+      ['El técnico no es obligatorio en Desmonte y no se valida contra Maestra Técnicos.'],
+      ['Descripción, topología y Dominion NOVALORADO se consultan en las Maestras.'],
       ['Formato sugerido de FECHA: DD-MM-YYYY HH:MM:SS.']
     ]);
     ins['!cols']=[{wch:95}];
@@ -315,8 +316,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nh=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
     if(!raw.length)return [];
     const cols=Object.keys(raw[0]).reduce((o,k)=>(o[nh(k)]=k,o),{});
-    for(const req of ['FECHA','CEDULA','SERIE','CODIGO'])if(!cols[req])throw new Error('Falta la columna '+req+'.');
-    return raw.map(r=>({fecha:norm(r[cols.FECHA]),cedula:norm(r[cols.CEDULA]),serial:upper(r[cols.SERIE]),codigo_sap:norm(r[cols.CODIGO]),segmento_manual:''})).filter(r=>r.fecha||r.cedula||r.serial||r.codigo_sap);
+    for(const req of ['FECHA','SERIE','CODIGO'])if(!cols[req])throw new Error('Falta la columna '+req+'.');
+    return raw.map(r=>({
+      fecha:norm(r[cols.FECHA]),
+      cedula:cols.CEDULA?norm(r[cols.CEDULA]):'',
+      serial:upper(r[cols.SERIE]),
+      codigo_sap:norm(r[cols.CODIGO]),
+      segmento_manual:''
+    })).filter(r=>r.fecha||r.cedula||r.serial||r.codigo_sap);
   }
   async function makeExcelPayload(file){
     const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:false});
