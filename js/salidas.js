@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION='20260922-2';
+  const VERSION='20261007-1';
   const supabase=window.sigloSupabase;
   const pdfInput=document.getElementById('pdfInput');
   const selectPdfBtn=document.getElementById('selectPdfBtn');
@@ -92,50 +92,86 @@ document.addEventListener('DOMContentLoaded', () => {
   ['dragleave','drop'].forEach(type=>dropZone.addEventListener(type,e=>{e.preventDefault();dropZone.classList.remove('dragging');}));
   dropZone.addEventListener('drop',e=>setFile(e.dataTransfer?.files?.[0]));
 
-  function pageToLines(items){
+  function pageToRows(items){
     const rows=[];
-    const serieHeader=items.find(item=>String(item.str||'').trim().toUpperCase()==='SERIE');
-    const umedHeader=items.find(item=>String(item.str||'').trim().toUpperCase()==='UMED');
-    const serieX=Number(serieHeader?.transform?.[4]);
-    const serieY=Number(serieHeader?.transform?.[5]);
-    const umedX=Number(umedHeader?.transform?.[4]);
-    const hasSerieColumn=Number.isFinite(serieX)&&Number.isFinite(umedX)&&umedX>serieX;
-
     for(const item of items){
-      let text=String(item.str||'').trim();
+      const text=String(item.str||'').trim();
       if(!text) continue;
-      const x=item.transform?.[4]??0;
-      const y=item.transform?.[5]??0;
-
-      if(hasSerieColumn && Number.isFinite(serieY) && y<serieY-2 && x>=serieX-4 && x<umedX-6){
-        const joinedUnit=text.match(/^(.*?)(Unidad|Unidades|Unid\.?|Und|Pieza|Piezas)$/i);
-        if(joinedUnit && joinedUnit[1].trim()){
-          text=`[[SERIE:${joinedUnit[1].trim()}]] ${joinedUnit[2]}`;
-        }else{
-          text=`[[SERIE:${text}]]`;
-        }
-      }
-
+      const x=Number(item.transform?.[4]??0);
+      const y=Number(item.transform?.[5]??0);
       let row=rows.find(r=>Math.abs(r.y-y)<=2.2);
       if(!row){row={y,items:[]};rows.push(row);}
       row.items.push({x,text});
     }
-
-    return rows.sort((a,b)=>b.y-a.y)
-      .map(row=>row.items.sort((a,b)=>a.x-b.x).map(i=>i.text).join(' '))
-      .join('\n');
+    return rows
+      .sort((a,b)=>b.y-a.y)
+      .map(row=>{
+        row.items.sort((a,b)=>a.x-b.x);
+        return {...row,text:row.items.map(i=>i.text).join(' ')};
+      });
   }
 
-  async function extractTextFromPdf(file){
+  function findPageLayout(rows,previous=null){
+    for(const row of rows){
+      const labels=row.items.map(item=>({
+        x:item.x,
+        label:String(item.text||'').trim().toUpperCase()
+      }));
+      const product=labels.find(item=>item.label==='PRODUCTO'||item.label==='MATERIAL');
+      const serie=labels.find(item=>item.label==='SERIE');
+      const cantidad=labels.find(item=>item.label==='CANTIDAD');
+      const unidad=labels.find(item=>['UNIDAD','UMED'].includes(item.label));
+      if(!product||!serie||!cantidad||!unidad) continue;
+
+      const starts=labels
+        .filter(item=>['PRODUCTO','MATERIAL','SERIE','CANTIDAD','UNIDAD','UMED','CONTROL','VALOR','VALORIZADO'].includes(item.label))
+        .map(item=>item.x)
+        .sort((a,b)=>a-b);
+
+      const nextStart=x=>{
+        const next=starts.find(value=>value>x+1);
+        return Number.isFinite(next)?next-6:x+110;
+      };
+
+      return {
+        productMin:Math.max(0,product.x-20),
+        productMax:serie.x-6,
+        serieMin:serie.x-6,
+        serieMax:nextStart(serie.x),
+        quantityMin:cantidad.x-6,
+        quantityMax:nextStart(cantidad.x)
+      };
+    }
+    return previous||{
+      productMin:0,
+      productMax:117,
+      serieMin:117,
+      serieMax:419,
+      quantityMin:419,
+      quantityMax:466
+    };
+  }
+
+  async function extractPdfData(file){
     const data=await file.arrayBuffer();
     const pdf=await window.pdfjsLib.getDocument({data}).promise;
     const pages=[];
+    const textPages=[];
+    let inheritedLayout=null;
+
     for(let n=1;n<=pdf.numPages;n+=1){
       const page=await pdf.getPage(n);
       const content=await page.getTextContent();
-      pages.push(pageToLines(content.items));
+      const rows=pageToRows(content.items);
+      const layout=findPageLayout(rows,inheritedLayout);
+      inheritedLayout=layout;
+      pages.push({page:n,rows,layout});
+      textPages.push(rows.map(row=>row.text).join('\n'));
+      try{page.cleanup();}catch(_){}
     }
-    return pages.join('\n');
+
+    try{await pdf.destroy();}catch(_){}
+    return {pages,text:textPages.join('\n')};
   }
 
   function extractMetadata(text){
@@ -148,98 +184,172 @@ document.addEventListener('DOMContentLoaded', () => {
     return {documento,subtipo,fecha:envio||interna};
   }
 
-  function findQuantity(segment){
-    const patterns=[
-      {re:/(Unidad|Unidades|Und|UND|Pieza|Piezas)\s*(\d+(?:[.,]\d+)?)\s+([\d.,]+)/i,quantityGroup:2},
-      {re:/(\d+(?:[.,]\d+)?)\s+(Unidad|Unidades|Und|UND|Pieza|Piezas)\s+([\d.,]+)/i,quantityGroup:1}
-    ];
-    for(const pattern of patterns){
-      const match=pattern.re.exec(segment);
-      if(!match) continue;
-      const cantidad=Number(match[pattern.quantityGroup].replace(',','.'));
-      if(Number.isFinite(cantidad)) return {cantidad,index:match.index,end:match.index+match[0].length};
-    }
-    return null;
+  function cellText(row,min,max){
+    return row.items
+      .filter(item=>item.x>=min&&item.x<max)
+      .map(item=>item.text)
+      .join(' ')
+      .trim();
   }
 
-  function serialCandidates(prefix,quantity){
-    const expected=Math.max(0,Math.round(quantity));
-    if(!expected) return [];
+  function cleanPdfText(value){
+    return String(value||'')
+      .replace(/[\u0000-\u001F\u007F-\u009F\uFFFE\uFFFF]/g,'')
+      .replace(/\s+/g,' ')
+      .trim();
+  }
 
-    const pieces=[...prefix.matchAll(/\[\[SERIE:([^\]]+)\]\]/gi)]
-      .flatMap(match=>String(match[1]||'').split(/[\s,;]+/))
+  function parseQuantityCell(value){
+    const match=String(value||'').match(/-?\d+(?:[.,]\d+)?/);
+    if(!match) return null;
+    const number=Number(match[0].replace(',','.'));
+    return Number.isFinite(number)?number:null;
+  }
+
+  function serialTokens(value){
+    const stopwords=new Set(['SERIE','PRODUCTO','MATERIAL','CANTIDAD','UNIDAD','UNIDADES','UNID','UND','PIEZA','PIEZAS','VALOR','VALORIZADO']);
+    const pieces=String(value||'')
+      .split(/[\s,;]+/)
       .map(token=>token.replace(/^[,;:]+|[,;:]+$/g,''))
       .filter(Boolean);
 
     const rebuilt=[];
     for(const piece of pieces){
-      if(rebuilt.length && /-$/.test(rebuilt[rebuilt.length-1]) && /^[A-Z0-9]{2,30}$/i.test(piece)){
+      if(rebuilt.length&&/-$/.test(rebuilt[rebuilt.length-1])&&/^[A-Z0-9]{2,30}$/i.test(piece)){
         rebuilt[rebuilt.length-1]+=piece;
       }else{
         rebuilt.push(piece);
       }
     }
 
-    const positioned=rebuilt.filter(token=>{
+    return rebuilt.filter(token=>{
+      const upperToken=token.toUpperCase();
       const compact=token.replace(/[^A-Z0-9]/gi,'');
-      return compact.length>=5;
-    });
-
-    if(positioned.length>=expected) return positioned.slice(0,expected);
-
-    // Respaldo para PDFs antiguos que no conserven bien la posición de columnas.
-    const plain=prefix.replace(/\[\[SERIE:([^\]]+)\]\]/gi,' $1 ');
-    const raw=plain.match(/\b[A-Z0-9][A-Z0-9-]{7,32}\b/gi)||[];
-    const fallback=raw.filter(token=>{
-      const compact=token.replaceAll('-','');
-      const digits=(compact.match(/\d/g)||[]).length;
-      const letters=(compact.match(/[A-Z]/gi)||[]).length;
-      if(digits>=5) return true;
-      return compact.length>=10 && digits>=2 && letters>=4;
-    });
-
-    const combined=[...positioned];
-    fallback.forEach(token=>{if(!combined.includes(token)) combined.push(token);});
-    return combined.slice(-expected);
+      return compact.length>=5
+        && /^[A-Z0-9-]+$/i.test(token)
+        && !stopwords.has(upperToken);
+    }).map(token=>token.toUpperCase());
   }
 
-  function cleanDescription(prefix,serials){
-    let value=prefix.replace(/\[\[SERIE:[^\]]+\]\]/gi,' ');
-    serials.forEach(serial=>{value=value.replaceAll(serial,' ');});
-    return value.replace(/\s+/g,' ').replace(/[,;]+\s*$/g,'').trim();
-  }
+  function extractItemsFromPages(pages){
+    const items=[];
+    let current=null;
+    let pendingHeader=false;
 
-  function extractItems(text){
-    const headerRegex=/\[([^/\]]+)\/([^\]]+)\]/g;
-    const headers=[];
-    let match;
-    while((match=headerRegex.exec(text))!==null){
-      headers.push({index:match.index,end:headerRegex.lastIndex,dominio:match[1].trim(),codigo_sap:match[2].trim()});
+    const finalizeCurrent=()=>{
+      if(!current) return;
+      const unique=[];
+      const seen=new Set();
+      current.serials.forEach(serial=>{
+        if(!seen.has(serial)){
+          seen.add(serial);
+          unique.push(serial);
+        }
+      });
+      current.serials=unique;
+      current.descripcion=current.descriptionParts.join(' ').replace(/\s+/g,' ').trim();
+      delete current.descriptionParts;
+      delete current.headerBuffer;
+      delete current.headerResolved;
+      items.push(current);
+      current=null;
+      pendingHeader=false;
+    };
+
+    const resolveHeader=()=>{
+      if(!current||current.headerResolved) return;
+      const match=current.headerBuffer.match(/\[DOM[-\s\uFFFE]*([0-9]+)\s*\/\s*([0-9]+)\s*\]/i);
+      if(!match) return;
+      current.dominio='DOM-'+match[1];
+      current.codigo_sap=normCode(match[2]);
+      const remainder=current.headerBuffer.slice((match.index||0)+match[0].length).trim();
+      if(remainder) current.descriptionParts.push(remainder);
+      current.headerResolved=true;
+      pendingHeader=false;
+    };
+
+    for(const page of pages){
+      const layout=page.layout;
+      let stopPage=false;
+
+      for(const row of page.rows){
+        if(stopPage) break;
+        const full=cleanPdfText(row.text);
+        const upperFull=full.toUpperCase();
+
+        if(/^EN CASO DE DAÑO/i.test(full)){
+          finalizeCurrent();
+          stopPage=true;
+          break;
+        }
+
+        const isHeaderRow=
+          upperFull.includes('SERIE')
+          && upperFull.includes('CANTIDAD')
+          && (upperFull.includes('PRODUCTO')||upperFull.includes('MATERIAL'));
+        if(isHeaderRow) continue;
+
+        if(
+          /DOMINION COLOMBIA SAS/i.test(full)
+          || /^CALLE 94A/i.test(full)
+          || /^BOGOT[ÁA]$/i.test(full)
+          || /^COLOMBIA$/i.test(full)
+          || /NOREPLY@/i.test(full)
+          || /^P[ÁA]GINA:/i.test(full)
+        ) continue;
+
+        const product=cleanPdfText(cellText(row,layout.productMin,layout.productMax));
+        const series=cleanPdfText(cellText(row,layout.serieMin,layout.serieMax));
+        const quantityText=cleanPdfText(cellText(row,layout.quantityMin,layout.quantityMax));
+
+        const startsHeader=/\[DOM(?:-|\s|\uFFFE|\uFFFF)/i.test(product);
+        if(startsHeader){
+          finalizeCurrent();
+          current={
+            dominio:'',
+            codigo_sap:'',
+            descripcion:'',
+            cantidad:null,
+            topologia:'NO CONFIGURADO',
+            serials:[],
+            descriptionParts:[],
+            headerBuffer:product,
+            headerResolved:false
+          };
+          pendingHeader=true;
+          resolveHeader();
+        }else if(current&&pendingHeader&&product){
+          current.headerBuffer+=' '+product;
+          resolveHeader();
+        }else if(current&&product){
+          current.descriptionParts.push(product);
+        }
+
+        if(!current) continue;
+
+        if(current.cantidad===null&&quantityText){
+          const cantidad=parseQuantityCell(quantityText);
+          if(cantidad!==null) current.cantidad=cantidad;
+        }
+
+        if(series){
+          current.serials.push(...serialTokens(series));
+        }
+      }
     }
 
-    const items=[];
-    headers.forEach((header,index)=>{
-      const end=index+1<headers.length?headers[index+1].index:text.length;
-      const segment=text.slice(header.end,end);
-      const quantity=findQuantity(segment);
-      if(!quantity) return;
+    finalizeCurrent();
 
-      const config=catalogMap.get(normCode(header.codigo_sap));
-      const topology=normTopology(config?.topologia);
-      const isSerial=topology.includes('CON PERFIL DE SERIE') && !topology.includes('SIN PERFIL DE SERIE');
-      const prefix=segment.slice(0,quantity.index).trim();
-      const serials=isSerial?serialCandidates(prefix,quantity.cantidad):[];
-
-      items.push({
-        dominio:header.dominio,
-        codigo_sap:normCode(header.codigo_sap),
-        descripcion:cleanDescription(prefix,serials),
-        cantidad:quantity.cantidad,
-        topologia:config?.topologia||'NO CONFIGURADO',
-        serials
+    return items
+      .filter(item=>item.codigo_sap)
+      .map(item=>{
+        const config=catalogMap.get(normCode(item.codigo_sap));
+        return {
+          ...item,
+          cantidad:item.cantidad??item.serials.length,
+          topologia:config?.topologia||'NO CONFIGURADO'
+        };
       });
-    });
-    return items;
   }
 
   function classify(items){
@@ -392,9 +502,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const {data:{session}}=await supabase.auth.getSession();
       if(!session){window.location.replace('index.html');return;}
 
-      const text=await extractTextFromPdf(currentFile);
-      const metadata=extractMetadata(text);
-      const items=extractItems(text);
+      const parsedPdf=await extractPdfData(currentFile);
+      const metadata=extractMetadata(parsedPdf.text);
+      const items=extractItemsFromPages(parsedPdf.pages);
       const classification=classify(items);
 
       currentMetadata=metadata;
