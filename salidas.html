@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260922-1">
   <link rel="stylesheet" href="css/styles.css?v=20260924-1">
   <link rel="stylesheet" href="css/despachos.css?v=20260918-9">
-  <link rel="stylesheet" href="css/salidas.css?v=20261003-2">
+  <link rel="stylesheet" href="css/salidas.css?v=20261009-3">
 </head>
 <body class="dashboard-body">
 <div class="app-shell">
@@ -120,6 +120,15 @@
         </section>
       </div>
 
+      <section id="manualSerialCard" class="dispatch-card manual-serial-card" hidden>
+        <div class="table-heading manual-serial-heading">
+          <div><h3>Seriales pendientes por completar</h3><p>El PDF indica más equipos serializados de los que SIGLO pudo leer. Completa únicamente los seriales faltantes.</p></div>
+          <button id="manualValidateBtn" class="manual-validate-button" type="button">Validar seriales</button>
+        </div>
+        <div id="manualSerialGroups" class="manual-serial-groups"></div>
+        <div class="manual-serial-note">Cada serial se valida contra Código SAP, Dominion, estado LIBRE · Disponible y duplicidad antes de habilitar el registro.</div>
+      </section>
+
       <section id="reviewCard" class="dispatch-card review-card" hidden>
         <div class="table-heading"><div><h3>Bloqueos</h3><p>La salida no se registra mientras exista algún error.</p></div></div>
         <div id="reviewMessages" class="review-messages"></div>
@@ -140,6 +149,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20261009-2"></script>
-<script src="js/salidas.js?v=20261007-1"></script>
+<script src="js/salidas.js?v=20261009-2"></script>
 </body>
 </html>
