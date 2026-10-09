@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20261001-3';
+  const VERSION = '20261009-4';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -193,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function cleanSerialValue(value) {
     return String(value ?? '')
       .trim()
+      .replace(/[‐‑‒–—−﹘﹣－]/g, '-')
       .replace(/\s+/g, '')
       .replace(/^[,;:]+|[,;:]+$/g, '');
   }
@@ -254,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function extractSerialsByRow(block, layout) {
-    const candidates = [];
+    const rowValues = [];
 
     block.forEach(row => {
       const fragments = row.items
@@ -264,13 +265,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!fragments.length) return;
 
-      // Un PDF puede fragmentar visualmente un serial en varios trozos de texto.
-      // Los reunimos por fila antes de validarlo.
+      // Primero unimos los fragmentos que PDF.js haya separado dentro de la misma línea.
       const serial = cleanSerialValue(fragments.join(''));
-      if (isValidSerial(serial)) candidates.push(serial);
+      if (serial && serial !== '-') rowValues.push(serial);
     });
 
-    return candidates;
+    // Algunos PDFs parten físicamente un serial en dos renglones:
+    // "002201216000-" + "42660" => "002201216000-42660".
+    // Si el renglón anterior termina en guion y el siguiente es una continuación
+    // alfanumérica, ambos pertenecen al mismo serial.
+    const rebuilt = [];
+    rowValues.forEach(value => {
+      const previousIndex = rebuilt.length - 1;
+      const previous = previousIndex >= 0 ? rebuilt[previousIndex] : '';
+
+      if (
+        previous &&
+        /-$/.test(previous) &&
+        /^[A-Z0-9]{2,32}$/i.test(value)
+      ) {
+        rebuilt[previousIndex] = cleanSerialValue(previous + value);
+      } else {
+        rebuilt.push(value);
+      }
+    });
+
+    return rebuilt.filter(isValidSerial);
   }
 
   function extractProducts(rows) {
