@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION='20261007-1';
+  const VERSION='20261009-2';
   const supabase=window.sigloSupabase;
   const pdfInput=document.getElementById('pdfInput');
   const selectPdfBtn=document.getElementById('selectPdfBtn');
@@ -81,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
     destinationSelect.value='';
     updateDestinationHint();
     registered=false;
+    document.getElementById('manualSerialCard').hidden=true;
+    document.getElementById('manualSerialGroups').innerHTML='';
     updateProcessButton();
   }
 
@@ -357,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const noSerialMap=new Map();
     const revisar=[];
     const warnings=[];
+    const missingSerialGroups=[];
 
     items.forEach(item=>{
       const topology=normTopology(item.topologia);
@@ -370,8 +373,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if(topology.includes('CON PERFIL DE SERIE')){
         item.serials.forEach(serial=>serializados.push({serial,codigo_sap:item.codigo_sap,dominio:item.dominio}));
-        if(item.serials.length!==Math.round(item.cantidad)){
-          warnings.push(item.codigo_sap+': se esperaban '+Math.round(item.cantidad)+' seriales y se detectaron '+item.serials.length+'.');
+        const expected=Math.max(0,Math.round(Number(item.cantidad)||0));
+        const detected=item.serials.length;
+
+        if(detected<expected){
+          missingSerialGroups.push({
+            key:item.codigo_sap+'|'+item.dominio,
+            codigo_sap:item.codigo_sap,
+            dominio:item.dominio,
+            expected,
+            detected,
+            missing:expected-detected,
+            manualSerials:Array(expected-detected).fill('')
+          });
+        }else if(detected>expected){
+          warnings.push(item.codigo_sap+': se esperaban '+expected+' seriales y se detectaron '+detected+'.');
         }
         return;
       }
@@ -379,7 +395,160 @@ document.addEventListener('DOMContentLoaded', () => {
       revisar.push(item);
     });
 
-    return {serializados,noSerializados:[...noSerialMap.values()],revisar,warnings};
+    return {
+      serializados,
+      noSerializados:[...noSerialMap.values()],
+      revisar,
+      warnings,
+      missingSerialGroups,
+      manualDirty:false
+    };
+  }
+
+  const normalizeManualSerial=value=>String(value??'')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g,'')
+    .replace(/^[,;:]+|[,;:]+$/g,'');
+
+  function manualSerialEntries(){
+    if(!currentClassification) return [];
+    const out=[];
+    (currentClassification.missingSerialGroups||[]).forEach(group=>{
+      (group.manualSerials||[]).forEach((value,index)=>{
+        const serial=normalizeManualSerial(value);
+        if(serial){
+          out.push({
+            serial,
+            codigo_sap:group.codigo_sap,
+            dominio:group.dominio,
+            manual:true,
+            manual_key:group.key,
+            manual_slot:index
+          });
+        }
+      });
+    });
+    return out;
+  }
+
+  function unresolvedManualGroups(){
+    if(!currentClassification) return [];
+    return (currentClassification.missingSerialGroups||[])
+      .map(group=>({
+        ...group,
+        unresolved:(group.manualSerials||[]).filter(value=>!normalizeManualSerial(value)).length
+      }))
+      .filter(group=>group.unresolved>0);
+  }
+
+  function buildSerialPayload(){
+    return [
+      ...(currentClassification?.serializados||[]),
+      ...manualSerialEntries().map(({serial,codigo_sap,dominio})=>({serial,codigo_sap,dominio}))
+    ];
+  }
+
+  function manualValidationMap(){
+    const map=new Map();
+    (currentValidation?.seriales||[]).forEach(row=>{
+      const serial=normalizeManualSerial(row.serial);
+      if(serial) map.set(serial,row);
+    });
+    return map;
+  }
+
+  function renderManualSerialCompletion(){
+    const card=document.getElementById('manualSerialCard');
+    const container=document.getElementById('manualSerialGroups');
+    const groups=currentClassification?.missingSerialGroups||[];
+
+    if(!groups.length){
+      card.hidden=true;
+      container.innerHTML='';
+      return;
+    }
+
+    card.hidden=false;
+    const validations=manualValidationMap();
+
+    container.innerHTML=groups.map((group,gIndex)=>{
+      const inputs=(group.manualSerials||[]).map((value,index)=>{
+        const serial=normalizeManualSerial(value);
+        const validation=serial?validations.get(serial):null;
+        const state=validation
+          ? (validation.resultado==='LISTO'?'ready':'error')
+          : (serial?'pending':'empty');
+        const detail=validation
+          ? validation.detalle
+          : (serial?'Pendiente de validar contra SIGLO.':'Escribe el serial faltante.');
+        return '<label class="manual-serial-slot '+state+'">'+
+          '<span>Serial '+(group.detected+index+1)+' de '+group.expected+'</span>'+
+          '<input type="text" autocomplete="off" spellcheck="false" '+
+            'data-manual-group="'+gIndex+'" data-manual-slot="'+index+'" value="'+esc(value||'')+'" '+
+            'placeholder="Escribir serial">'+
+          '<small>'+esc(detail)+'</small>'+
+        '</label>';
+      }).join('');
+
+      const filled=(group.manualSerials||[]).filter(value=>normalizeManualSerial(value)).length;
+      return '<div class="manual-serial-group">'+
+        '<div class="manual-serial-group-head">'+
+          '<div><strong>SAP '+esc(group.codigo_sap)+'</strong><span>'+esc(group.dominio)+'</span></div>'+
+          '<span class="manual-serial-count">Detectados '+group.detected+' de '+group.expected+' · Completados '+filled+' de '+group.missing+'</span>'+
+        '</div>'+
+        '<div class="manual-serial-inputs">'+inputs+'</div>'+
+      '</div>';
+    }).join('');
+
+    container.querySelectorAll('[data-manual-group]').forEach(input=>{
+      input.addEventListener('input',()=>{
+        const g=Number(input.dataset.manualGroup);
+        const s=Number(input.dataset.manualSlot);
+        const group=currentClassification.missingSerialGroups[g];
+        if(!group) return;
+        group.manualSerials[s]=input.value;
+        currentClassification.manualDirty=true;
+        if(currentPayload) currentPayload.seriales=buildSerialPayload();
+        registerBtn.disabled=true;
+        const slot=input.closest('.manual-serial-slot');
+        slot?.classList.remove('ready','error');
+        slot?.classList.add(normalizeManualSerial(input.value)?'pending':'empty');
+        const small=slot?.querySelector('small');
+        if(small) small.textContent=normalizeManualSerial(input.value)?'Pendiente de validar contra SIGLO.':'Escribe el serial faltante.';
+      });
+
+      input.addEventListener('blur',()=>{
+        if(normalizeManualSerial(input.value)) validateManualSerials(true);
+      });
+    });
+  }
+
+  async function validateManualSerials(silent=false){
+    if(!currentPayload || !currentMetadata || !currentClassification) return;
+
+    currentPayload.seriales=buildSerialPayload();
+    registered=false;
+
+    if(!silent){
+      processMessage.textContent='Validando seriales ingresados manualmente…';
+      processMessage.className='process-message';
+    }
+
+    const {data,error}=await supabase.rpc('validar_salida',{p_payload:currentPayload});
+    if(error) throw error;
+
+    currentClassification.manualDirty=false;
+    currentValidation=data||{};
+    renderValidation(currentMetadata,currentClassification,currentValidation);
+
+    if(!silent){
+      const pending=unresolvedManualGroups().reduce((sum,group)=>sum+group.unresolved,0);
+      processMessage.textContent=pending
+        ? 'Seriales validados. Aún faltan '+pending+' por completar.'
+        : 'Seriales manuales validados. Revisa el resultado antes de registrar.';
+      processMessage.className='process-message success';
+    }
   }
 
   function updateDestinationHint(){
@@ -399,6 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function revalidateCurrentSalida(){
     if(!currentPayload || !currentMetadata || !currentClassification) return;
     currentPayload.destino_operativo=destinationSelect.value;
+    currentPayload.seriales=buildSerialPayload();
     registered=false;
     processMessage.textContent='Actualizando validación según el destino seleccionado…';
     processMessage.className='process-message';
@@ -420,8 +590,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const serialRows=validation?.seriales||[];
     const quantityRows=validation?.no_serializados||[];
+    const unresolvedManualErrors=unresolvedManualGroups().map(group=>
+      group.codigo_sap+': faltan '+group.unresolved+' serial'+(group.unresolved===1?'':'es')+' por completar manualmente.'
+    );
     const parserErrors=[
       ...classification.warnings,
+      ...unresolvedManualErrors,
       ...classification.revisar.map(item=>'Código SAP '+item.codigo_sap+': no está configurado en la maestra.'),
       ...(!metadata.fecha?['No se detectó la fecha del documento.']:[])
     ];
@@ -451,6 +625,8 @@ document.addEventListener('DOMContentLoaded', () => {
           '<td>'+esc(row.detalle||'')+'</td>'+
         '</tr>').join('')
       : '<tr class="empty-row"><td colspan="6">Sin registros</td></tr>';
+
+    renderManualSerialCompletion();
 
     const review=document.getElementById('reviewCard');
     document.getElementById('reviewMessages').innerHTML=globalErrors.map(msg=>'<div class="review-message"><strong>Bloqueo:</strong> '+esc(msg)+'</div>').join('');
@@ -515,7 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fecha:metadata.fecha,
         archivo:currentFile.name,
         destino_operativo:destinationSelect.value,
-        seriales:classification.serializados,
+        seriales:buildSerialPayload(),
         no_serializados:classification.noSerializados
       };
 
@@ -540,6 +716,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   registerBtn.addEventListener('click',async()=>{
     if(!currentPayload || registerBtn.disabled) return;
+    if(currentClassification?.manualDirty){
+      processMessage.textContent='Valida los seriales manuales antes de registrar la salida.';
+      processMessage.className='process-message error';
+      registerBtn.disabled=true;
+      return;
+    }
     registerBtn.disabled=true;
     const original=registerBtn.innerHTML;
     registerBtn.textContent='Registrando…';
@@ -562,6 +744,20 @@ document.addEventListener('DOMContentLoaded', () => {
       registerBtn.disabled=false;
     }finally{
       registerBtn.innerHTML=original;
+    }
+  });
+
+  document.getElementById('manualValidateBtn').addEventListener('click',async()=>{
+    try{
+      const button=document.getElementById('manualValidateBtn');
+      button.disabled=true;
+      await validateManualSerials(false);
+    }catch(error){
+      console.error('Error validando seriales manuales',error);
+      processMessage.textContent=error.message||'No fue posible validar los seriales manuales.';
+      processMessage.className='process-message error';
+    }finally{
+      document.getElementById('manualValidateBtn').disabled=false;
     }
   });
 
