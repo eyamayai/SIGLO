@@ -80,6 +80,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     return normalizeText(value).replace(/\.0+$/,'');
   }
 
+  const CLIENT_SERIAL_TRIM_SAPS=new Set(['4023065','4034050','4038682','4051593']);
+  function clientSerial(codigoSap,serial){
+    const code=normalizeCode(codigoSap);
+    const value=normalizeText(serial);
+    return CLIENT_SERIAL_TRIM_SAPS.has(code) && value.startsWith('00') ? value.slice(2) : value;
+  }
+
   function formatNumber(value){
     const n=Number(value);
     if(!Number.isFinite(n)) return value ?? '';
@@ -407,7 +414,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         lote:normalizeHeader(raw.lote),
         stock:Number(raw.stock||0) || (normalizeText(raw.tipo)==='DESMONTE'?4:1),
         cantidad:Number(raw.cantidad||0),
-        serial:normalizeText(raw.serial),
+        serial:clientSerial(raw.codigo_sap,raw.serial),
         serializado:Boolean(raw.serializado)
       };
       if(row.cantidad<=0) return;
@@ -665,8 +672,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       'SERIALIZADOS',
       ['CÓDIGO SAP','DESCRIPCIÓN','SERIAL','CANTIDAD','LOTE','UBICACION','TIPO STOCK','SERIAL RR','ESTADO RR','NRO PLANILLA'],
       modelData.serials.map(row=>[
-        row.codigo_sap,row.descripcion,row.serial,1,row.lote,row.ubicacion,row.stock,
-        row.serial_rr,row.estado_rr,row.planilla
+        row.codigo_sap,row.descripcion,clientSerial(row.codigo_sap,row.serial),1,row.lote,row.ubicacion,row.stock,
+        clientSerial(row.codigo_sap,row.serial_rr),row.estado_rr,row.planilla
       ]),
       [16,48,28,10,16,18,14,28,14,16]
     );
@@ -701,7 +708,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           wb,
           group.serialSheetName,
           ['CÓDIGO SAP','DESCRIPCIÓN','CANTIDAD','SERIAL','LOTE','UBICACIÓN','OBSERVACIONES'],
-          group.serialRows.map(row=>[row.codigo_sap,row.descripcion,1,row.serial,row.lote,row.ubicacion,row.segmento]),
+          group.serialRows.map(row=>[row.codigo_sap,row.descripcion,1,clientSerial(row.codigo_sap,row.serial),row.lote,row.ubicacion,row.segmento]),
           [16,48,10,28,16,18,20]
         );
       }
@@ -722,7 +729,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         wb,
         'NO_CLASIFICADOS_SER',
         ['CÓDIGO SAP','DESCRIPCIÓN','ALMACÉN','CANTIDAD','SERIAL','LOTE','UBICACIÓN','OBSERVACIONES'],
-        preparedActas.unclassifiedSerial.map(row=>[row.codigo_sap,row.descripcion,row.almacen,1,row.serial,row.lote,row.ubicacion,row.segmento]),
+        preparedActas.unclassifiedSerial.map(row=>[row.codigo_sap,row.descripcion,row.almacen,1,clientSerial(row.codigo_sap,row.serial),row.lote,row.ubicacion,row.segmento]),
         [16,48,14,10,28,16,18,20]
       );
     }
