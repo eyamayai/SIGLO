@@ -11,3 +11,5 @@
 @media(max-width:1400px){.mf-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.mf-history-row{grid-template-columns:minmax(190px,1fr) repeat(3,95px) 80px}}
 @media(max-width:1000px){.mf-kpis{grid-template-columns:1fr 1fr}.mf-history-row{grid-template-columns:1fr 1fr}.mf-open-btn{justify-self:start}.mf-tools .count-chip{margin-left:0}}
 @media(max-width:600px){.mf-kpis{grid-template-columns:1fr}.mf-history-row{grid-template-columns:1fr}.mf-tools{align-items:stretch}.mf-tools .audit-filter,.mf-tools .master-search{width:100%}.mf-tabs{display:grid;grid-template-columns:1fr 1fr}}
+
+.mf-result-pill.colision_siglo{background:#ffe4c7;color:#8b4f17}
