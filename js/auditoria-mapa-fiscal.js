@@ -25,6 +25,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   const text=value=>String(value??'').trim();
   const upper=value=>text(value).toUpperCase();
   const code=value=>text(value).replace(/\.0+$/,'');
+  const CLIENT_SERIAL_TRIM_SAPS=new Set(['4023065','4034050','4038682','4051593']);
+  const clientSerial=(codigoSap,serial)=>{
+    const c=code(codigoSap);
+    const value=upper(serial);
+    return CLIENT_SERIAL_TRIM_SAPS.has(c) && value.startsWith('00') ? value.slice(2) : value;
+  };
+  const clientSerialList=(codigoSap,value)=>String(value||'').split(',').map(item=>item.trim()).filter(Boolean).map(item=>clientSerial(codigoSap,item)).join(', ');
   const fmt=value=>new Intl.NumberFormat('es-CO',{maximumFractionDigits:3}).format(Number(value||0));
   const pct=value=>Number(value||0).toLocaleString('es-CO',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
   const dateTime=value=>{
@@ -116,7 +123,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     const seriales=[];
     const seen=new Set();
     for(const row of serialRows){
-      const serial=upper(row.serial);
+      const codigoSap=code(row.codigo_sap);
+      const serial=clientSerial(codigoSap,row.serial);
       if(!serial) continue;
       if(seen.has(serial)) throw new Error('El serial '+serial+' está duplicado en la hoja SERIALIZADO.');
       seen.add(serial);
@@ -130,7 +138,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
       seriales.push({
         serial:serial,
-        codigo_sap:code(row.codigo_sap),
+        codigo_sap:codigoSap,
         centro:upper(row.centro),
         almacen:upper(row.almacen),
         lote:upper(row.lote),
@@ -175,7 +183,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         resultPill(r.resultado),fmt(r.cantidad_seriales),r.cliente_codigo_sap||'—',r.siglo_codigo_sap||'—',
         r.cliente_lote||'—',r.siglo_lote||'—',r.cliente_tipo||'—',r.siglo_tipo||'—',
         r.ubicacion||'—',[r.tipo_siglo,r.estado,r.estado_inventario].filter(Boolean).join(' / ')||'—',
-        r.seriales||'',r.detalle||''
+        clientSerialList(r.cliente_codigo_sap||r.siglo_codigo_sap,r.seriales),r.detalle||''
       ],
       classes:['','','','','','','','','','','serials-cell','detail-cell']
     },
@@ -325,7 +333,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     const serialHeader=['Resultado','Serial','Cliente Código SAP','Cliente Almacén','Cliente Lote','Cliente Tipo','SIGLO Código SAP','SIGLO Almacén','SIGLO Lote','SIGLO Tipo','Segmento SIGLO','Ubicación SIGLO','Estado actual SIGLO','Descripción','Detalle'];
     const serialRows=[];
     (currentAudit.seriales||[]).forEach(g=>{
-      const list=String(g.seriales||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const serialCode=g.cliente_codigo_sap||g.siglo_codigo_sap||'';
+      const list=String(g.seriales||'').split(',').map(s=>clientSerial(serialCode,s)).filter(Boolean);
       list.forEach(serial=>serialRows.push([
         g.resultado,serial,g.cliente_codigo_sap||'',g.cliente_almacen||'',g.cliente_lote||'',g.cliente_tipo||'',
         g.siglo_codigo_sap||'',g.siglo_almacen||'',g.siglo_lote||'',g.siglo_tipo||'',g.segmento||'',g.ubicacion||'',
