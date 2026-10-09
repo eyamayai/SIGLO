@@ -537,7 +537,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     currentClassification.manualDirty=false;
     currentValidation=data||{};
-    currentClassification.manualDirty=false;
     renderValidation(currentMetadata,currentClassification,currentValidation);
 
     if(!silent){
@@ -575,6 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(error) throw error;
 
     currentValidation=data||{};
+    currentClassification.manualDirty=false;
     renderValidation(currentMetadata,currentClassification,currentValidation);
     processMessage.textContent='Destino actualizado. Revisa la validación antes de registrar.';
     processMessage.className='process-message success';
@@ -597,7 +597,11 @@ document.addEventListener('DOMContentLoaded', () => {
       ...classification.revisar.map(item=>'Código SAP '+item.codigo_sap+': no está configurado en la maestra.'),
       ...(!metadata.fecha?['No se detectó la fecha del documento.']:[])
     ];
-    const globalErrors=[...(validation?.errores_globales||[]),...parserErrors];
+    const hasManualPending=(classification.missingSerialGroups||[]).length>0;
+    const backendGlobalErrors=(validation?.errores_globales||[]).filter(msg=>
+      !(hasManualPending && msg==='No se detectaron materiales para registrar.')
+    );
+    const globalErrors=[...backendGlobalErrors,...parserErrors];
 
     document.getElementById('countSerializados').textContent=serialRows.length;
     document.getElementById('countNoSerializados').textContent=quantityRows.length;
@@ -630,7 +634,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('reviewMessages').innerHTML=globalErrors.map(msg=>'<div class="review-message"><strong>Bloqueo:</strong> '+esc(msg)+'</div>').join('');
     review.hidden=globalErrors.length===0;
 
-    const errors=(validation?.resumen?.errores||0)+parserErrors.length;
+    const suppressedNoMaterial=(validation?.errores_globales||[]).filter(msg=>
+      hasManualPending && msg==='No se detectaron materiales para registrar.'
+    ).length;
+    const errors=Math.max(0,(validation?.resumen?.errores||0)-suppressedNoMaterial)+parserErrors.length;
     registerBtn.disabled=errors>0 || registered;
     const bar=document.querySelector('.dispatch-register-bar');
     const title=document.getElementById('registerTitle');
