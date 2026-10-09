@@ -29,6 +29,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   const clientSerial=(codigoSap,serial)=>{
     const c=code(codigoSap);
     const value=upper(serial);
+    if(c==='4050259'){
+      const base=value.length>8 ? value.slice(-9,-1) : value;
+      return base.replace(/^0+/,'');
+    }
     return CLIENT_SERIAL_TRIM_SAPS.has(c) && value.startsWith('00') ? value.slice(2) : value;
   };
   const clientSerialList=(codigoSap,value)=>String(value||'').split(',').map(item=>item.trim()).filter(Boolean).map(item=>clientSerial(codigoSap,item)).join(', ');
@@ -159,7 +163,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   function resultPill(value){
     const v=upper(value);
-    return '<span class="mf-result-pill '+v.toLowerCase()+'">'+A.escapeHtml(v||'—')+'</span>';
+    const label=v==='COLISION_SIGLO'?'COLISIÓN SIGLO':v;
+    return '<span class="mf-result-pill '+v.toLowerCase()+'">'+A.escapeHtml(label||'—')+'</span>';
   }
 
   function renderSummary(){
@@ -169,6 +174,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('kpiQtyPct').textContent=pct(r.porcentaje_no_serial);
     document.getElementById('kpiInconsistencies').textContent=r.inconsistencias_siglo||0;
     document.getElementById('kpiClientControl').textContent=r.control_cliente||0;
+    document.getElementById('kpiSerialCollisions').textContent=r.serial_colision_siglo||0;
     document.getElementById('kpiSerialInfo').textContent=(r.serial_conciliado||0)+' conciliados de '+(r.seriales_cliente||0)+' del Cliente';
     document.getElementById('kpiQtyInfo').textContent=(r.qty_conciliado||0)+' conciliadas de '+(r.qty_claves_total||0)+' llaves';
     document.getElementById('resultMeta').textContent=(currentAudit.nombre_archivo||'Auditoría')+' · '+dateTime(currentAudit.creado_en)+' · '+(currentAudit.creado_por_nombre||'SIGLO');
@@ -314,6 +320,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       ['Seriales sobrantes',r.serial_sobrante||0],
       ['Seriales con diferencia',r.serial_diferencia||0],
       ['Seriales fuera del mapa',r.serial_fuera_mapa||0],
+      ['Colisiones SIGLO',r.serial_colision_siglo||0],
       ['Llaves no serializadas',r.qty_claves_total||0],
       ['Llaves no serializadas conciliadas',r.qty_conciliado||0],
       ['Llaves faltantes',r.qty_faltante||0],
@@ -374,6 +381,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       ['SOBRANTE','SIGLO tiene existencia fiscal que no aparece en el preliminar.'],
       ['DIFERENCIA','El serial existe en ambos, pero cambia SAP, almacén, lote o tipo.'],
       ['EXISTE_FUERA_MAPA','El serial existe en SIGLO, pero su estado actual no pertenece al universo fiscal.'],
+      ['COLISIÓN SIGLO','Dos o más equipos de SIGLO se normalizan al mismo serial Cliente. Se reporta para revisión y no se concilia automáticamente.'],
       ['Acierto general','Promedio entre el porcentaje de conciliación serializada y no serializada cuando ambos universos existen.']
     ];
     const wsMethod=XLSX.utils.aoa_to_sheet(methodology);
