@@ -84,6 +84,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   function clientSerial(codigoSap,serial){
     const code=normalizeCode(codigoSap);
     const value=normalizeText(serial);
+    if(code==='4050259'){
+      const base=value.length>8 ? value.slice(-9,-1) : value;
+      return base.replace(/^0+/,'');
+    }
     return CLIENT_SERIAL_TRIM_SAPS.has(code) && value.startsWith('00') ? value.slice(2) : value;
   }
 
