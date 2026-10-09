@@ -78,7 +78,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       'auditoria_carga',
       'auditoria_tecnicos',
       'auditoria_codigos',
-      'auditoria_documentos'
+      'auditoria_documentos',
+      'auditoria_mapa_fiscal'
     ].some(key => permisos?.[key] === true);
   }
 
@@ -99,6 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'auditoria-tecnicos.html':'auditoria_tecnicos',
       'auditoria-codigos.html':'auditoria_codigos',
       'auditoria-documentos.html':'auditoria_documentos',
+      'auditoria-mapa-fiscal.html':'auditoria_mapa_fiscal',
       'auditoria-usuarios.html':'auditoria_usuarios'
     };
     return map[path] || null;
