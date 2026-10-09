@@ -1,0 +1,103 @@
+<!DOCTYPE html><html lang="es"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1976c9">
+<title>SIGLO | Auditoría · Ajustes de Inventario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260918-14">
+<link rel="stylesheet" href="css/styles.css?v=20260924-1"><link rel="stylesheet" href="css/auditoria.css?v=20260921-2"><link rel="stylesheet" href="css/auditoria-ajustes.css?v=20261009-1">
+</head><body class="dashboard-body"><div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-brand"><img src="assets/icono-siglo.png?v=20260918-14" alt="Icono SIGLO"><strong>SIGLO</strong></div>
+<nav aria-label="Navegación principal">
+    <a class="nav-link" href="inicio.html"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
+    <a class="nav-link" href="ingresos.html"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Ingresos</a>
+    <a class="nav-link" href="despachos.html"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Despachos</a>
+    <a class="nav-link" href="salidas.html"><svg viewBox="0 0 24 24"><path d="M4 12h13"/><path d="m13 7 5 5-5 5"/><path d="M4 5v14"/></svg>Salidas</a>
+    <a class="nav-link" href="devoluciones.html"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>Devoluciones</a>
+    <a class="nav-link" href="desmonte.html"><svg viewBox="0 0 24 24"><path d="M4 6h16v4H4z"/><path d="M7 10v8h10v-8"/><path d="M9 14h6"/></svg>Desmonte</a>
+    <a class="nav-link" href="prealerta.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M8 9h8"/><path d="M8 13h5"/><path d="m14 16 2 2 4-4"/></svg>Prealerta</a>
+    <a class="nav-link" href="saldos.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Saldos</a>
+    <a class="nav-link" href="movimientos.html"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg>Movimientos</a>
+    <a class="nav-link active" href="auditoria.html"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>Auditoría</a>
+    <a class="nav-link" href="informes.html"><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>Informes</a>
+</nav>
+<div class="sidebar-bottom"><a class="nav-link" id="logoutBtn" href="index.html"><svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>Cerrar sesión</a></div>
+</aside>
+
+<main class="dashboard-main audit-main">
+<div class="dashboard-top"><div class="dashboard-title">
+<div class="breadcrumb"><a href="auditoria.html">Auditoría</a><span>›</span><strong>Ajustes de Inventario</strong></div>
+<h1>Ajustes de Inventario</h1><p>Corrige equipos serializados sin alterar su serial ni borrar la trazabilidad histórica.</p></div>
+<div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div></div>
+
+<section class="audit-card adjust-search-card">
+  <div class="audit-heading"><div><h2>1. Buscar equipo</h2><p>Consulta el serial exacto. SIGLO mostrará su estado actual antes de habilitar cualquier corrección.</p></div><span class="adjust-audit-badge">Con trazabilidad</span></div>
+  <div class="adjust-search-row"><input id="serialInput" class="master-search" autocomplete="off" placeholder="Serial del equipo"><button id="searchBtn" class="audit-button primary" type="button">Consultar serial</button></div>
+  <div id="adjustMessage" class="audit-message" role="status" aria-live="polite"></div>
+</section>
+
+<section id="editorSection" hidden>
+  <div class="adjust-columns">
+    <article class="audit-card adjust-panel current-panel">
+      <div class="adjust-panel-heading"><div><span class="adjust-step">ACTUAL</span><h2>Estado en SIGLO</h2></div><span id="currentSerial" class="count-chip">—</span></div>
+      <div id="currentGrid" class="adjust-data-grid"></div>
+    </article>
+
+    <article class="audit-card adjust-panel proposed-panel">
+      <div class="adjust-panel-heading"><div><span class="adjust-step proposed">PROPUESTO</span><h2>Corrección</h2></div><span id="adminSapBadge" class="adjust-admin-badge" hidden>Administrador · SAP editable</span></div>
+      <div class="adjust-form-grid">
+        <label><span>Código SAP</span><div class="adjust-inline"><input id="sapInput" type="text" autocomplete="off"><button id="validateSapBtn" type="button" class="mini-action">Validar</button></div><small id="sapHelp">Se conserva el SAP actual.</small></label>
+        <label><span>Lote</span><select id="lotSelect"></select><small>Dominion se calcula automáticamente.</small></label>
+        <label><span>Dominion automático</span><input id="domainInput" type="text" disabled></label>
+        <label class="field-wide"><span>Descripción automática</span><input id="descriptionInput" type="text" disabled></label>
+        <label><span>Almacén</span><select id="warehouseSelect"><option value="A221">A221</option><option value="U020">U020</option></select></label>
+        <label><span>Tipo</span><select id="typeSelect"><option value="LIBRE">LIBRE</option><option value="DESMONTE">DESMONTE</option></select></label>
+        <label id="locationField"><span>Ubicación</span><select id="locationSelect"></select><small>El Segmento se obtiene del catálogo.</small></label>
+        <label id="desmonteSegmentField" hidden><span>Segmento Desmonte</span><select id="desmonteSegmentSelect"></select><small>Define QMINTIC o QQ01Q1 automáticamente.</small></label>
+        <label><span>Segmento automático</span><input id="segmentInput" type="text" disabled></label>
+        <label><span>Ubicación resultante</span><input id="resultLocationInput" type="text" disabled></label>
+        <label id="inventoryStateField"><span>Estado inventario</span><select id="inventoryStateSelect"><option value="Inversa">Inversa</option><option value="Garantía">Garantía</option></select></label>
+        <label><span>Estado físico</span><input id="physicalStateInput" type="text" disabled></label>
+        <label><span>Stock</span><input id="stockInput" type="text" disabled></label>
+      </div>
+      <div class="adjust-form-actions"><button id="previewBtn" class="audit-button primary" type="button">Validar propuesta</button></div>
+    </article>
+  </div>
+
+  <article id="previewCard" class="audit-card adjust-preview-card" hidden>
+    <div class="preview-heading"><div><h2>2. Confirmar cambios</h2><p>SIGLO solo aplicará los campos que cambien y guardará el antes/después en Auditoría.</p></div><span id="changeCount" class="count-chip">0 cambios</span></div>
+    <div class="audit-table-wrap adjust-diff-wrap"><table class="audit-table adjust-diff-table"><thead><tr><th>Campo</th><th>Actual</th><th>Propuesto</th></tr></thead><tbody id="diffBody"></tbody></table></div>
+
+    <div class="adjust-reason-grid">
+      <label><span>Motivo *</span><select id="reasonSelect">
+        <option value="">Seleccionar motivo</option>
+        <option value="CONCILIACION_PRELIMINAR">Conciliación preliminar Cliente</option>
+        <option value="CORRECCION_LOTE">Corrección de lote</option>
+        <option value="CORRECCION_ALMACEN">Corrección de almacén</option>
+        <option value="CORRECCION_UBICACION">Corrección de ubicación</option>
+        <option value="CORRECCION_CLASIFICACION">Corrección Libre / Desmonte</option>
+        <option value="ERROR_CARGA_INICIAL">Error de carga inicial</option>
+        <option value="OTRO">Otro</option>
+      </select></label>
+      <label class="field-wide"><span>Observación / soporte</span><textarea id="observationInput" rows="3" placeholder="Ej. Ajuste validado contra preliminar del Cliente del 09/10/2026"></textarea></label>
+    </div>
+
+    <div class="audit-register-bar ready">
+      <div><strong>Ajuste listo para aplicar</strong><p>Esta acción modifica el inventario actual, no reescribe Movimientos anteriores y crea un registro de Auditoría.</p></div>
+      <button id="applyBtn" class="audit-button" type="button" disabled>Aplicar ajuste →</button>
+    </div>
+  </article>
+
+  <article class="audit-card adjust-history-card">
+    <div class="preview-heading"><div><h2>Historial de ajustes del serial</h2><p>Últimas correcciones administrativas realizadas desde este módulo.</p></div><span id="historyCount" class="count-chip">0 ajustes</span></div>
+    <div id="historyList" class="adjust-history-list"><div class="adjust-empty">Este serial aún no tiene ajustes de Auditoría.</div></div>
+  </article>
+</section>
+
+<footer class="dashboard-footer">SIGLO v0.1 · Auditoría · Ajustes de Inventario</footer>
+</main></div>
+<div id="toast" class="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js?v=20260918-1"></script><script src="js/app.js?v=20261009-2"></script>
+<script src="js/auditoria-common.js?v=20260921-2"></script><script src="js/auditoria-ajustes.js?v=20261009-1"></script>
+</body></html>
