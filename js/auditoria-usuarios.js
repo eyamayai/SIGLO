@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const permissionKeys=[
     'ingresos','despachos','consumos','salidas','devoluciones','desmonte','prealerta',
     'saldos','movimientos','informes',
-    'auditoria_carga','auditoria_tecnicos','auditoria_codigos','auditoria_documentos','auditoria_mapa_fiscal'
+    'auditoria_carga','auditoria_tecnicos','auditoria_codigos','auditoria_documentos','auditoria_mapa_fiscal','auditoria_ajustes'
   ];
   const operationalKeys=['ingresos','despachos','consumos','salidas','devoluciones','desmonte','prealerta','saldos','movimientos','informes'];
 
