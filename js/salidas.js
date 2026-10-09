@@ -518,9 +518,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(small) small.textContent=normalizeManualSerial(input.value)?'Pendiente de validar contra SIGLO.':'Escribe el serial faltante.';
       });
 
-      input.addEventListener('blur',()=>{
-        if(normalizeManualSerial(input.value)) validateManualSerials(true);
-      });
     });
   }
 
@@ -540,6 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     currentClassification.manualDirty=false;
     currentValidation=data||{};
+    currentClassification.manualDirty=false;
     renderValidation(currentMetadata,currentClassification,currentValidation);
 
     if(!silent){
