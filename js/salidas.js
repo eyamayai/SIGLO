@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION='20261009-2';
+  const VERSION='20261010-1';
   const supabase=window.sigloSupabase;
   const pdfInput=document.getElementById('pdfInput');
   const selectPdfBtn=document.getElementById('selectPdfBtn');
@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFile=null;
   let catalog=[];
   let catalogMap=new Map();
+  let dominionMap=new Map();
   let currentPayload=null;
   let currentValidation=null;
   let currentMetadata=null;
@@ -33,6 +34,53 @@ document.addEventListener('DOMContentLoaded', () => {
   const norm=value=>String(value??'').trim();
   const normCode=value=>norm(value);
   const normTopology=value=>norm(value).toUpperCase();
+  const normDominion=value=>norm(value).toUpperCase();
+
+  function buildDominionMap(items){
+    const owners=new Map();
+    (items||[]).forEach(item=>{
+      const sap=normCode(item.codigo_sap);
+      (Array.isArray(item.dominios)?item.dominios:[]).forEach(rawDominion=>{
+        const dominio=normDominion(rawDominion);
+        if(!dominio) return;
+        if(!owners.has(dominio)) owners.set(dominio,new Set());
+        owners.get(dominio).add(sap);
+      });
+    });
+
+    return new Map([...owners.entries()].map(([dominio,set])=>{
+      const codigos=[...set].filter(Boolean).sort();
+      return [dominio,{
+        codigo_sap:codigos.length===1?codigos[0]:null,
+        codigos,
+        ambiguo:codigos.length>1
+      }];
+    }));
+  }
+
+  function resolveDocumentSap(rawSap,rawDominion){
+    const original=normCode(rawSap);
+    const dominio=normDominion(rawDominion);
+    const match=dominionMap.get(dominio);
+
+    if(!match) return {codigo_sap:original,original,dominio,normalizado:false,ambiguo:false};
+
+    if(match.ambiguo){
+      if(match.codigos.includes(original)){
+        return {codigo_sap:original,original,dominio,normalizado:false,ambiguo:false};
+      }
+      return {codigo_sap:original,original,dominio,normalizado:false,ambiguo:true,codigos:match.codigos};
+    }
+
+    const resolved=match.codigo_sap||original;
+    return {
+      codigo_sap:resolved,
+      original,
+      dominio,
+      normalizado:Boolean(resolved && original!==resolved),
+      ambiguo:false
+    };
+  }
 
   async function loadCatalog(){
     try{
@@ -46,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         catalog=await response.json();
       }
       catalogMap=new Map(catalog.map(item=>[normCode(item.codigo_sap),item]));
+      dominionMap=buildDominionMap(catalog);
       catalogStatus.textContent='Catálogo listo · '+catalog.length+' códigos SAP cargados';
       catalogStatus.className='catalog-status ready';
       updateProcessButton();
@@ -343,11 +392,19 @@ document.addEventListener('DOMContentLoaded', () => {
     finalizeCurrent();
 
     return items
-      .filter(item=>item.codigo_sap)
+      .filter(item=>item.codigo_sap || item.dominio)
       .map(item=>{
-        const config=catalogMap.get(normCode(item.codigo_sap));
+        const originalSap=normCode(item.codigo_sap);
+        const resolution=resolveDocumentSap(originalSap,item.dominio);
+        const codigoSap=resolution.codigo_sap;
+        const config=resolution.ambiguo?null:catalogMap.get(codigoSap);
         return {
           ...item,
+          codigo_sap:codigoSap,
+          codigo_sap_pdf:originalSap,
+          sap_normalizado:resolution.normalizado,
+          sap_ambiguo:resolution.ambiguo,
+          sap_codigos_posibles:resolution.codigos||[],
           cantidad:item.cantidad??item.serials.length,
           topologia:config?.topologia||'NO CONFIGURADO'
         };
@@ -359,9 +416,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const noSerialMap=new Map();
     const revisar=[];
     const warnings=[];
+    const notices=[];
     const missingSerialGroups=[];
 
     items.forEach(item=>{
+      if(item.sap_normalizado){
+        notices.push('SAP normalizado por Dominion: '+item.codigo_sap_pdf+' → '+item.codigo_sap+' · '+item.dominio+'.');
+      }
+      if(item.sap_ambiguo){
+        warnings.push('Dominion '+item.dominio+': está asociado a '+(item.sap_codigos_posibles||[]).join(' / ')+' y el SAP del documento '+item.codigo_sap_pdf+' no permite resolverlo de forma única.');
+        return;
+      }
+
       const topology=normTopology(item.topologia);
       if(topology.includes('SIN PERFIL DE SERIE')){
         const key=item.codigo_sap+'|'+item.dominio;
@@ -400,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
       noSerializados:[...noSerialMap.values()],
       revisar,
       warnings,
+      notices:[...new Set(notices)],
       missingSerialGroups,
       manualDirty:false
     };
@@ -602,6 +669,7 @@ document.addEventListener('DOMContentLoaded', () => {
       !(hasManualPending && msg==='No se detectaron materiales para registrar.')
     );
     const globalErrors=[...backendGlobalErrors,...parserErrors];
+    const parserNotices=classification.notices||[];
 
     document.getElementById('countSerializados').textContent=serialRows.length;
     document.getElementById('countNoSerializados').textContent=quantityRows.length;
@@ -631,8 +699,10 @@ document.addEventListener('DOMContentLoaded', () => {
     renderManualSerialCompletion();
 
     const review=document.getElementById('reviewCard');
-    document.getElementById('reviewMessages').innerHTML=globalErrors.map(msg=>'<div class="review-message"><strong>Bloqueo:</strong> '+esc(msg)+'</div>').join('');
-    review.hidden=globalErrors.length===0;
+    document.getElementById('reviewMessages').innerHTML=
+      globalErrors.map(msg=>'<div class="review-message"><strong>Bloqueo:</strong> '+esc(msg)+'</div>').join('')+
+      parserNotices.map(msg=>'<div class="review-message info"><strong>Aviso:</strong> '+esc(msg)+'</div>').join('');
+    review.hidden=globalErrors.length===0 && parserNotices.length===0;
 
     const suppressedNoMaterial=(validation?.errores_globales||[]).filter(msg=>
       hasManualPending && msg==='No se detectaron materiales para registrar.'
