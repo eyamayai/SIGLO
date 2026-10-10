@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20261009-4';
+  const VERSION = '20261010-1';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFile = null;
   let catalog = [];
   let catalogMap = new Map();
+  let dominionMap = new Map();
   let locations = [];
   let locationMap = new Map();
   let currentRows = [];
@@ -40,6 +41,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const top = normalizeTopology(value);
     return top.includes('CON PERFIL DE SERIE') && !top.includes('SIN PERFIL DE SERIE');
   };
+
+  const normalizeDominion = (value) => String(value ?? '').trim().toUpperCase();
+
+  function buildDominionMap(items) {
+    const owners = new Map();
+    (items || []).forEach(item => {
+      const sap = normalizeCode(item.codigo_sap);
+      (Array.isArray(item.dominios) ? item.dominios : []).forEach(rawDominion => {
+        const dominio = normalizeDominion(rawDominion);
+        if (!dominio) return;
+        if (!owners.has(dominio)) owners.set(dominio, new Set());
+        owners.get(dominio).add(sap);
+      });
+    });
+
+    return new Map([...owners.entries()].map(([dominio, set]) => {
+      const codigos = [...set].filter(Boolean).sort();
+      return [dominio, {
+        codigo_sap: codigos.length === 1 ? codigos[0] : null,
+        codigos,
+        ambiguo: codigos.length > 1
+      }];
+    }));
+  }
+
+  function resolveDocumentSap(rawSap, rawDominion) {
+    const original = normalizeCode(rawSap);
+    const dominio = normalizeDominion(rawDominion);
+    const match = dominionMap.get(dominio);
+
+    if (!match) return { codigo_sap: original, original, dominio, normalizado: false, ambiguo: false };
+
+    if (match.ambiguo) {
+      if (match.codigos.includes(original)) {
+        return { codigo_sap: original, original, dominio, normalizado: false, ambiguo: false };
+      }
+      return { codigo_sap: original, original, dominio, normalizado: false, ambiguo: true, codigos: match.codigos };
+    }
+
+    const resolved = match.codigo_sap || original;
+    return {
+      codigo_sap: resolved,
+      original,
+      dominio,
+      normalizado: Boolean(resolved && original !== resolved),
+      ambiguo: false
+    };
+  }
 
   async function loadCatalog() {
     try {
@@ -75,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
       locations = [...locations].sort((a,b) => String(a.ubicacion||'').localeCompare(String(b.ubicacion||''), 'es'));
 
       catalogMap = new Map(catalog.map(item => [normalizeCode(item.codigo_sap), item]));
+      dominionMap = buildDominionMap(catalog);
       locationMap = new Map(locations.map(item => [normalizeCode(item.ubicacion), String(item.segmento || '').trim()]));
 
       catalogStatus.textContent = `Catálogos listos · ${catalog.length} códigos SAP · ${locations.length} ubicaciones`;
@@ -317,9 +367,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const first = block[0];
       const dominioPdf = start.match[1].trim();
-      const codigoSap = normalizeCode(start.match[2]);
-      const config = catalogMap.get(codigoSap);
+      const codigoSapPdf = normalizeCode(start.match[2]);
+      const sapResolution = resolveDocumentSap(codigoSapPdf, dominioPdf);
+      const codigoSap = sapResolution.codigo_sap;
+      const config = sapResolution.ambiguo ? null : catalogMap.get(codigoSap);
       const topologia = config?.topologia || 'NO CONFIGURADO';
+
+      if (sapResolution.normalizado) {
+        notices.push(`SAP normalizado por Dominion: ${codigoSapPdf} → ${codigoSap} · ${dominioPdf}.`);
+      } else if (sapResolution.ambiguo) {
+        issues.push(`Dominion ${dominioPdf}: está asociado a ${sapResolution.codigos.join(' / ')} y el SAP del documento ${codigoSapPdf} no permite resolverlo de forma única.`);
+      }
 
       const firstHeaderText = start.match[0];
       const layout = findColumnLayout(rows, start.index);
