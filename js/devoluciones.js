@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20260930-3';
+  const VERSION = '20261015-1';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -16,9 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const desmonteSegmentWrap = document.getElementById('returnDesmonteSegmentWrap');
   const desmonteSegmentSelect = document.getElementById('returnDesmonteSegment');
   const librePlacementWrap = document.getElementById('returnLibrePlacementWrap');
-  const libreWarehouseSelect = document.getElementById('returnLibreWarehouse');
-  const libreLocationSelect = document.getElementById('returnLibreLocation');
-  const libreSegment = document.getElementById('returnLibreSegment');
+  const librePlacementList = document.getElementById('returnLibrePlacementList');
   const preSigloNotice = document.getElementById('preSigloNotice');
   const registerBtn = document.getElementById('registerReturnBtn');
 
@@ -28,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentClassification = null;
   let currentAnalysis = {seriales_pre_siglo:0,unidades_pre_siglo:0,unidades_sin_responsable:0,requiere_ubicacion_libre:false,bloqueos:[],hallazgos:[]};
   let locationCatalog = [];
+  let librePlacements = new Map();
   let devolucionRegistrada = false;
 
   if (window.pdfjsLib) {
@@ -61,9 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const {data:locations,error:locationError}=await supabase.rpc('consultar_catalogo_ubicaciones');
         if(!locationError && Array.isArray(locations)) locationCatalog=locations;
       }
-      libreLocationSelect.innerHTML='<option value="">Seleccionar…</option>'+locationCatalog
-        .map(item=>`<option value="${escapeHtml(item.ubicacion)}">${escapeHtml(item.ubicacion)} · ${escapeHtml(item.segmento)}</option>`)
-        .join('');
       const segmentos=[...new Set(locationCatalog.map(item=>String(item.segmento||'').trim()).filter(Boolean))].sort();
       desmonteSegmentSelect.innerHTML='<option value="">Automático</option>'+segmentos
         .map(seg=>`<option value="${escapeHtml(seg)}">${escapeHtml(seg)}</option>`).join('');
@@ -383,7 +379,9 @@ document.addEventListener('DOMContentLoaded', () => {
     currentMetadata={...metadata}; currentClassification=classification;
     currentAnalysis=analysis||{seriales_pre_siglo:0,unidades_pre_siglo:0,unidades_sin_responsable:0,requiere_ubicacion_libre:false,bloqueos:[],hallazgos:[]};
     devolucionRegistrada=false;
-    destinationSelect.value=''; libreWarehouseSelect.value=''; libreLocationSelect.value=''; libreSegment.textContent='Segmento: —';
+    destinationSelect.value='';
+    librePlacements=new Map();
+    renderLibrePlacements();
     updatePreSigloNotice();
     updateDestinationEffect();
 
@@ -429,9 +427,97 @@ document.addEventListener('DOMContentLoaded', () => {
       : '';
   }
 
-  function updateLibreSegment(){
-    const selected=locationCatalog.find(item=>String(item.ubicacion)===libreLocationSelect.value);
-    libreSegment.textContent='Segmento: '+(selected?.segmento||'—');
+  function librePlacementKey(codigoSap,dominio){
+    return `${normalizeCode(codigoSap)}|${String(dominio||'').trim()}`;
+  }
+
+  function getPreSigloMaterials(){
+    const grouped=new Map();
+    (currentAnalysis?.hallazgos||[])
+      .filter(item=>String(item?.tipo||'').toUpperCase()==='PRE_SIGLO')
+      .forEach(item=>{
+        const codigo_sap=normalizeCode(item.codigo_sap);
+        const dominio=String(item.dominio||'').trim();
+        if(!codigo_sap||!dominio) return;
+        const key=librePlacementKey(codigo_sap,dominio);
+        const current=grouped.get(key)||{key,codigo_sap,dominio,seriales:0,cantidad:0};
+        if(item.serial) current.seriales+=1;
+        else current.cantidad+=Number(item.cantidad||0);
+        grouped.set(key,current);
+      });
+    return [...grouped.values()];
+  }
+
+  function renderLibrePlacements(){
+    if(!librePlacementList) return;
+    const materials=getPreSigloMaterials();
+    if(!materials.length){
+      librePlacementList.innerHTML='';
+      return;
+    }
+
+    const locationOptions='<option value="">Seleccionar…</option>'+locationCatalog
+      .map(item=>`<option value="${escapeHtml(item.ubicacion)}">${escapeHtml(item.ubicacion)} · ${escapeHtml(item.segmento)}</option>`)
+      .join('');
+
+    librePlacementList.innerHTML=materials.map(material=>{
+      const saved=librePlacements.get(material.key)||{
+        codigo_sap:material.codigo_sap,
+        dominio:material.dominio,
+        almacen:'',
+        ubicacion:''
+      };
+      librePlacements.set(material.key,saved);
+      const detail=[
+        material.seriales? `${material.seriales} serial(es)` : '',
+        material.cantidad? `${material.cantidad} unidad(es)` : ''
+      ].filter(Boolean).join(' · ');
+      return `
+        <div class="pre-siglo-placement-row" data-placement-key="${escapeHtml(material.key)}">
+          <div class="placement-material">
+            <strong>SAP ${escapeHtml(material.codigo_sap)}</strong>
+            <span>${escapeHtml(material.dominio)}${detail?' · '+escapeHtml(detail):''}</span>
+          </div>
+          <label>
+            <span>Almacén</span>
+            <select data-role="almacen">
+              <option value="">Seleccionar…</option>
+              <option value="A221"${saved.almacen==='A221'?' selected':''}>A221</option>
+              <option value="U020"${saved.almacen==='U020'?' selected':''}>U020</option>
+            </select>
+          </label>
+          <label>
+            <span>Ubicación</span>
+            <select data-role="ubicacion">${locationOptions}</select>
+          </label>
+          <div class="placement-segment" data-role="segmento">Segmento: —</div>
+        </div>`;
+    }).join('');
+
+    librePlacementList.querySelectorAll('.pre-siglo-placement-row').forEach(row=>{
+      const key=row.dataset.placementKey;
+      const saved=librePlacements.get(key);
+      const locationSelect=row.querySelector('select[data-role="ubicacion"]');
+      if(saved?.ubicacion) locationSelect.value=saved.ubicacion;
+      const selected=locationCatalog.find(item=>String(item.ubicacion)===String(saved?.ubicacion||''));
+      row.querySelector('[data-role="segmento"]').textContent='Segmento: '+(selected?.segmento||'—');
+    });
+  }
+
+  function getLibrePlacementsPayload(){
+    return getPreSigloMaterials().map(material=>{
+      const placement=librePlacements.get(material.key)||{};
+      return {
+        codigo_sap:material.codigo_sap,
+        dominio:material.dominio,
+        almacen:String(placement.almacen||'').trim(),
+        ubicacion:String(placement.ubicacion||'').trim()
+      };
+    });
+  }
+
+  function getMissingLibrePlacements(){
+    return getLibrePlacementsPayload().filter(item=>!item.almacen||!item.ubicacion);
   }
 
   function updateDestinationEffect(){
@@ -446,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
       librePlacementWrap.hidden=!needsPlacement;
       destinationEffect.classList.add('libre');
       destinationEffect.textContent=needsPlacement
-        ? 'Libre: el material con historial regresa a su ubicación de origen; el material PRE-SIGLO usará el Almacén y Ubicación seleccionados.'
+        ? 'Libre: el material con historial regresa a su ubicación de origen; cada Código SAP PRE-SIGLO usará el Almacén y la Ubicación que le asignes.'
         : 'Libre: el material con historial regresa a su ubicación de origen.';
     }else if(value==='DESMONTE'){
       librePlacementWrap.hidden=true;
@@ -487,8 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const destino=destinationSelect.value;
     const ubicacionDesmonte=desmonteLocationSelect.value;
     const requiereLibre=Boolean(currentAnalysis?.requiere_ubicacion_libre);
-    const almacenLibre=libreWarehouseSelect.value;
-    const ubicacionLibre=libreLocationSelect.value;
+    const pendientesLibre=requiereLibre?getMissingLibrePlacements():[];
 
     if(!material){
       registerBtn.disabled=true;bar.classList.remove('ready','error');
@@ -506,9 +591,10 @@ document.addEventListener('DOMContentLoaded', () => {
       registerBtn.disabled=true;bar.classList.remove('ready','error');
       title.textContent='Selecciona la ubicación de Desmonte';help.textContent='Elige QMINTIC o QQ01Q1. La ubicación aplica a todo el PDF.';return;
     }
-    if(destino==='LIBRE'&&requiereLibre&&(!almacenLibre||!ubicacionLibre)){
+    if(destino==='LIBRE'&&requiereLibre&&pendientesLibre.length){
       registerBtn.disabled=true;bar.classList.remove('ready','error');
-      title.textContent='Ubica el material PRE-SIGLO';help.textContent='Selecciona Almacén y Ubicación para el material que entra por primera vez a SIGLO.';return;
+      title.textContent='Ubica todo el material PRE-SIGLO';
+      help.textContent=`Completa Almacén y Ubicación para ${pendientesLibre.length} Código(s) SAP antes de registrar la devolución.`;return;
     }
 
     registerBtn.disabled=false;bar.classList.remove('error');bar.classList.add('ready');
@@ -519,8 +605,20 @@ document.addEventListener('DOMContentLoaded', () => {
   destinationSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
   desmonteLocationSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
   desmonteSegmentSelect?.addEventListener('change',()=>{updateDestinationEffect();validateRegistration();});
-  libreWarehouseSelect?.addEventListener('change',validateRegistration);
-  libreLocationSelect?.addEventListener('change',()=>{updateLibreSegment();validateRegistration();});
+  librePlacementList?.addEventListener('change',event=>{
+    const select=event.target.closest('select[data-role]');
+    const row=select?.closest('.pre-siglo-placement-row');
+    if(!select||!row) return;
+    const key=row.dataset.placementKey;
+    const placement=librePlacements.get(key)||{};
+    placement[select.dataset.role]=select.value;
+    librePlacements.set(key,placement);
+    if(select.dataset.role==='ubicacion'){
+      const selected=locationCatalog.find(item=>String(item.ubicacion)===select.value);
+      row.querySelector('[data-role="segmento"]').textContent='Segmento: '+(selected?.segmento||'—');
+    }
+    validateRegistration();
+  });
 
   processPdfBtn?.addEventListener('click',async()=>{
     if(!currentFile)return;
@@ -568,6 +666,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const {data:{session}}=await supabase.auth.getSession();
     if(!session){window.location.replace('index.html');return;}
 
+    const ubicacionesLibre=destinationSelect.value==='LIBRE'?getLibrePlacementsPayload():[];
+    const primeraUbicacionLibre=ubicacionesLibre[0]||{};
     const payload={
       documento:currentMetadata.documento||'',
       fecha:currentMetadata.fecha||null,
@@ -576,8 +676,9 @@ document.addEventListener('DOMContentLoaded', () => {
       destino:destinationSelect.value,
       ubicacion_desmonte:destinationSelect.value==='DESMONTE'?desmonteLocationSelect.value:'',
       segmento_desmonte:destinationSelect.value==='DESMONTE'?desmonteSegmentSelect.value:'',
-      almacen_libre:destinationSelect.value==='LIBRE'?libreWarehouseSelect.value:'',
-      ubicacion_libre:destinationSelect.value==='LIBRE'?libreLocationSelect.value:'',
+      almacen_libre:destinationSelect.value==='LIBRE'?(primeraUbicacionLibre.almacen||''):'',
+      ubicacion_libre:destinationSelect.value==='LIBRE'?(primeraUbicacionLibre.ubicacion||''):'',
+      ubicaciones_libre:ubicacionesLibre,
       seriales:currentClassification.serializados.map(row=>({serial:row.serial,codigo_sap:row.codigo_sap,dominio:row.dominio})),
       no_serializados:currentClassification.noSerializados.map(row=>({codigo_sap:row.codigo_sap,dominio:row.dominio,cantidad:Number(row.cantidad||0)}))
     };
@@ -617,7 +718,9 @@ document.addEventListener('DOMContentLoaded', () => {
     processMessage.textContent='';processMessage.className='process-message';resultsSection.hidden=true;
     currentMetadata={};currentClassification=null;
     currentAnalysis={seriales_pre_siglo:0,unidades_pre_siglo:0,unidades_sin_responsable:0,requiere_ubicacion_libre:false,bloqueos:[],hallazgos:[]};
-    devolucionRegistrada=false;destinationSelect.value='';desmonteLocationSelect.value='';desmonteSegmentSelect.value='';libreWarehouseSelect.value='';libreLocationSelect.value='';libreSegment.textContent='Segmento: —';
+    librePlacements=new Map();
+    if(librePlacementList) librePlacementList.innerHTML='';
+    devolucionRegistrada=false;destinationSelect.value='';desmonteLocationSelect.value='';desmonteSegmentSelect.value='';
     updatePreSigloNotice();updateDestinationEffect();updateProcessButton();dropZone.scrollIntoView({behavior:'smooth',block:'center'});
   });
 
