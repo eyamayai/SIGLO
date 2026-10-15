@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20261010-1';
+  const VERSION = '20261015-1';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -419,7 +419,18 @@ document.addEventListener('DOMContentLoaded', () => {
         issues.push(`Código SAP ${codigoSap}: no existe en el catálogo de topologías.`);
       }
 
-      // Dominion y descripción provienen del PDF. El JSON solo decide la Topología.
+      const configuracionLote = (Array.isArray(config?.configuraciones) ? config.configuraciones : [])
+        .find(item => normalizeTopology(item.lote) === lote);
+      const dominioMaestra = configuracionLote?.dominio
+        ? normalizeDominion(configuracionLote.dominio)
+        : normalizeDominion(dominioPdf);
+
+      if (config && !configuracionLote) {
+        issues.push(`Código SAP ${codigoSap} / ${lote}: no tiene Código Dominion configurado en la Maestra.`);
+      } else if (configuracionLote && normalizeDominion(dominioPdf) !== dominioMaestra) {
+        notices.push(`Dominion normalizado por Maestra: ${dominioPdf} → ${dominioMaestra} · SAP ${codigoSap} · ${lote}.`);
+      }
+
       const descripcion = descripcionPdf || 'SIN DESCRIPCIÓN';
       const serializado = isSerialTopology(topologia);
 
@@ -433,7 +444,8 @@ document.addEventListener('DOMContentLoaded', () => {
         serials.slice(0, expected).forEach((serial, serialIndex) => products.push({
           _rowId: `serial-${position}-${serialIndex}`,
           codigo_sap: codigoSap,
-          dominio_pdf: dominioPdf,
+          dominio_pdf: dominioMaestra,
+          dominio_documento: dominioPdf,
           descripcion,
           topologia,
           serial,
@@ -466,7 +478,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         products.push({
           codigo_sap: codigoSap,
-          dominio_pdf: dominioPdf,
+          dominio_pdf: dominioMaestra,
+          dominio_documento: dominioPdf,
           descripcion,
           topologia,
           serial: '',
