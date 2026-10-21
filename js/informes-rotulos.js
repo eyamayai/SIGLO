@@ -128,71 +128,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function headerCell(ws,row,text,fill){
-    ws.mergeCells(row,1,row,5);
-    const cell=ws.getCell(row,1);
-    cell.value=text;
-    cell.font={name:'Calibri',size:15,bold:true,color:{argb:'FFFFFFFF'}};
-    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}};
-    cell.alignment={vertical:'middle',horizontal:'center'};
-    ws.getRow(row).height=32;
+  // Rótulo físico 3 x 3 por página, tres columnas de ancho 85.
+  // Las dimensiones de filas se respetan en puntos (formato Excel).
+  const LABEL_COLUMNS=[1,3,5];
+  const LABEL_WIDTH=85;
+  const ROW_HEIGHT={claro:95.25,descripcion:89.25,lote:36.75,sap:112.5,separacion:15.75};
+  const LOGO_WIDTH_PX=4/2.54*96;
+  const LOGO_HEIGHT_PX=2.81/2.54*96;
+
+  function labelBorder(index){
+    const edge={style:'medium',color:{argb:'FF101010'}};
+    const thin={style:'thin',color:{argb:'FF101010'}};
+    return {left:edge,right:edge,top:index===0?edge:thin,bottom:index===3?edge:thin};
   }
 
-  function sectionCell(ws,row,lote,count){
-    ws.mergeCells(row,1,row,5);
-    const cell=ws.getCell(row,1);
-    cell.value=lote+'  |  '+num(count)+' RÓTULO'+(count===1?'':'S');
-    cell.font={name:'Calibri',size:12,bold:true,color:{argb:'FF16354E'}};
-    cell.fill={type:'pattern',pattern:'solid',
-      fgColor:{argb:lote==='VALORADO'?'FFE7F3FE':'FFF1F3F6'}};
-    cell.alignment={horizontal:'center',vertical:'middle'};
-    ws.getRow(row).height=25;
-  }
+  function label(ws,column,row,item,logoId){
+    const brand=ws.getCell(row,column);
+    brand.value='CLARO';
+    brand.font={name:'Calibri',size:100,bold:true,color:{argb:'FF000000'}};
 
-  function label(ws,col,start,item){
-    const brand=ws.getCell(start,col);
-    brand.value={richText:[
-      {text:'DOMINION',font:{name:'Arial',size:12,bold:true,color:{argb:'FF2853A3'}}},
-      {text:'   ',font:{name:'Calibri',size:12}},
-      {text:'CLARO',font:{name:'Arial',size:25,bold:true,color:{argb:'FF111827'}}}
-    ]};
-    const description=ws.getCell(start+1,col);
+    const description=ws.getCell(row+1,column);
     description.value=upper(item.description)||'MATERIAL SIN DESCRIPCIÓN';
-    const length=description.value.length;
-    description.font={name:'Arial',size:length>74?10:(length>48?12:14),
-      bold:true,color:{argb:'FF101820'}};
-    const lot=ws.getCell(start+2,col);
+    description.font={name:'Calibri',size:36,bold:true,color:{argb:'FF000000'}};
+
+    const lot=ws.getCell(row+2,column);
     lot.value=item.lote;
-    lot.font={name:'Arial',size:14,bold:true,color:{argb:'FF101820'}};
-    lot.fill={type:'pattern',pattern:'solid',fgColor:{argb:item.lote==='VALORADO'?'FFE7F3FE':'FFF2F3F5'}};
-    const sap=ws.getCell(start+3,col);
+    lot.font={name:'Calibri',size:40,bold:true,color:{argb:'FF000000'}};
+
+    const sap=ws.getCell(row+3,column);
     sap.value=String(item.codigo_sap);
     sap.numFmt='@';
-    sap.font={name:'Arial',size:sap.value.length>9?37:46,bold:true,color:{argb:'FF050A0E'}};
-    for(let i=0;i<4;i++){
-      const cell=ws.getCell(start+i,col);
-      cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};
-      cell.border={
-        left:{style:'medium',color:{argb:'FF172633'}},
-        right:{style:'medium',color:{argb:'FF172633'}},
-        top:{style:i===0?'medium':'thin',color:{argb:'FF172633'}},
-        bottom:{style:i===3?'medium':'thin',color:{argb:'FF172633'}}
-      };
-    }
-  }
+    sap.font={name:'Calibri',size:110,bold:true,color:{argb:'FF000000'}};
 
-  function printGroup(ws,begin,items){
-    let row=begin;
-    for(let i=0;i<items.length;i+=3){
-      ws.getRow(row).height=38;
-      ws.getRow(row+1).height=54;
-      ws.getRow(row+2).height=24;
-      ws.getRow(row+3).height=69;
-      ws.getRow(row+4).height=12;
-      items.slice(i,i+3).forEach((item,index)=>label(ws,1+2*index,row,item));
-      row+=5;
+    for(let index=0;index<4;index++){
+      const cell=ws.getCell(row+index,column);
+      cell.alignment={
+        horizontal:'center',
+        vertical:'middle',
+        wrapText:true,
+        shrinkToFit:index===1||index===3
+      };
+      cell.border=labelBorder(index);
     }
-    return row;
+
+    // El texto CLARO queda centrado. Logo DOMINION pegado a su derecha,
+    // dentro de la celda (4 cm de ancho x 2,81 cm de alto).
+    // Estas coordenadas son relativas a la columna Excel de ancho 85.
+    ws.addImage(logoId,{
+      tl:{col:column-1+0.745,row:row-1+0.07},
+      ext:{width:LOGO_WIDTH_PX,height:LOGO_HEIGHT_PX},
+      editAs:'oneCell'
+    });
   }
 
   function makeSheetName(group,used,requiresWarehouse){
@@ -208,42 +194,68 @@ document.addEventListener('DOMContentLoaded', () => {
     return name;
   }
 
-  async function buildWorkbook(groups,Excel){
+  function printLot(ws,startRow,items,logoId){
+    let row=startRow;
+    // Cada lote comienza en su propia página. Máximo 9 rótulos por página.
+    for(let first=0;first<items.length;first+=9){
+      const page=items.slice(first,first+9);
+      for(let offset=0;offset<page.length;offset+=3){
+        ws.getRow(row).height=ROW_HEIGHT.claro;
+        ws.getRow(row+1).height=ROW_HEIGHT.descripcion;
+        ws.getRow(row+2).height=ROW_HEIGHT.lote;
+        ws.getRow(row+3).height=ROW_HEIGHT.sap;
+        ws.getRow(row+4).height=ROW_HEIGHT.separacion;
+        page.slice(offset,offset+3).forEach((item,i)=>
+          label(ws,LABEL_COLUMNS[i],row,item,logoId));
+        row+=5;
+      }
+      // Salto explícito, incluso si el lote terminó antes de llenar 9 rótulos.
+      ws.getRow(row-1).addPageBreak();
+    }
+    return row;
+  }
+
+  async function fetchDominionLogo(){
+    const response=await fetch('assets/logo-dominion-rotulos.png?v=20261021-3',{cache:'no-store'});
+    if(!response.ok)throw new Error('No se pudo cargar el logo DOMINION ('+response.status+').');
+    const buffer=await response.arrayBuffer();
+    if(!buffer || buffer.byteLength<100)throw new Error('El archivo PNG de DOMINION está vacío o incompleto.');
+    return buffer;
+  }
+
+  async function buildWorkbook(groups,Excel,logoBuffer){
+    if(!logoBuffer)throw new Error('Falta la imagen PNG de DOMINION.');
     const wb=new Excel.Workbook();
     wb.creator='SIGLO - Sistema Integrado de Gestión de Logística y Operaciones';
     wb.created=new Date();
     wb.subject='Rótulos físicos por ubicación y lote';
+    const logoId=wb.addImage({buffer:logoBuffer,extension:'png'});
     const used=new Set();
     const warehouseIsRequired=new Set(groups.map(g=>g.almacen)).size>1;
-
     for(const group of groups){
       const ws=wb.addWorksheet(makeSheetName(group,used,warehouseIsRequired),{
-        pageSetup:{paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,
-          margins:{left:.22,right:.22,top:.3,bottom:.3,header:0,footer:0},
-          horizontalCentered:true}
+        pageSetup:{
+          paperSize:1, // Carta (Letter), 8.5 x 11 pulgadas.
+          orientation:'landscape',
+          fitToPage:false,
+          scale:52, // Escala conservadora para 3 x 3 en Carta horizontal.
+          margins:{left:0.18,right:0.18,top:0.18,bottom:0.18,header:0,footer:0},
+          horizontalCentered:true
+        }
       });
       ws.views=[{showGridLines:false}];
-      ws.columns=[{width:38},{width:3},{width:38},{width:3},{width:38}];
-      headerCell(ws,1,'RÓTULOS  ·  '+group.ubicacion+'  ·  ALMACÉN '+group.almacen,'FF173C5A');
-      ws.mergeCells(2,1,2,5);
-      const note=ws.getCell(2,1);
-      note.value='SIGLO  |  '+(stock.value==='1'?'LIBRE / DISPONIBLE':'DESMONTE / INVERSA-GARANTÍA')+
-        '  |  '+(snapshotAt?snapshotAt.toLocaleString('es-CO'):'')+'  |  Un rótulo por Código SAP y lote';
-      note.alignment={horizontal:'center',vertical:'middle'};
-      note.font={name:'Calibri',size:10,color:{argb:'FF5C7488'}};
-      ws.getRow(2).height=23;
-      ws.getRow(3).height=9;
-      let row=4;
-      for(const [lote,items] of [['VALORADO',group.valorado],['NOVALORADO',group.novalorado]]){
-        if(!items.length)continue;
-        sectionCell(ws,row++,lote,items.length);
-        ws.getRow(row).height=9;
-        row++;
-        row=printGroup(ws,row,items);
-        ws.getRow(row).height=9;
-        row++;
+      ws.columns=[
+        {width:LABEL_WIDTH},{width:2},
+        {width:LABEL_WIDTH},{width:2},
+        {width:LABEL_WIDTH}
+      ];
+
+      let row=1; // Sin títulos, fechas ni barras de lote al principio.
+      for(const items of [group.valorado,group.novalorado]){
+        if(items.length)row=printLot(ws,row,items,logoId);
       }
-      ws.pageSetup.printArea='A1:E'+(row-1);
+      // Los saltos de página limitan cada grupo a 9 rótulos y separan los lotes.
+      ws.pageSetup.printArea='A1:E'+Math.max(1,row-1);
     }
     return wb;
   }
@@ -259,7 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
     exportBtn.textContent='Generando Excel…';
     showMessage('Diseñando las '+prepared.length+' pestañas para impresión…');
     try{
-      const workbook=await buildWorkbook(prepared,window.ExcelJS);
+      const logoBuffer=await fetchDominionLogo();
+      const workbook=await buildWorkbook(prepared,window.ExcelJS,logoBuffer);
       const buffer=await workbook.xlsx.writeBuffer();
       const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       const url=URL.createObjectURL(blob);
