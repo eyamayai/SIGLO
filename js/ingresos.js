@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20261015-1';
+  const VERSION = '20261021-1';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -258,7 +258,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function findColumnLayout(rows, startIndex) {
-    for (let index = startIndex - 1; index >= Math.max(0, startIndex - 45); index -= 1) {
+    // Buscar hasta el encabezado real más cercano, aunque esté a más de 45 renglones.
+    // En PDFs largos, el límite anterior activaba el respaldo x=270 y confundía
+    // los seriales (x≈261) con la descripción del material.
+    for (let index = startIndex - 1; index >= 0; index -= 1) {
       const row = rows[index];
       const material = row.items.find(item => /^Material$/i.test(item.text));
       const serie = row.items.find(item => /^Serie$/i.test(item.text));
@@ -316,7 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!fragments.length) return;
 
       // Primero unimos los fragmentos que PDF.js haya separado dentro de la misma línea.
-      const serial = cleanSerialValue(fragments.join(''));
+      // PDF.js a veces entrega el serial y "Unidad" dentro del mismo fragmento
+      // (ej. "148050K0102606090132Unidad"). La unidad no hace parte del serial.
+      const serial = cleanSerialValue(fragments.join('').replace(/\s*Unidad\s*$/i, ''));
       if (serial && serial !== '-') rowValues.push(serial);
     });
 
