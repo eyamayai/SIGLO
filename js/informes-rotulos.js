@@ -57,6 +57,20 @@ document.addEventListener('DOMContentLoaded', () => {
       .map(group=>{
         group.valorado.sort((a,b)=>natural(a.codigo_sap,b.codigo_sap));
         group.novalorado.sort((a,b)=>natural(a.codigo_sap,b.codigo_sap));
+        // Agrupar por SAP antes de imprimir: VALORADO junto a NOVALORADO.
+        // Las parejas son indivisibles para que queden en una misma fila.
+        const bySap=new Map();
+        for(const item of [...group.valorado,...group.novalorado]){
+          const key=upper(item.codigo_sap);
+          if(!bySap.has(key))bySap.set(key,{codigo_sap:item.codigo_sap,items:[]});
+          bySap.get(key).items.push(item);
+        }
+        group.parejas=[...bySap.values()]
+          .sort((a,b)=>natural(a.codigo_sap,b.codigo_sap))
+          .map(pair=>{
+            pair.items.sort((a,b)=>(a.lote==='VALORADO'?0:1)-(b.lote==='VALORADO'?0:1));
+            return pair;
+          });
         return group;
       })
       .sort((a,b)=>natural(a.almacen,b.almacen)||natural(a.ubicacion,b.ubicacion));
@@ -171,11 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
       cell.border=labelBorder(index);
     }
 
-    // El texto CLARO queda centrado. Logo DOMINION pegado a su derecha,
-    // dentro de la celda (4 cm de ancho x 2,81 cm de alto).
-    // Estas coordenadas son relativas a la columna Excel de ancho 85.
+    // Mantener CLARO centrado y mover el logo junto al borde izquierdo,
+    // tal como aparece en el modelo físico. Separarlo evita tapar las letras CL.
+    // Tamaño de la imagen: 4 cm de ancho x 2,81 cm de alto.
     ws.addImage(logoId,{
-      tl:{col:column-1+0.745,row:row-1+0.07},
+      tl:{col:column-1+0.018,row:row-1+0.07},
       ext:{width:LOGO_WIDTH_PX,height:LOGO_HEIGHT_PX},
       editAs:'oneCell'
     });
@@ -194,24 +208,36 @@ document.addEventListener('DOMContentLoaded', () => {
     return name;
   }
 
-  function printLot(ws,startRow,items,logoId){
-    let row=startRow;
-    // Cada lote comienza en su propia página. Máximo 9 rótulos por página.
-    for(let first=0;first<items.length;first+=9){
-      const page=items.slice(first,first+9);
-      for(let offset=0;offset<page.length;offset+=3){
-        ws.getRow(row).height=ROW_HEIGHT.claro;
-        ws.getRow(row+1).height=ROW_HEIGHT.descripcion;
-        ws.getRow(row+2).height=ROW_HEIGHT.lote;
-        ws.getRow(row+3).height=ROW_HEIGHT.sap;
-        ws.getRow(row+4).height=ROW_HEIGHT.separacion;
-        page.slice(offset,offset+3).forEach((item,i)=>
-          label(ws,LABEL_COLUMNS[i],row,item,logoId));
-        row+=5;
+  function printPairs(ws,startRow,pairs,logoId){
+    // Pares por SAP: nunca partir VALORADO y NOVALORADO entre filas/páginas.
+    const lines=[];
+    let current=[];
+    for(const pair of pairs){
+      const items=pair.items||[];
+      if(!items.length)continue;
+      if(items.length>3)throw new Error('Más de tres rótulos para un mismo SAP.');
+      if(current.length+items.length>3){
+        lines.push(current);
+        current=[];
       }
-      // Salto explícito, incluso si el lote terminó antes de llenar 9 rótulos.
-      ws.getRow(row-1).addPageBreak();
+      current.push(...items);
     }
+    if(current.length)lines.push(current);
+
+    let row=startRow;
+    lines.forEach((items,index)=>{
+      ws.getRow(row).height=ROW_HEIGHT.claro;
+      ws.getRow(row+1).height=ROW_HEIGHT.descripcion;
+      ws.getRow(row+2).height=ROW_HEIGHT.lote;
+      ws.getRow(row+3).height=ROW_HEIGHT.sap;
+      ws.getRow(row+4).height=ROW_HEIGHT.separacion;
+      items.forEach((item,i)=>label(ws,LABEL_COLUMNS[i],row,item,logoId));
+      // Tres filas de rótulos por hoja Carta, máximo nueve etiquetas.
+      if((index+1)%3===0||index===lines.length-1){
+        ws.getRow(row+4).addPageBreak();
+      }
+      row+=5;
+    });
     return row;
   }
 
@@ -250,11 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
         {width:LABEL_WIDTH}
       ];
 
-      let row=1; // Sin títulos, fechas ni barras de lote al principio.
-      for(const items of [group.valorado,group.novalorado]){
-        if(items.length)row=printLot(ws,row,items,logoId);
-      }
-      // Los saltos de página limitan cada grupo a 9 rótulos y separan los lotes.
+      // No separar por lote: respetar orden SAP, VALORADO seguido de NOVALORADO.
+      let row=printPairs(ws,1,group.parejas||[],logoId);
+      // Los saltos de página limitan cada grupo a 9 rótulos.
       ws.pageSetup.printArea='A1:E'+Math.max(1,row-1);
     }
     return wb;
