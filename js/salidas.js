@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION='20261010-1';
+  const VERSION='20261021-1';
   const supabase=window.sigloSupabase;
   const pdfInput=document.getElementById('pdfInput');
   const selectPdfBtn=document.getElementById('selectPdfBtn');
@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const resolveHeader=()=>{
       if(!current||current.headerResolved) return;
-      const match=current.headerBuffer.match(/\[DOM[-\s\uFFFE]*([0-9]+)\s*\/\s*([0-9]+)\s*\]/i);
+      const match=current.headerBuffer.match(/\[DOM[-\s\uFFFE]*([0-9]+)\s*\/\s*([A-Z0-9]+)\s*\]/i);
       if(!match) return;
       current.dominio='DOM-'+match[1];
       current.codigo_sap=normCode(match[2]);
