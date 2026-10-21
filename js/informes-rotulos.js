@@ -32,48 +32,40 @@ document.addEventListener('DOMContentLoaded', () => {
       const ubicacion=upper(raw.ubicacion);
       const lote=upper(raw.lote);
       const stockValue=Number(raw.stock);
-      if(!codigo_sap||!ubicacion||!almacen) continue;
-      if(lote!=='VALORADO'&&lote!=='NOVALORADO') continue;
-      if(stockValue!==Number(options.stock)) continue;
-      if(options.warehouse!=='TODOS'&&options.warehouse!==almacen) continue;
-      if(options.location!=='TODAS'&&options.location!==ubicacion) continue;
+      if(!codigo_sap||!ubicacion||!almacen)continue;
+      if(lote!=='VALORADO'&&lote!=='NOVALORADO')continue;
+      if(stockValue!==Number(options.stock))continue;
+      if(options.warehouse!=='TODOS'&&options.warehouse!==almacen)continue;
+      if(options.location!=='TODAS'&&options.location!==ubicacion)continue;
       const key=[almacen,ubicacion,lote,codigo_sap].join('|');
-      const description=clean(raw.nombre_equipo || raw.descripcion || '');
-      const existing=individual.get(key);
-      if(!existing||(!existing.description&&description)){
-        individual.set(key,{codigo_sap,almacen,ubicacion,lote,description});
+      const description=clean(raw.nombre_equipo||raw.descripcion||'');
+      if(!individual.has(key)||(!individual.get(key).description&&description)){
+        individual.set(key,{codigo_sap,almacen,ubicacion,lote,description,prefijo:ubicacion.slice(0,4)});
       }
     }
     const groups=new Map();
     for(const item of individual.values()){
-      const key=item.almacen+'|'+item.ubicacion;
-      if(!groups.has(key)){
-        groups.set(key,{key,almacen:item.almacen,ubicacion:item.ubicacion,
-          valorado:[],novalorado:[]});
-      }
-      groups.get(key)[item.lote==='VALORADO'?'valorado':'novalorado'].push(item);
+      const key=item.almacen+'|'+item.prefijo;
+      if(!groups.has(key))groups.set(key,{
+        almacen:item.almacen,ubicacion:item.prefijo,ubicaciones:new Set(),
+        valorado:[],novalorado:[],ordenados:[]
+      });
+      const g=groups.get(key);
+      g.ubicaciones.add(item.ubicacion);
+      g[item.lote==='VALORADO'?'valorado':'novalorado'].push(item);
+      g.ordenados.push(item);
     }
-    return [...groups.values()]
-      .map(group=>{
-        group.valorado.sort((a,b)=>natural(a.codigo_sap,b.codigo_sap));
-        group.novalorado.sort((a,b)=>natural(a.codigo_sap,b.codigo_sap));
-        // Agrupar por SAP antes de imprimir: VALORADO junto a NOVALORADO.
-        // Las parejas son indivisibles para que queden en una misma fila.
-        const bySap=new Map();
-        for(const item of [...group.valorado,...group.novalorado]){
-          const key=upper(item.codigo_sap);
-          if(!bySap.has(key))bySap.set(key,{codigo_sap:item.codigo_sap,items:[]});
-          bySap.get(key).items.push(item);
-        }
-        group.parejas=[...bySap.values()]
-          .sort((a,b)=>natural(a.codigo_sap,b.codigo_sap))
-          .map(pair=>{
-            pair.items.sort((a,b)=>(a.lote==='VALORADO'?0:1)-(b.lote==='VALORADO'?0:1));
-            return pair;
-          });
-        return group;
-      })
-      .sort((a,b)=>natural(a.almacen,b.almacen)||natural(a.ubicacion,b.ubicacion));
+    return [...groups.values()].map(g=>{
+      // Se conserva cada ubicación original para no perder rótulos.
+      // Orden compacto: Código SAP, ubicación y VALORADO antes de NOVALORADO.
+      g.ordenados.sort((x,y)=>natural(x.codigo_sap,y.codigo_sap)||
+        natural(x.ubicacion,y.ubicacion)||
+        (x.lote==='VALORADO'?0:1)-(y.lote==='VALORADO'?0:1));
+      g.valorado.sort((x,y)=>natural(x.codigo_sap,y.codigo_sap)||natural(x.ubicacion,y.ubicacion));
+      g.novalorado.sort((x,y)=>natural(x.codigo_sap,y.codigo_sap)||natural(x.ubicacion,y.ubicacion));
+      g.ubicaciones=[...g.ubicaciones].sort(natural);
+      return g;
+    }).sort((x,y)=>natural(x.almacen,y.almacen)||natural(x.ubicacion,y.ubicacion));
   }
 
   function updateLocations(){
@@ -92,9 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
     prepared=groupLabels(snapshot,{warehouse:warehouse.value,stock:stock.value,location:location.value});
     const valued=prepared.reduce((sum,group)=>sum+group.valorado.length,0);
     const reused=prepared.reduce((sum,group)=>sum+group.novalorado.length,0);
-    summary.textContent=prepared.length+' ubicación(es) · '+num(valued)+' VALORADO · '+num(reused)+' NOVALORADO · '+num(valued+reused)+' rótulos';
+    summary.textContent=prepared.length+' hoja(s) por prefijo · '+num(valued)+' VALORADO · '+num(reused)+' NOVALORADO · '+num(valued+reused)+' rótulos';
     previewBody.innerHTML=prepared.length?prepared.map(group=>
-      '<tr><td><strong>'+escape(group.ubicacion)+'</strong></td><td>'+escape(group.almacen)+
+      '<tr><td><strong>'+escape(group.ubicacion)+'</strong><small style="display:block;font-weight:normal;color:#77899b">'+escape(group.ubicaciones.join(' · '))+'</small></td><td>'+escape(group.almacen)+
       '</td><td>'+num(group.valorado.length)+'</td><td>'+num(group.novalorado.length)+
       '</td><td><strong>'+num(group.valorado.length+group.novalorado.length)+'</strong></td></tr>'
     ).join(''):'<tr class="empty-row"><td colspan="5">No hay material disponible para estos filtros.</td></tr>';
@@ -158,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function label(ws,column,row,item,logoId){
     const brand=ws.getCell(row,column);
-    brand.value='CLARO';
+    brand.value='   CLARO';
     brand.font={name:'Calibri',size:100,bold:true,color:{argb:'FF000000'}};
 
     const description=ws.getCell(row+1,column);
@@ -208,36 +200,19 @@ document.addEventListener('DOMContentLoaded', () => {
     return name;
   }
 
-  function printPairs(ws,startRow,pairs,logoId){
-    // Pares por SAP: nunca partir VALORADO y NOVALORADO entre filas/páginas.
-    const lines=[];
-    let current=[];
-    for(const pair of pairs){
-      const items=pair.items||[];
-      if(!items.length)continue;
-      if(items.length>3)throw new Error('Más de tres rótulos para un mismo SAP.');
-      if(current.length+items.length>3){
-        lines.push(current);
-        current=[];
-      }
-      current.push(...items);
-    }
-    if(current.length)lines.push(current);
-
+  function printCompact(ws,startRow,items,logoId){
     let row=startRow;
-    lines.forEach((items,index)=>{
+    for(let start=0;start<items.length;start+=3){
       ws.getRow(row).height=ROW_HEIGHT.claro;
       ws.getRow(row+1).height=ROW_HEIGHT.descripcion;
       ws.getRow(row+2).height=ROW_HEIGHT.lote;
       ws.getRow(row+3).height=ROW_HEIGHT.sap;
       ws.getRow(row+4).height=ROW_HEIGHT.separacion;
-      items.forEach((item,i)=>label(ws,LABEL_COLUMNS[i],row,item,logoId));
-      // Tres filas de rótulos por hoja Carta, máximo nueve etiquetas.
-      if((index+1)%3===0||index===lines.length-1){
-        ws.getRow(row+4).addPageBreak();
-      }
+      items.slice(start,start+3).forEach((item,i)=>label(ws,LABEL_COLUMNS[i],row,item,logoId));
+      const lineNumber=Math.floor(start/3)+1;
+      if(lineNumber%3===0||start+3>=items.length)ws.getRow(row+4).addPageBreak();
       row+=5;
-    });
+    }
     return row;
   }
 
@@ -269,15 +244,15 @@ document.addEventListener('DOMContentLoaded', () => {
           horizontalCentered:true
         }
       });
-      ws.views=[{showGridLines:false}];
+      ws.views=[{state:'normal',showGridLines:false,zoomScale:60,zoomScaleNormal:60}];
       ws.columns=[
         {width:LABEL_WIDTH},{width:2},
         {width:LABEL_WIDTH},{width:2},
         {width:LABEL_WIDTH}
       ];
 
-      // No separar por lote: respetar orden SAP, VALORADO seguido de NOVALORADO.
-      let row=printPairs(ws,1,group.parejas||[],logoId);
+      // Sin huecos de reserva: tres rótulos contiguos por renglón.
+      let row=printCompact(ws,1,group.ordenados||[],logoId);
       // Los saltos de página limitan cada grupo a 9 rótulos.
       ws.pageSetup.printArea='A1:E'+Math.max(1,row-1);
     }
