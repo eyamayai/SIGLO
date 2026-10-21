@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '20261021-1';
+  const VERSION = '20261021-2';
   const pdfInput = document.getElementById('pdfInput');
   const selectPdfBtn = document.getElementById('selectPdfBtn');
   const processPdfBtn = document.getElementById('processPdfBtn');
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }));
   dropZone?.addEventListener('drop', (event) => setFile(event.dataTransfer?.files?.[0]));
 
-  function pageToRows(items) {
+  function pageToRows(items, pageNumber) {
     const rows = [];
     for (const item of items) {
       const text = String(item.str || '').trim();
@@ -192,10 +192,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const y = item.transform?.[5] ?? 0;
       let row = rows.find(entry => Math.abs(entry.y - y) <= 2.2);
       if (!row) {
-        row = { y, items: [] };
+        row = { y, items: [], pageNumber };
         rows.push(row);
       }
-      row.items.push({ x, text });
+      row.items.push({ x, text, width: Number(item.width || 0) });
     }
 
     return rows
@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
       const page = await pdf.getPage(pageNumber);
       const content = await page.getTextContent();
-      rows.push(...pageToRows(content.items));
+      rows.push(...pageToRows(content.items, pageNumber));
     }
     return {
       rows,
@@ -258,11 +258,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function findColumnLayout(rows, startIndex) {
-    // Buscar hasta el encabezado real más cercano, aunque esté a más de 45 renglones.
-    // En PDFs largos, el límite anterior activaba el respaldo x=270 y confundía
-    // los seriales (x≈261) con la descripción del material.
+    const pageNumber = rows[startIndex]?.pageNumber;
+    // En cada página buscar su encabezado, sin tomar encabezados de otra página.
+    // Los PDFs largos y algunas versiones de PDF.js pueden agrupar los encabezados.
     for (let index = startIndex - 1; index >= 0; index -= 1) {
       const row = rows[index];
+      if (row.pageNumber !== pageNumber) break;
       const material = row.items.find(item => /^Material$/i.test(item.text));
       const serie = row.items.find(item => /^Serie$/i.test(item.text));
       const umed = row.items.find(item => /^UMed$/i.test(item.text));
@@ -295,19 +296,51 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Respaldo para PDFs antiguos con el mismo diseño.
+    // Respaldo para formato RHAC1 cuando PDF.js agrupa el encabezado.
+    // En el original la Serie arranca en x≈261 y UMed en x≈351.
+    // El antiguo serieMin=270 descartaba todos los seriales con inicio x≈261.
     return {
-      materialMax: 270,
-      serieMin: 270,
-      serieMax: 330,
-      unitMin: 330,
-      unitMax: 405,
-      quantityMin: 405,
-      quantityMax: 510
+      materialMax: 248,
+      serieMin: 248,
+      serieMax: 344,
+      unitMin: 344,
+      unitMax: 417,
+      quantityMin: 417,
+      quantityMax: 478
     };
   }
 
-  function extractSerialsByRow(block, layout) {
+  function recoverMergedSerial(row, layout, firstHeaderText) {
+    // Solo se intenta en la primera línea del material y si la columna Serie
+    // no pudo extraerse. Se usa el ancho de PDF.js para descartar modelos
+    // que siguen íntegramente en la columna de descripción.
+    if (!row) return null;
+    const candidates = [];
+
+    row.items.filter(item => item.x < layout.serieMin).forEach(item => {
+      const raw = String(item.text || '');
+      const cleaned = raw
+        .replace(firstHeaderText || '', '')
+        .replace(/\\s*Unidad(?:\\s|$)/ig, ' ')
+        .trim();
+      const tokens = [...cleaned.matchAll(/(?:^|\\s)([A-Z0-9][A-Z0-9-]{5,})(?=\\s|$)/gi)];
+      if (!tokens.length) return;
+      const match = tokens[tokens.length - 1];
+      const value = cleanSerialValue(match[1]);
+      if (!isValidSerial(value) || !/\\d/.test(value)) return;
+
+      const width = Number(item.width || 0);
+      const position = match.index + match[0].lastIndexOf(match[1]);
+      const estimate = item.x + width * position / Math.max(1, raw.length);
+      if (item.x + width < layout.serieMin - 8 || estimate < layout.serieMin - 26) return;
+      candidates.push({ serial: value, estimate });
+    });
+
+    candidates.sort((a, b) => b.estimate - a.estimate);
+    return candidates.length === 1 ? candidates[0].serial : null;
+  }
+
+  function extractSerialsByRow(block, layout, firstHeaderText) {
     const rowValues = [];
 
     block.forEach(row => {
@@ -324,6 +357,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const serial = cleanSerialValue(fragments.join('').replace(/\s*Unidad\s*$/i, ''));
       if (serial && serial !== '-') rowValues.push(serial);
     });
+
+    if (!rowValues.length) {
+      const merged = recoverMergedSerial(block[0], layout, firstHeaderText);
+      if (merged) rowValues.push(merged);
+    }
 
     // Algunos PDFs parten físicamente un serial en dos renglones:
     // "002201216000-" + "42660" => "002201216000-42660".
@@ -418,7 +456,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const cantidad = parseColombianNumber(quantityParts.join(' '));
       const unidad = unitParts.join(' ').trim();
-      const serials = extractSerialsByRow(block, layout);
+      const serials = extractSerialsByRow(block, layout, firstHeaderText);
+      // PDF.js puede unir el último token de la descripción con el serial.
+      // Una vez recuperado, nunca debe permanecer dentro de la descripción.
+      if (serials.length === 1 && descripcionPdf.includes(serials[0])) {
+        descripcionPdf = descripcionPdf.replace(serials[0], '').replace(/\\s+/g, ' ').trim();
+      }
 
       if (!config) {
         issues.push(`Código SAP ${codigoSap}: no existe en el catálogo de topologías.`);
