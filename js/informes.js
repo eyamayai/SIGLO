@@ -113,6 +113,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function selectReport(key){
+    if(key==='rotulos'){
+      window.location.href='informes-rotulos.html';
+      return;
+    }
     selected=key;
     buttons.forEach(btn=>btn.classList.toggle('active',btn.dataset.report===key));
 
