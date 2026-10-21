@@ -321,13 +321,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const raw = String(item.text || '');
       const cleaned = raw
         .replace(firstHeaderText || '', '')
-        .replace(/\\s*Unidad(?:\\s|$)/ig, ' ')
+        .replace(/\s*Unidad(?:\s|$)/ig, ' ')
         .trim();
-      const tokens = [...cleaned.matchAll(/(?:^|\\s)([A-Z0-9][A-Z0-9-]{5,})(?=\\s|$)/gi)];
+      const tokens = [...cleaned.matchAll(/(?:^|\s)([A-Z0-9][A-Z0-9-]{5,})(?=\s|$)/gi)];
       if (!tokens.length) return;
       const match = tokens[tokens.length - 1];
       const value = cleanSerialValue(match[1]);
-      if (!isValidSerial(value) || !/\\d/.test(value)) return;
+      if (!isValidSerial(value) || !/\d/.test(value)) return;
 
       const width = Number(item.width || 0);
       const position = match.index + match[0].lastIndexOf(match[1]);
@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // PDF.js puede unir el último token de la descripción con el serial.
       // Una vez recuperado, nunca debe permanecer dentro de la descripción.
       if (serials.length === 1 && descripcionPdf.includes(serials[0])) {
-        descripcionPdf = descripcionPdf.replace(serials[0], '').replace(/\\s+/g, ' ').trim();
+        descripcionPdf = descripcionPdf.replace(serials[0], '').replace(/\s+/g, ' ').trim();
       }
 
       if (!config) {
