@@ -49,7 +49,7 @@
         <span class="step-badge">1</span>
         <div>
           <h2>Preparar rótulos de inventario</h2>
-          <p>Consulta el inventario fiscal de SIGLO. Se genera una hoja por ubicación, con rótulos VALORADO y NOVALORADO separados.</p>
+          <p>Consulta el inventario fiscal de SIGLO. Se genera una hoja por los primeros cuatro caracteres de la ubicación (AA01, AA02, BB01), agrupando por Código SAP y lote.</p>
         </div>
       </div>
       <a href="informes.html" class="outline-action rotulos-back">← Volver a Informes</a>
@@ -82,11 +82,11 @@
     </div>
     <div class="rotulos-tip">
       <strong>Diseño de impresión:</strong> tres rótulos por fila, Código SAP en tamaño grande, descripción del material y lote visible.
-      Cada pestaña se identifica por su ubicación. Cuando se incluyen varios almacenes, el nombre agrega el almacén para evitar confusiones.
+      Cada pestaña se identifica por los primeros cuatro caracteres de su ubicación. Cuando se incluyen varios almacenes, el nombre agrega el almacén para evitar confusiones.
     </div>
     <div class="table-wrap">
       <table class="rotulos-table">
-        <thead><tr><th>Ubicación / Hoja</th><th>Almacén</th><th>VALORADO</th><th>NOVALORADO</th><th>Total rótulos</th></tr></thead>
+        <thead><tr><th>Grupo / Hoja (ubicaciones incluidas)</th><th>Almacén</th><th>VALORADO</th><th>NOVALORADO</th><th>Total rótulos</th></tr></thead>
         <tbody id="rotulosPreviewBody"><tr class="empty-row"><td colspan="5">Prepara el inventario para ver las hojas.</td></tr></tbody>
       </table>
     </div>
@@ -101,6 +101,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20261009-2"></script>
-<script src="js/informes-rotulos.js?v=20261021-4"></script>
+<script src="js/informes-rotulos.js?v=20261021-5"></script>
 </body>
 </html>
