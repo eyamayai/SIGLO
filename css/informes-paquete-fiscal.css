@@ -1,17 +1,29 @@
 
-.paquete-card{display:grid;gap:22px;margin-bottom:18px}
-.paquete-head,.paquete-head>div{display:flex;align-items:flex-start;gap:15px}
+/* SIGLO - Paquete Fiscal Dinámico, misma escala visual de Informes y Rótulos */
+.reports-main.paquete-main{min-width:0}
+.paquete-main .dashboard-top{margin-bottom:18px}
+.paquete-card{display:flex;flex-direction:column;gap:17px;padding:22px 24px;margin:0 0 16px}
+.paquete-head,.paquete-title{display:flex;align-items:flex-start;gap:14px}
 .paquete-head{justify-content:space-between;flex-wrap:wrap}
-.paquete-head h2{margin:0 0 5px;font-size:20px}
-.paquete-head p{max-width:810px;margin:0;color:#697b8f;line-height:1.65}
-.paquete-file{display:flex;align-items:end;flex-wrap:wrap;gap:16px}
-.paquete-picker{display:flex;flex:1;min-width:260px;flex-direction:column;gap:6px;background:#f6f9fe;border:1px dashed #9bb7d4;border-radius:13px;padding:16px;cursor:pointer}
-.paquete-picker strong{color:#153756}.paquete-picker span{font-size:13px;color:#718498}
-.paquete-picker input{display:block;margin-top:8px;font-size:13px;max-width:100%}
-.paquete-note h2{margin:0 0 10px;font-size:19px}
-.paquete-features{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:11px}
-.paquete-features>div{padding:15px;border:1px solid #e2e9f1;border-radius:12px;display:flex;gap:6px;flex-direction:column}
-.paquete-features strong{color:#183a5d}.paquete-features span{color:#708195;font-size:13px;line-height:1.5}
-.paquete-alert{margin:12px 0 0;background:#fff8e6;border-left:4px solid #e1aa2b;padding:14px 16px;font-size:13px;line-height:1.65;color:#55451e;border-radius:8px}
-.paquete-stats{margin:10px 0 25px;color:#1d4d63}
-@media(max-width:760px){.paquete-features{grid-template-columns:1fr}.paquete-file>button{width:100%}}
+.paquete-title{flex:1;min-width:270px;max-width:890px}
+.paquete-title h2{font-size:19px;line-height:1.3;margin:0 0 5px;color:#183954}
+.paquete-title p{font-size:12px;line-height:1.6;color:#77899b;margin:0}
+.paquete-head>.outline-action{white-space:nowrap;flex-shrink:0}
+.paquete-file{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:16px}
+.paquete-picker{display:flex;flex-direction:column;gap:6px;min-width:0;padding:15px 17px;background:#f8fbfd;border:1px dashed #b8cede;border-radius:12px;color:#183954}
+.paquete-picker strong{font-size:13px;font-weight:700;color:#20364d}
+.paquete-picker span{font-size:11px;line-height:1.45;color:#8192a2}
+.paquete-picker input{width:100%;max-width:100%;margin-top:4px;font:inherit;font-size:12px;color:#4c6176}
+.paquete-picker input::file-selector-button{border:1px solid #bcd2e3;background:#fff;border-radius:8px;color:#176fae;padding:8px 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-right:12px}
+.paquete-file button{min-height:44px;max-width:345px;white-space:normal;line-height:1.4}
+.paquete-note h2{margin:0;font-size:18px;color:#183954}
+.paquete-features{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.paquete-features>div{padding:14px 16px;border:1px solid #e1e9f1;border-radius:12px;background:#fcfdff;display:flex;gap:6px;flex-direction:column;min-width:0}
+.paquete-features strong{color:#1b4263;font-size:12px}
+.paquete-features span{color:#728397;font-size:12px;line-height:1.55}
+.paquete-alert{margin:0;border:1px solid #f0e4c7;background:#fffaf0;border-radius:10px;padding:13px 15px;font-size:12px;line-height:1.55;color:#685638}
+.paquete-status{margin:2px 0 12px;padding:0 3px;line-height:1.5}
+.paquete-stats{margin:0 0 18px;padding:0 3px;font-size:12px;color:#2a5874;line-height:1.5}
+@media (min-width:1450px){.paquete-main .paquete-card{max-width:1250px}}
+@media (max-width:940px){.paquete-file{grid-template-columns:1fr}.paquete-file button{width:100%;max-width:none}.paquete-head>.outline-action{margin-left:46px}}
+@media (max-width:650px){.paquete-card{padding:17px 16px}.paquete-features{grid-template-columns:1fr}.paquete-head>.outline-action{width:100%;margin:0}.paquete-title{min-width:0}}
