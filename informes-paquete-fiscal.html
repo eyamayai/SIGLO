@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260921-1">
   <link rel="stylesheet" href="css/styles.css?v=20260924-1">
   <link rel="stylesheet" href="css/informes.css?v=20260922-4">
-  <link rel="stylesheet" href="css/informes-paquete-fiscal.css?v=20261022-2">
+  <link rel="stylesheet" href="css/informes-paquete-fiscal.css?v=20261022-3">
 </head>
 <body class="dashboard-body">
 <div class="app-shell">
@@ -43,6 +43,26 @@
     </div>
     <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div>
   </div>
+  <section class="report-card paquete-card paquete-macro-config">
+    <div class="paquete-head">
+      <div class="paquete-title">
+        <span class="step-badge">VBA</span>
+        <div>
+          <h2>Activar automatización en este navegador</h2>
+          <p>Selecciona una sola vez tu archivo .xlsm validado. SIGLO extrae localmente el proyecto VBA y el diseño del botón ACTUALIZAR INFORMES. La BASE MAESTRA y los datos del archivo no se almacenan ni se envían al servidor.</p>
+        </div>
+      </div>
+    </div>
+    <div class="paquete-file">
+      <label class="paquete-picker" for="paquetePlantillaMacros">
+        <strong>Plantilla .xlsm funcional</strong>
+        <span>El archivo con la macro VBA 1.2 y el botón de actualizar comprobado</span>
+        <input type="file" id="paquetePlantillaMacros" accept=".xlsm">
+      </label>
+      <button id="paqueteActivarMacros" class="outline-action" type="button" disabled>Activar macros para mis descargas</button>
+    </div>
+    <div id="paqueteMacrosEstado" class="report-message" role="status" aria-live="polite"></div>
+  </section>
   <section class="report-card paquete-card">
     <div class="paquete-head">
       <div class="paquete-title"><span class="step-badge">1</span><div><h2>Crear paquete desde SIGLO</h2><p>Adjunta la matriz de distribución enviada por Claro. La descarga combina las existencias fiscales vigentes con la clasificación de Conteo con Acompañamiento / Certificado. Los SAP ausentes serán Certificado.</p></div></div>
@@ -56,7 +76,7 @@
   <section class="report-card paquete-card">
     <div class="paquete-head"><div class="paquete-title"><span class="step-badge">2</span><div><h2>Reorganizar un paquete corregido</h2><p>Si cambias de almacén, segmento o clasificación y necesitas crear nuevas pestañas de acta, adjunta aquí el Excel corregido. SIGLO lo reorganiza exclusivamente con el contenido del archivo, sin cargar los cambios a Supabase.</p></div></div></div>
     <div class="paquete-file">
-      <label class="paquete-picker" for="paqueteEditado"><strong>Paquete Fiscal Dinámico editado</strong><span>Archivo .xlsx generado por esta misma funcionalidad</span><input type="file" id="paqueteEditado" accept=".xlsx"></label>
+      <label class="paquete-picker" for="paqueteEditado"><strong>Paquete Fiscal Dinámico editado</strong><span>Archivo .xlsm o .xlsx generado por esta funcionalidad</span><input type="file" id="paqueteEditado" accept=".xlsx,.xlsm"></label>
       <button class="outline-action" type="button" id="paqueteRegenerar" disabled>Regenerar actas y descargar Excel</button>
     </div>
   </section>
@@ -68,7 +88,7 @@
       <div><strong>Actas sin huecos</strong><span>Cada grupo tiene su acta y anexo serializado. Las filas se reacomodan al editar BASE MAESTRA.</span></div>
       <div><strong>Sin cambios en SIGLO</strong><span>Todo ajuste permanece en el Excel. La regeneración solo lee ese archivo local.</span></div>
     </div>
-    <p class="paquete-alert"><strong>Formato actualizado:</strong> .xlsx con fórmulas tradicionales de Excel y sin macros. No requiere habilitar VBA. Para grupos de acta nuevos utiliza «Regenerar». La exportación .xlsm con botón VBA integrado aún no forma parte de esta versión.</p>
+    <p class="paquete-alert"><strong>Descarga automática:</strong> después de activar tu plantilla, los nuevos paquetes se descargan como .xlsm e incluyen la macro y el botón de actualización. Sin plantilla activada, permanece disponible el .xlsx tradicional. La activación se realiza una sola vez por navegador. Para ejecutar macros, utiliza Excel de escritorio y autoriza el archivo descargado únicamente si reconoces su procedencia.</p>
   </section>
   <div id="paqueteEstado" class="report-message paquete-status" role="status" aria-live="polite">Selecciona la matriz del Cliente para empezar.</div>
   <div id="paqueteEstadisticas" class="paquete-stats"></div>
@@ -78,9 +98,11 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20261009-2"></script>
-<script src="js/informes-paquete-fiscal.js?v=20261022-7"></script>
+<script src="js/informes-paquete-macros.js?v=20261022-1"></script>
+<script src="js/informes-paquete-fiscal.js?v=20261022-8"></script>
 </body>
 </html>
