@@ -117,10 +117,14 @@ document.addEventListener('DOMContentLoaded', () => {
     XLSX.utils.book_append_sheet(book,ws,name.slice(0,31));
     return ws;
   }
-  const formula=(ws,addr,f)=>{ws[addr]={t:'n',f:f};};
-  function arrayFormula(ws,cell,f,width,rowCapacity){
-    // SheetJS guarda fórmulas matriciales dinámicas para Excel 365.
-    XLSX.utils.sheet_set_array_formula(ws,cell+':'+XLSX.utils.encode_col(XLSX.utils.decode_cell(cell).c+width-1)+(XLSX.utils.decode_cell(cell).r+rowCapacity),f,true);
+  const modernFormula=f=>f.replace(/\b(FILTER|SORT|UNIQUE|CHOOSECOLS|LET|BYROW|LAMBDA|HSTACK)\(/g,(found,fn)=>{
+    if(fn==='FILTER'||fn==='SORT')return '_xlfn._xlws.'+fn+'(';
+    return '_xlfn.'+fn+'(';
+  });
+  const formula=(ws,addr,f)=>{ws[addr]={t:'n',f:modernFormula(f)};};
+  function arrayFormula(ws,cell,f){
+    // Metadatos D:true y rango de una celda: Excel determina la zona derramada.
+    XLSX.utils.sheet_set_array_formula(ws,cell,modernFormula(f),true);
   }
   function titleRows(title,desc,comment){
     return [[title],[desc],[comment],[]];
@@ -202,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
       'IFERROR(SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8),'+masterCodes+'<>""))),"")',
       6,data.length+100);
     const invKey='CHOOSECOLS(A6#,1)&"|"&CHOOSECOLS(A6#,2)&"|"&CHOOSECOLS(A6#,3)&"|"&CHOOSECOLS(A6#,4)&"|"&CHOOSECOLS(A6#,5)&"|"&CHOOSECOLS(A6#,6)';
-    formula(inv,'G6','IFERROR(SUMIF('+fiscalKey+','+invKey+','+qtyRange+'),"")');
+    arrayFormula(inv,'G6','IFERROR(SUMIF('+fiscalKey+','+invKey+','+qtyRange+'),"")');
     for(let r=6;r<=Math.min(rowsLimit,data.length+205);r++)formula(inv,'H'+r,'IF(A'+r+'="","","'+today()+'")');
 
     const actSummary=sheetNamed(book,'ACTAS DE CONTEO',['GRUPO ACTA','NRO PLANILLA','REGISTROS','UNIDADES','SERIALIZADOS','HOJA ACTA'],[53,20,18,18,19,31],
@@ -240,8 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
       'IFERROR(SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8,16),'+masterCodes+'<>""))),"")',
       7,data.length+100);
     const mk='CHOOSECOLS(A6#,7)&"|"&CHOOSECOLS(A6#,1)&"|"&CHOOSECOLS(A6#,2)&"|"&CHOOSECOLS(A6#,3)&"|"&CHOOSECOLS(A6#,4)&"|"&CHOOSECOLS(A6#,5)&"|"&CHOOSECOLS(A6#,6)';
-    formula(model,'H6','IFERROR(SUMIF('+modelKey+','+mk+','+qtyRange+'),"")');
-    formula(model,'I6','IFERROR(H6#,"")');
+    arrayFormula(model,'H6','IFERROR(SUMIF('+modelKey+','+mk+','+qtyRange+'),"")');
+    arrayFormula(model,'I6','IFERROR(H6#,"")');
     for(let r=6;r<=Math.min(rowsLimit,data.length+205);r++)formula(model,'J'+r,'IF(A'+r+'="","","'+dateCompact()+'")');
 
     const serialized=sheetNamed(book,'MODELO SERIALIZADOS',['CODIGO SAP','DESCRIPCION','SERIAL','CANTIDAD','LOTE','UBICACION','TIPO STOCK','SERIAL RR','NRO PLANILLA'],[18,46,30,13,18,20,17,30,18],
