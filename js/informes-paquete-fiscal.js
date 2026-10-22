@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
       formula(plan,'B'+r,'IF(C'+r+'=0,"",COUNTIF($C$6:C'+r+',">0"))');
     });
 
-    const map=sheetNamed(book,'MAPA FISCAL',['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','STOCK','NOMBRE DEL EQUIPO','FECHA'],'','MAPA FISCAL','Una fila por llave fiscal única; se recalcula al editar BASE MAESTRA.');
+    const map=sheetNamed(book,'MAPA FISCAL',['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','STOCK','NOMBRE DEL EQUIPO','FECHA'],[18,14,14,18,22,12,48,16],'MAPA FISCAL','Una fila por llave fiscal única; se recalcula al editar BASE MAESTRA.');
     assignFormat(map,5,[18,14,14,18,22,12,48,16]);
     arrayFormula(map,'A6',
       'IFERROR(SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8,2),'+masterCodes+'<>""))),"")',
