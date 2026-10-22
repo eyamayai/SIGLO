@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ['Edición','Modifica solo columnas A:K de BASE MAESTRA. No sobrescribas las fórmulas de L:X.'],
       ['Recalcular','Excel de escritorio: Fórmulas > Opciones para el cálculo > Automático.'],
       ['Actualización','Los informes dependen de fórmulas dinámicas, se recalculan al editar BASE MAESTRA.'],
-      ['Actas','Las pestañas previstas cubren segmentos, almacenes y anotaciones presentes.'],
+      ['Actas','Las filas de cada ACTA y SER se compactan al cambiar BASE MAESTRA. Un grupo completamente nuevo exige regenerar el paquete.'],
       ['Grupo nuevo','Si agregas un nuevo almacén, segmento o anotación, vuelve a SIGLO y usa REGENERAR DESDE EXCEL.'],
       ['Preliminar Cliente','No se modifica ninguna información original del Cliente.'],
       ['Matriz','La hoja MATRIZ conserva las anotaciones del Cliente; SAP ausente se trata como CERTIFICADO.'],
