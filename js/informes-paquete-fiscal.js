@@ -155,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const masterCodes=master+'$A$6:$A$'+rowsLimit;
     const groupRange=master+'$M$6:$M$'+rowsLimit;
     const qtyRange=master+'$I$6:$I$'+rowsLimit;
+    const validRows='('+masterCodes+'<>"")*('+qtyRange+'>0)';
     const serialFlag=master+'$K$6:$K$'+rowsLimit;
     const fiscalKey=master+'$N$6:$N$'+rowsLimit;
     const modelKey=master+'$O$6:$O$'+rowsLimit;
@@ -180,10 +181,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const r=index+6;
       // Fórmulas adicionales hasta mil registros para permitir ampliar la base sin perder cálculos.
       formula(base,'L'+r,'IF(A'+r+'="","",IFERROR(VLOOKUP(A'+r+',MATRIZ!$A$6:$C$'+matrixLimit+',3,FALSE),"CERTIFICADO"))');
-      formula(base,'M'+r,'IF(A'+r+'="","",F'+r+'&"|"&D'+r+'&"|"&UPPER(L'+r+'))');
-      formula(base,'N'+r,'IF(A'+r+'="","",A'+r+'&"|"&C'+r+'&"|"&D'+r+'&"|"&G'+r+'&"|"&E'+r+'&"|"&H'+r+')');
-      formula(base,'O'+r,'IF(A'+r+'="","",P'+r+'&"|"&N'+r+')');
-      formula(base,'P'+r,'IF(A'+r+'="","",IFERROR(VLOOKUP(M'+r+',PLANILLAS!$A$6:$B$'+(groups.keys.length+5)+',2,FALSE),"REGENERAR ACTAS"))');
+      formula(base,'M'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",F'+r+'&"|"&D'+r+'&"|"&UPPER(L'+r+'))');
+      formula(base,'N'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",A'+r+'&"|"&C'+r+'&"|"&D'+r+'&"|"&G'+r+'&"|"&E'+r+'&"|"&H'+r+')');
+      formula(base,'O'+r,'IF(N'+r+'="","",P'+r+'&"|"&N'+r+')');
+      formula(base,'P'+r,'IF(M'+r+'="","",IFERROR(VLOOKUP(M'+r+',PLANILLAS!$A$6:$B$'+(groups.keys.length+5)+',2,FALSE),"REGENERAR ACTAS"))');
     }
     base['!ref']='A1:P'+rowsLimit;
     const planRows=groups.keys.map(k=>[k,null,null]);
@@ -197,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const map=sheetNamed(book,'MAPA FISCAL',['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','STOCK','NOMBRE DEL EQUIPO','FECHA'],[18,14,14,18,22,12,48,16],'MAPA FISCAL','Una fila por llave fiscal única; se recalcula al editar BASE MAESTRA.');
     assignFormat(map,5,[18,14,14,18,22,12,48,16]);
     arrayFormula(map,'A6',
-      'IFERROR(LET(k,SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8),'+masterCodes+'<>""))),n,BYROW(k,LAMBDA(fila,IFERROR(INDEX('+master+'$B$6:$B$'+rowsLimit+',MATCH(TEXTJOIN("|",FALSE,fila),'+fiscalKey+',0)),""))),HSTACK(k,n)),"")',
+      'IFERROR(LET(k,SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8),'+validRows+'))),n,BYROW(k,LAMBDA(fila,IFERROR(INDEX('+master+'$B$6:$B$'+rowsLimit+',MATCH(TEXTJOIN("|",FALSE,fila),'+fiscalKey+',0)),""))),HSTACK(k,n)),"")',
       7,data.length+100);
     // Fecha de consulta: referencia fija de la exportación, sin modificar existencias.
     for(let r=6;r<=Math.min(rowsLimit,data.length+205);r++)formula(map,'H'+r,'IF(A'+r+'="","","'+today()+'")');
@@ -206,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inv=sheetNamed(book,'INVENTARIO FISCAL',['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','STOCK','SALDO','FECHA'],[18,14,14,18,22,12,15,16],
       'INVENTARIO FISCAL','Agrupa por Código SAP, Centro, Almacén, Lote, Ubicación y Stock; SUMIF recalcula cantidades.');
     arrayFormula(inv,'A6',
-      'IFERROR(SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8),'+masterCodes+'<>""))),"")',
+      'IFERROR(SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8),'+validRows+'))),"")',
       6,data.length+100);
     const invKey='CHOOSECOLS(A6#,1)&"|"&CHOOSECOLS(A6#,2)&"|"&CHOOSECOLS(A6#,3)&"|"&CHOOSECOLS(A6#,4)&"|"&CHOOSECOLS(A6#,5)&"|"&CHOOSECOLS(A6#,6)';
     arrayFormula(inv,'G6','IFERROR(SUMIF('+fiscalKey+','+invKey+','+qtyRange+'),"")');
@@ -246,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const model=sheetNamed(book,'MODELO ESTRUCTURA',['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','STOCK','NRO PLANILLA','CONTEO1','CONTEO2','FECHA'],[18,14,14,17,22,12,19,14,14,16],
       'MODELO ESTRUCTURA','Planillas ligadas a grupos de Actas. Las cantidades se consolidan por llave.');
     arrayFormula(model,'A6',
-      'IFERROR(SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8,16),'+masterCodes+'<>""))),"")',
+      'IFERROR(SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8,16),'+validRows+'))),"")',
       7,data.length+100);
     const mk='CHOOSECOLS(A6#,7)&"|"&CHOOSECOLS(A6#,1)&"|"&CHOOSECOLS(A6#,2)&"|"&CHOOSECOLS(A6#,3)&"|"&CHOOSECOLS(A6#,4)&"|"&CHOOSECOLS(A6#,5)&"|"&CHOOSECOLS(A6#,6)';
     arrayFormula(model,'H6','IFERROR(SUMIF('+modelKey+','+mk+','+qtyRange+'),"")');
@@ -257,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const serialized=sheetNamed(book,'MODELO SERIALIZADOS',['CODIGO SAP','DESCRIPCION','SERIAL','CANTIDAD','LOTE','UBICACION','TIPO STOCK','SERIAL RR','NRO PLANILLA'],[18,46,30,13,18,20,17,30,18],
       'MODELO SERIALIZADOS','Anexo de todos los materiales serializados, vinculado a BASE MAESTRA.');
     arrayFormula(serialized,'A6',
-      'IFERROR(FILTER(CHOOSECOLS('+masterRange+',1,2,10,9,7,5,8,10,16),('+serialFlag+'=1)*('+masterCodes+'<>"")),"")',
+      'IFERROR(FILTER(CHOOSECOLS('+masterRange+',1,2,10,9,7,5,8,10,16),('+serialFlag+'=1)*('+validRows+')),"")',
       9,data.length+100);
 
     book.Workbook=book.Workbook||{};
