@@ -82,8 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function groupsFor(data,matrix){
     const annotations=new Map(matrix.map(x=>[x.codigo_sap,x.anotacion]));
-    const classes=new Set(['CERTIFICADO']);
-    for(const m of matrix)classes.add(norm(m.anotacion));
     const segments=[...new Set(data.map(x=>x.segmento))].sort();
     const warehouses=[...new Set(data.map(x=>x.almacen))].sort();
     const active=new Map();
@@ -92,10 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const key=[item.segmento,item.almacen,annotation].join('|');
       active.set(key,(active.get(key)||0)+1);
     }
-    // Preparar también cambios entre almacenes y anotaciones ya existentes.
-    const keys=[];
-    segments.forEach(s=>warehouses.forEach(w=>[...classes].sort().forEach(c=>keys.push([s,w,c].join('|')))));
-    keys.sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+    // Una pestaña por grupo fiscal con existencias al momento de exportar.
+    // Un grupo completamente nuevo se incorpora mediante la regeneración local.
+    const keys=[...active.keys()].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
     if(keys.length>120)throw Error('Demasiadas combinaciones potenciales de Actas ('+keys.length+').');
     return {keys,active,annotations,warehouses,segments};
   }
