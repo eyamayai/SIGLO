@@ -162,21 +162,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const headers=['CODIGO SAP','DESCRIPCION','CENTRO','ALMACEN','UBICACION','SEGMENTO','LOTE','STOCK','CANTIDAD','SERIAL','SERIALIZADO','ANOTACION','GRUPO ACTA','CLAVE FISCAL','CLAVE MODELO','PLANILLA'];
     const guide=worksheet(book,'LEEME',['PAQUETE FISCAL DINÁMICO','INSTRUCCIONES'],[
       ['Fuente','Exportación puntual de SIGLO. Este libro no escribe en Supabase.'],
-      ['Edición','Modifica solo columnas A:K de BASE MAESTRA. No sobrescribas las columnas L:P.'],
-      ['Recalcular','Excel de escritorio Microsoft 365: Fórmulas > Opciones de cálculo > Automático.'],
+      ['Edición','Modifica solo columnas A:K de BASE MAESTRA. No sobrescribas las fórmulas de L:T.'],
+      ['Recalcular','Excel de escritorio: Fórmulas > Opciones para el cálculo > Automático.'],
       ['Actualización','Los informes dependen de fórmulas dinámicas, se recalculan al editar BASE MAESTRA.'],
       ['Actas','Las pestañas previstas cubren segmentos, almacenes y anotaciones presentes.'],
       ['Grupo nuevo','Si agregas un nuevo almacén, segmento o anotación, vuelve a SIGLO y usa REGENERAR DESDE EXCEL.'],
       ['Preliminar Cliente','No se modifica ninguna información original del Cliente.'],
       ['Matriz','La hoja MATRIZ conserva las anotaciones del Cliente; SAP ausente se trata como CERTIFICADO.'],
       ['Histórico','Guarda una copia independiente cuando el inventario sea firmado o entregado.'],
-      ['Versión','Motor Excel Microsoft 365; no incluye macros VBA ni depende de servicios externos.'],
+      ['Versión','Fórmulas estándar de Excel de escritorio, sin funciones matriciales dinámicas ni macros VBA.'],
       ['Fecha exportación',today()]
     ],[34,110]);
     guide['!rows']=[{hpt:28}];
     const matr=polished(book,'MATRIZ',titleRows('MATRIZ DEL CLIENTE','Fuente de clasificación para Actas y Modelo','No cambiar las anotaciones de Claro sin validación.'),5,matrix.map(x=>[x.codigo_sap,x.descripcion,x.anotacion]),['CODIGO SAP','DESCRIPCION','ANOTACION'],[19,58,38]);
     const masterData=data.map(x=>[x.codigo_sap,x.descripcion,x.centro,x.almacen,x.ubicacion,x.segmento,x.lote,x.stock,x.cantidad,x.serial,x.serializado,null,null,null,null,null]);
-    const base=polished(book,'BASE MAESTRA',titleRows('BASE MAESTRA EDITABLE','Cambios exclusivos de este Excel. Columnas A:K editables.','Columnas L:P calculadas. No eliminar filas existentes: para retirar una existencia poner CANTIDAD=0.'),5,masterData,headers,[18,45,12,14,19,22,18,11,13,27,14,30,45,65,76,19]);
+    const base=polished(book,'BASE MAESTRA',titleRows('BASE MAESTRA EDITABLE','Cambios exclusivos de este Excel. Columnas A:K editables.','Columnas L:T calculadas. Para retirar una existencia poner CANTIDAD=0.'),5,masterData,headers,[18,45,12,14,19,22,18,11,13,27,14,30,45,65,76,19]);
     for(let index=0;index<data.length+1000;index++){
       const r=index+6;
       // Fórmulas adicionales hasta mil registros para permitir ampliar la base sin perder cálculos.
