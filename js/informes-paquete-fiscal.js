@@ -7,6 +7,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const rebuild=document.getElementById('paqueteRegenerar');
   const status=document.getElementById('paqueteEstado');
   const stats=document.getElementById('paqueteEstadisticas');
+  const macroFile=document.getElementById('paquetePlantillaMacros');
+  const macroActivate=document.getElementById('paqueteActivarMacros');
+  const macroStatus=document.getElementById('paqueteMacrosEstado');
+  const macroEngine=window.SIGLOPaqueteMacro;
+  function syncMacroStatus(){
+    const ready=Boolean(macroEngine?.active());
+    macroStatus.textContent=ready
+      ? 'Automatización VBA activa en este navegador. Las descargas serán .xlsm con el botón ACTUALIZAR INFORMES.'
+      : 'VBA sin activar. Las descargas continuarán en .xlsx hasta seleccionar tu plantilla validada.';
+    macroStatus.className='report-message'+(ready?' success':'');
+    generate.textContent=ready?'Consultar SIGLO y descargar .xlsm':'Consultar SIGLO y descargar .xlsx';
+    rebuild.textContent=ready?'Regenerar y descargar .xlsm':'Regenerar y descargar .xlsx';
+  }
   const clean=v=>String(v??'').trim().replace(/\s+/g,' ');
   const norm=v=>clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
   const sap=v=>clean(v).replace(/\.0+$/,'');
@@ -141,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     XLSX.utils.book_append_sheet(book,ws,name);
     return ws;
   }
-  function exportWorkbook(dataIn,matrixIn,fileName){
+  async function exportWorkbook(dataIn,matrixIn,fileName){
     if(!XLSX)throw Error('No se ha cargado el motor de Excel.');
     const data=cleanData(dataIn);
     if(!data.length)throw Error('No se encontraron existencias fiscales para el paquete.');
@@ -454,12 +467,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // no contiene fórmulas matriciales que Excel pueda eliminar al repararlo.
     book.Workbook=book.Workbook||{};
     book.Workbook.CalcPr={calcMode:'auto',fullCalcOnLoad:true};
-    XLSX.writeFile(book,fileName||'SIGLO_Paquete_Fiscal_Dinamico_'+today()+'.xlsx',{compression:true,bookType:'xlsx'});
-    return {records:data.length,groups:groups.keys.length,activeGroups:groups.active.size,
+    const downloadName=fileName||'SIGLO_Paquete_Fiscal_Dinamico_'+today()+'.xlsx';
+    const macroEnabled=Boolean(macroEngine?.active());
+    if(macroEnabled){
+      await macroEngine.download(book,downloadName);
+    }else{
+      XLSX.writeFile(book,downloadName,{compression:true,bookType:'xlsx'});
+    }
+    return {format:macroEnabled?'xlsm':'xlsx',records:data.length,groups:groups.keys.length,activeGroups:groups.active.size,
       serials:data.filter(x=>x.serializado).length,
       autoCertificate:[...new Set(data.filter(x=>!groups.annotations.has(x.codigo_sap)).map(x=>x.codigo_sap))].length};
   }
 
+  syncMacroStatus();
+  if(macroFile&&macroActivate){
+    macroFile.addEventListener('change',()=>{
+      macroActivate.disabled=!macroFile.files?.length;
+    });
+    macroActivate.addEventListener('click',async()=>{
+      const file=macroFile.files?.[0];
+      if(!file)return;
+      macroActivate.disabled=true;
+      macroStatus.textContent='Validando el VBA y el botón ACTUALIZAR INFORMES…';
+      try{
+        const info=await macroEngine.install(file);
+        syncMacroStatus();
+        notify('Macros activadas correctamente ('+info.size+' bytes de proyecto VBA). Ya puedes descargar .xlsm.','success');
+      }catch(err){
+        console.error('VBA local',err);
+        macroStatus.textContent=err.message||'No se pudo registrar la plantilla VBA.';
+        macroStatus.className='report-message error';
+      }finally{
+        macroActivate.disabled=!macroFile.files?.length;
+      }
+    });
+  }
   fileInput.addEventListener('change',()=>{generate.disabled=!fileInput.files?.length;});
   editedInput.addEventListener('change',()=>{rebuild.disabled=!editedInput.files?.length;});
 
@@ -475,9 +517,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const {data,error}=await supabase.rpc('consultar_base_actas_conteo');
       if(error)throw error;
       if(!Array.isArray(data)||!data.length)throw Error('La base fiscal de SIGLO está vacía.');
-      const out=exportWorkbook(data,matrix);
+      const out=await exportWorkbook(data,matrix);
       stats.innerHTML='<strong>'+out.records+'</strong> registros · <strong>'+out.activeGroups+'</strong> actas con inventario · <strong>'+out.serials+'</strong> seriales · <strong>'+out.autoCertificate+'</strong> SAP certificados automáticamente.';
-      notify('Paquete generado. Podrás corregir BASE MAESTRA en el Excel sin cambiar SIGLO.','success');
+      notify('Paquete '+out.format+' generado. BASE MAESTRA puede corregirse sin cambiar SIGLO.','success');
     }catch(err){console.error(err);notify(err.message||'No se pudo generar el paquete fiscal.','error');}
     finally{generate.disabled=false;}
   });
@@ -489,9 +531,9 @@ document.addEventListener('DOMContentLoaded', () => {
     try{
       if(!XLSX)throw Error('El motor de Excel no está disponible.');
       const {data,matrix}=readEdited(await file.arrayBuffer());
-      const out=exportWorkbook(data,matrix,'SIGLO_Paquete_Fiscal_Reorganizado_'+today()+'.xlsx');
+      const out=await exportWorkbook(data,matrix,'SIGLO_Paquete_Fiscal_Reorganizado_'+today()+'.xlsx');
       stats.innerHTML='<strong>'+out.records+'</strong> registros · <strong>'+out.activeGroups+'</strong> actas con inventario · <strong>'+out.serials+'</strong> seriales.';
-      notify('Paquete regenerado desde el Excel. No se leyó ni se modificó la base de datos de SIGLO.','success');
+      notify('Paquete '+out.format+' regenerado desde el Excel, sin leer ni modificar la base de datos de SIGLO.','success');
     }catch(err){console.error(err);notify(err.message||'No se pudo regenerar el archivo.','error');}
     finally{rebuild.disabled=false;}
   });
