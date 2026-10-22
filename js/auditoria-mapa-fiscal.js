@@ -175,7 +175,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('kpiInconsistencies').textContent=r.inconsistencias_siglo||0;
     document.getElementById('kpiClientControl').textContent=r.control_cliente||0;
     document.getElementById('kpiSerialCollisions').textContent=r.serial_colision_siglo||0;
-    document.getElementById('kpiSerialInfo').textContent=(r.serial_conciliado||0)+' conciliados de '+(r.seriales_cliente||0)+' del Cliente';
+    const reconocidos=Number(r.serial_despachado_aceptado||0);
+    document.getElementById('kpiSerialInfo').textContent=
+      (r.serial_conciliado||0)+' conciliados + '+reconocidos+
+      ' despachados reconocidos de '+(r.seriales_cliente||0)+' del Cliente';
     document.getElementById('kpiQtyInfo').textContent=(r.qty_conciliado||0)+' conciliadas de '+(r.qty_claves_total||0)+' llaves';
     document.getElementById('resultMeta').textContent=(currentAudit.nombre_archivo||'Auditoría')+' · '+dateTime(currentAudit.creado_en)+' · '+(currentAudit.creado_por_nombre||'SIGLO');
     resultSection.hidden=false;
@@ -316,6 +319,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       ['Seriales Cliente',r.seriales_cliente||0],
       ['Seriales SIGLO fiscales',r.seriales_siglo_fiscales||0],
       ['Seriales conciliados',r.serial_conciliado||0],
+      ['Despachados reconocidos para acierto',r.serial_despachado_aceptado||0],
       ['Seriales faltantes',r.serial_faltante||0],
       ['Seriales sobrantes',r.serial_sobrante||0],
       ['Seriales con diferencia',r.serial_diferencia||0],
@@ -380,7 +384,10 @@ document.addEventListener('DOMContentLoaded',()=>{
       ['FALTANTE','El Cliente reporta existencia que SIGLO no concilia.'],
       ['SOBRANTE','SIGLO tiene existencia fiscal que no aparece en el preliminar.'],
       ['DIFERENCIA','El serial existe en ambos, pero cambia SAP, almacén, lote o tipo.'],
-      ['EXISTE_FUERA_MAPA','El serial existe en SIGLO, pero su estado actual no pertenece al universo fiscal.'],
+      ['EXISTE_FUERA_MAPA','El serial existe en SIGLO, pero su estado actual no pertenece al universo fiscal; la novedad permanece visible.'],
+      ['Despachado reconocido','Un serial en LIBRE / Despachado, cuya llave SAP + Centro + Almacén + Lote + Tipo coincide, cuenta para el acierto, pero se muestra como EXISTE_FUERA_MAPA.'],
+      ['Instalado','Los seriales Instalados siguen fuera del inventario fiscal y afectan el porcentaje de acierto.'],
+      ['Acierto serializados','(Seriales CONCILIADOS + Despachados reconocidos) / Total de seriales del Cliente.'],
       ['COLISIÓN SIGLO','Dos o más equipos de SIGLO se normalizan al mismo serial Cliente. Se reporta para revisión y no se concilia automáticamente.'],
       ['Acierto general','Promedio entre el porcentaje de conciliación serializada y no serializada cuando ambos universos existen.']
     ];
