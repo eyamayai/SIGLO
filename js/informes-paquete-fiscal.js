@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const map=sheetNamed(book,'MAPA FISCAL',['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','STOCK','NOMBRE DEL EQUIPO','FECHA'],[18,14,14,18,22,12,48,16],'MAPA FISCAL','Una fila por llave fiscal única; se recalcula al editar BASE MAESTRA.');
     assignFormat(map,5,[18,14,14,18,22,12,48,16]);
     arrayFormula(map,'A6',
-      'IFERROR(LET(k,SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8),'+masterCodes+'<>""))),n,BYROW(k,LAMBDA(r,IFERROR(INDEX('+master+'$B$6:$B$'+rowsLimit+',MATCH(TEXTJOIN("|",FALSE,r),'+fiscalKey+',0)),""))),HSTACK(k,n)),"")',
+      'IFERROR(LET(k,SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8),'+masterCodes+'<>""))),n,BYROW(k,LAMBDA(fila,IFERROR(INDEX('+master+'$B$6:$B$'+rowsLimit+',MATCH(TEXTJOIN("|",FALSE,fila),'+fiscalKey+',0)),""))),HSTACK(k,n)),"")',
       7,data.length+100);
     // Fecha de consulta: referencia fija de la exportación, sin modificar existencias.
     for(let r=6;r<=Math.min(rowsLimit,data.length+205);r++)formula(map,'H'+r,'IF(A'+r+'="","","'+today()+'")');
@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const act=sheetNamed(book,mainName,['CODIGO SAP','DESCRIPCION','UBICACION','LOTE','CANTIDAD','OBSERVACION'],[18,48,22,17,15,25],
         'ACTA '+short+' · '+key,'Filtro dinámico sobre BASE MAESTRA. Editar exclusivamente allí.');
       act['B3']={t:'s',v:key};
-      const sql='IFERROR(LET(t,FILTER(CHOOSECOLS('+masterRange+',1,2,5,7,6),'+groupRange+'=$B$3),u,UNIQUE(t),c,BYROW(u,LAMBDA(r,SUMIFS('+qtyRange+','+masterCodes+',INDEX(r,1,1),'+master+'$E$6:$E$'+rowsLimit+',INDEX(r,1,3),'+master+'$G$6:$G$'+rowsLimit+',INDEX(r,1,4),'+groupRange+',$B$3))),HSTACK(CHOOSECOLS(u,1,2,3,4),c,CHOOSECOLS(u,5)))),"")';
+      const sql='IFERROR(LET(t,FILTER(CHOOSECOLS('+masterRange+',1,2,5,7,6),'+groupRange+'=$B$3),u,UNIQUE(t),cant,BYROW(u,LAMBDA(fila,SUMIFS('+qtyRange+','+masterCodes+',INDEX(fila,1,1),'+master+'$E$6:$E$'+rowsLimit+',INDEX(fila,1,3),'+master+'$G$6:$G$'+rowsLimit+',INDEX(fila,1,4),'+groupRange+',$B$3))),HSTACK(CHOOSECOLS(u,1,2,3,4),cant,CHOOSECOLS(u,5))),"")';
       arrayFormula(act,'A6',sql,6,data.length+100);
       const ser=sheetNamed(book,serName,['CODIGO SAP','DESCRIPCION','CANTIDAD','SERIAL','LOTE','UBICACION','OBSERVACIONES'],[18,46,14,29,18,22,24],
         'SERIALIZADOS '+short+' · '+key,'Anexo serializado vinculado a BASE MAESTRA.');
