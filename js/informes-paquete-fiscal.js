@@ -184,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
       formula(base,'O'+r,'IF(A'+r+'="","",P'+r+'&"|"&N'+r+')');
       formula(base,'P'+r,'IF(A'+r+'="","",IFERROR(VLOOKUP(M'+r+',PLANILLAS!$A$6:$B$'+(groups.keys.length+5)+',2,FALSE),"REGENERAR ACTAS"))');
     }
+    base['!ref']='A1:P'+rowsLimit;
     const planRows=groups.keys.map(k=>[k,null,null]);
     const plan=polished(book,'PLANILLAS',titleRows('PLANILLAS Y GRUPOS','Las planillas se recalculan por grupos con existencias fiscales.','Un grupo nuevo que no figure en esta lista requiere REGENERAR DESDE EXCEL.'),5,planRows,['GRUPO ACTA','NRO PLANILLA','FILAS EN GRUPO'],[53,22,21]);
     groups.keys.forEach((key,i)=>{
@@ -199,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
       7,data.length+100);
     // Fecha de consulta: referencia fija de la exportación, sin modificar existencias.
     for(let r=6;r<=Math.min(rowsLimit,data.length+205);r++)formula(map,'H'+r,'IF(A'+r+'="","","'+today()+'")');
+    map['!ref']='A1:H'+Math.min(rowsLimit,data.length+205);
 
     const inv=sheetNamed(book,'INVENTARIO FISCAL',['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','STOCK','SALDO','FECHA'],[18,14,14,18,22,12,15,16],
       'INVENTARIO FISCAL','Agrupa por Código SAP, Centro, Almacén, Lote, Ubicación y Stock; SUMIF recalcula cantidades.');
@@ -208,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const invKey='CHOOSECOLS(A6#,1)&"|"&CHOOSECOLS(A6#,2)&"|"&CHOOSECOLS(A6#,3)&"|"&CHOOSECOLS(A6#,4)&"|"&CHOOSECOLS(A6#,5)&"|"&CHOOSECOLS(A6#,6)';
     arrayFormula(inv,'G6','IFERROR(SUMIF('+fiscalKey+','+invKey+','+qtyRange+'),"")');
     for(let r=6;r<=Math.min(rowsLimit,data.length+205);r++)formula(inv,'H'+r,'IF(A'+r+'="","","'+today()+'")');
+    inv['!ref']='A1:H'+Math.min(rowsLimit,data.length+205);
 
     const actSummary=sheetNamed(book,'ACTAS DE CONTEO',['GRUPO ACTA','NRO PLANILLA','REGISTROS','UNIDADES','SERIALIZADOS','HOJA ACTA'],[53,20,18,18,19,31],
       'ACTAS DE CONTEO','Separadas por Segmento + Almacén + Anotación. Solo grupos con existencias tienen planilla.');
@@ -221,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
       actSummary['F'+r]={t:'s',v:'ACTA_'+String(i+1).padStart(3,'0')};
     });
 
+    actSummary['!ref']='A1:F'+(groups.keys.length+5);
     groups.keys.forEach((key,i)=>{
       const short=String(i+1).padStart(3,'0');
       const mainName='ACTA_'+short;
@@ -247,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
     arrayFormula(model,'H6','IFERROR(SUMIF('+modelKey+','+mk+','+qtyRange+'),"")');
     arrayFormula(model,'I6','IFERROR(H6#,"")');
     for(let r=6;r<=Math.min(rowsLimit,data.length+205);r++)formula(model,'J'+r,'IF(A'+r+'="","","'+dateCompact()+'")');
+    model['!ref']='A1:J'+Math.min(rowsLimit,data.length+205);
 
     const serialized=sheetNamed(book,'MODELO SERIALIZADOS',['CODIGO SAP','DESCRIPCION','SERIAL','CANTIDAD','LOTE','UBICACION','TIPO STOCK','SERIAL RR','NRO PLANILLA'],[18,46,30,13,18,20,17,30,18],
       'MODELO SERIALIZADOS','Anexo de todos los materiales serializados, vinculado a BASE MAESTRA.');
