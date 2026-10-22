@@ -86,7 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const warehouses=[...new Set(data.map(x=>x.almacen))].sort();
     const active=new Map();
     for(const item of data){
-      const annotation=annotations.has(item.codigo_sap)?norm(annotations.get(item.codigo_sap)):'CERTIFICADO';
+      // Excel UPPER conserva tildes: usar exactamente la misma clave para las actas.
+      const annotation=annotations.has(item.codigo_sap)?clean(annotations.get(item.codigo_sap)).toUpperCase():'CERTIFICADO';
       const key=[item.segmento,item.almacen,annotation].join('|');
       active.set(key,(active.get(key)||0)+1);
     }
