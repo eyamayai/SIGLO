@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const headers=['CODIGO SAP','DESCRIPCION','CENTRO','ALMACEN','UBICACION','SEGMENTO','LOTE','STOCK','CANTIDAD','SERIAL','SERIALIZADO','ANOTACION','GRUPO ACTA','CLAVE FISCAL','CLAVE MODELO','PLANILLA'];
     const guide=worksheet(book,'LEEME',['PAQUETE FISCAL DINÁMICO','INSTRUCCIONES'],[
       ['Fuente','Exportación puntual de SIGLO. Este libro no escribe en Supabase.'],
-      ['Edición','Modifica solo columnas A:K de BASE MAESTRA. No sobrescribas las fórmulas de L:T.'],
+      ['Edición','Modifica solo columnas A:K de BASE MAESTRA. No sobrescribas las fórmulas de L:X.'],
       ['Recalcular','Excel de escritorio: Fórmulas > Opciones para el cálculo > Automático.'],
       ['Actualización','Los informes dependen de fórmulas dinámicas, se recalculan al editar BASE MAESTRA.'],
       ['Actas','Las pestañas previstas cubren segmentos, almacenes y anotaciones presentes.'],
@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
     guide['!rows']=[{hpt:28}];
     const matr=polished(book,'MATRIZ',titleRows('MATRIZ DEL CLIENTE','Fuente de clasificación para Actas y Modelo','No cambiar las anotaciones de Claro sin validación.'),5,matrix.map(x=>[x.codigo_sap,x.descripcion,x.anotacion]),['CODIGO SAP','DESCRIPCION','ANOTACION'],[19,58,38]);
     const masterData=data.map(x=>[x.codigo_sap,x.descripcion,x.centro,x.almacen,x.ubicacion,x.segmento,x.lote,x.stock,x.cantidad,x.serial,x.serializado,null,null,null,null,null]);
-    const base=polished(book,'BASE MAESTRA',titleRows('BASE MAESTRA EDITABLE','Cambios exclusivos de este Excel. Columnas A:K editables.','Columnas L:T calculadas. Para retirar una existencia poner CANTIDAD=0.'),5,masterData,headers,[18,45,12,14,19,22,18,11,13,27,14,30,45,65,76,19]);
+    const base=polished(book,'BASE MAESTRA',titleRows('BASE MAESTRA EDITABLE','Cambios exclusivos de este Excel. Columnas A:K editables.','Columnas L:X calculadas. Para retirar una existencia poner CANTIDAD=0.'),5,masterData,headers,[18,45,12,14,19,22,18,11,13,27,14,30,45,65,76,19]);
     for(let index=0;index<data.length+1000;index++){
       const r=index+6;
       // Fórmulas adicionales hasta mil registros para permitir ampliar la base sin perder cálculos.
@@ -241,15 +241,26 @@ document.addEventListener('DOMContentLoaded', () => {
     base['R5']={t:'s',v:'PRIMERA ACTA'};
     base['S5']={t:'s',v:'PRIMERA FISCAL'};
     base['T5']={t:'s',v:'PRIMERA MODELO'};
+    // Numeración consecutiva por grupo y claves de búsqueda para compactar
+    // ACTAS y anexos SER sin fórmulas matriciales ni huecos intermedios.
+    base['U5']={t:'s',v:'NRO FILA ACTA'};
+    base['V5']={t:'s',v:'BUSQUEDA ACTA'};
+    base['W5']={t:'s',v:'NRO FILA SERIAL'};
+    base['X5']={t:'s',v:'BUSQUEDA SERIAL'};
     for(let index=0;index<data.length+1000;index++){
       const rr=index+6;
       formula(base,'Q'+rr,'IF(M'+rr+'="","",M'+rr+'&"|"&A'+rr+'&"|"&E'+rr+'&"|"&G'+rr+')');
       formula(base,'R'+rr,'IF(Q'+rr+'="","",IF(COUNTIF($Q$6:Q'+rr+',Q'+rr+')=1,1,0))');
       formula(base,'S'+rr,'IF(N'+rr+'="","",IF(COUNTIF($N$6:N'+rr+',N'+rr+')=1,1,0))');
       formula(base,'T'+rr,'IF(O'+rr+'="","",IF(COUNTIF($O$6:O'+rr+',O'+rr+')=1,1,0))');
+      formula(base,'U'+rr,'IF(AND(M'+rr+'<>"",R'+rr+'=1),COUNTIFS($M$6:M'+rr+',M'+rr+',$R$6:R'+rr+',1),"")');
+      formula(base,'V'+rr,'IF(U'+rr+'="","",M'+rr+'&"|"&U'+rr+')');
+      formula(base,'W'+rr,'IF(AND(M'+rr+'<>"",K'+rr+'=1),COUNTIFS($M$6:M'+rr+',M'+rr+',$K$6:K'+rr+',1),"")');
+      formula(base,'X'+rr,'IF(W'+rr+'="","",M'+rr+'&"|"&W'+rr+')');
     }
-    base['!cols']=base['!cols'].concat([{wch:85},{wch:16},{wch:18},{wch:18}]);
-    base['!ref']='A1:T'+rowsLimit;
+    base['!cols']=base['!cols'].concat([{wch:85},{wch:16},{wch:18},{wch:18},
+      {wch:16},{wch:85},{wch:16},{wch:85}]);
+    base['!ref']='A1:X'+rowsLimit;
     const makeView=(name,head,widths,heading,desc)=>{
       return sheetNamed(book,name,head,widths,heading,desc);
     };
@@ -320,45 +331,82 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     bookRow(report,'F',5+groups.keys.length);
 
-    // ACTAS: todas las líneas originales del grupo tienen una plaza.
-    // Marcador R deduplica por SAP + ubicación + lote + grupo; una corrección
-    // de lote en una línea antes duplicada crea una nueva línea visible.
+    // ACTAS compactas: una columna auxiliar identifica el n-ésimo registro
+    // VIGENTE del grupo. Cambiar lote/almacén reordena las filas visibles,
+    // incluso si una fila original desaparece o cambia de grupo.
     groups.keys.forEach((key,gi)=>{
       const short=String(gi+1).padStart(3,'0');
       const positions=data.map((x,i)=>({x,i})).filter(({x})=>{
         const annotation=(groups.annotations.get(x.codigo_sap)||'CERTIFICADO').toUpperCase();
         return [x.segmento,x.almacen,annotation].join('|')===key;
       });
-      const sorted=partitionUnique(positions.map(({x,i})=>({
-        i,key:[key,x.codigo_sap,x.ubicacion,x.lote].join('|')
-      })));
+      // En las actas se consolida por SAP + ubicación + lote dentro del grupo.
+      const seen=new Set();
+      const unique=positions.filter(({x})=>{
+        const k=[key,x.codigo_sap,x.ubicacion,x.lote].join('|');
+        if(seen.has(k))return false;
+        seen.add(k);return true;
+      });
+      // Reservar capacidad para cambios de clasificación entre actas existentes.
+      // Si surge un grupo nuevo sigue disponible "Regenerar" sin escribir en SIGLO.
+      const actRows=Math.min(rowsLimit-5,Math.max(unique.length+40,Math.ceil(unique.length*1.2)));
       const a=makeView('ACTA_'+short,
         ['CODIGO SAP','DESCRIPCION','UBICACION','LOTE','CANTIDAD','OBSERVACION'],
-        [18,47,22,17,16,23],'ACTA '+short+' · '+key,
-        'Conteo dinámico por Grupo. Ajusta solamente BASE MAESTRA.');
+        [18,47,22,17,16,23],
+        'ACTA '+short+' · '+key,
+        'Filas compactas: cambia BASE MAESTRA y las líneas se reacomodan sin espacios.');
       a['B3']={t:'s',v:key};
-      sorted.forEach((idx,j)=>{
-        const rr=idx+6,br=j+6,x=data[idx],cond='AND('+baseRef+'$M'+rr+'=$B$3,'+baseRef+'$R'+rr+'=1)';
-        [['A',x.codigo_sap],['B',x.descripcion],['E',x.ubicacion],['G',x.lote]].forEach(([column,val],k)=>
-          copyIf(a,XLSX.utils.encode_col(k)+br,cond,column+rr,val));
-        put(a,'E'+br,'IF('+cond+',SUMIF('+baseRef+'$Q$6:$Q$'+last+','+baseRef+'Q'+rr+','+qtyRange+'),"")',
-          actaTotals.get([key,x.codigo_sap,x.ubicacion,x.lote].join('|'))||0);
-        copyIf(a,'F'+br,cond,'F'+rr,x.segmento);
-      });
-      bookRow(a,'F',5+sorted.length);
-      const serialized=positions.filter(({x})=>x.serializado).map(({i})=>i);
+      a['G5']={t:'s',v:'INDICE BASE'};
+      a['!cols'].push({wch:14,hidden:true});
+      for(let j=0;j<actRows;j++){
+        const br=j+6;
+        const item=unique[j]||null;
+        // MATCH recupera la fila cuya clave coincide con el orden 1, 2, 3…
+        const finder='IFERROR(MATCH($B$3&"|"&'+(j+1)+','+baseRef+'$V$6:$V$'+last+',0),"")';
+        put(a,'G'+br,finder,item?item.i+1:'');
+        const idx='$G'+br;
+        const col=(letter,initial)=>{
+          const range=baseRef+'$'+letter+'$6:$'+letter+'$'+last;
+          return {expr:'IF('+idx+'="","",INDEX('+range+','+idx+'))',value:initial};
+        };
+        const fields=[
+          col('A',item?.x.codigo_sap||''),col('B',item?.x.descripcion||''),
+          col('E',item?.x.ubicacion||''),col('G',item?.x.lote||''),
+          {expr:'IF('+idx+'="","",SUMIF('+baseRef+'$Q$6:$Q$'+last+
+            ',INDEX('+baseRef+'$Q$6:$Q$'+last+','+idx+'),'+qtyRange+'))',
+           value:item?(actaTotals.get([key,item.x.codigo_sap,item.x.ubicacion,item.x.lote].join('|'))||0):''},
+          col('F',item?.x.segmento||'')
+        ];
+        fields.forEach((field,k)=>put(a,XLSX.utils.encode_col(k)+br,field.expr,field.value));
+      }
+      bookRow(a,'G',5+actRows);
+
+      const serialized=positions.filter(({x})=>x.serializado);
+      const serRows=Math.min(rowsLimit-5,
+        Math.max(serialized.length+30,Math.ceil(serialized.length*1.2)));
       const sr=makeView('SER_'+short,
         ['CODIGO SAP','DESCRIPCION','CANTIDAD','SERIAL','LOTE','UBICACION','OBSERVACIONES'],
-        [18,47,12,28,17,22,25],'SERIALIZADOS '+short+' · '+key,
-        'Solo serializados del Acta. Cambios de grupo: usar REGENERAR en SIGLO.');
+        [18,47,12,28,17,22,25],
+        'SERIALIZADOS '+short+' · '+key,
+        'Anexo compacto con seriales del grupo actual. Regenerar si nace un grupo nuevo.');
       sr['B3']={t:'s',v:key};
-      serialized.forEach((idx,j)=>{
-        const rr=idx+6,br=j+6,x=data[idx],cond=baseRef+'$M'+rr+'=$B$3';
-        [['A',x.codigo_sap],['B',x.descripcion],['I',x.cantidad],['J',x.serial],
-          ['G',x.lote],['E',x.ubicacion],['F',x.segmento]]
-          .forEach(([col,val],k)=>copyIf(sr,XLSX.utils.encode_col(k)+br,cond,col+rr,val));
-      });
-      bookRow(sr,'G',5+serialized.length);
+      sr['H5']={t:'s',v:'INDICE BASE'};
+      sr['!cols'].push({wch:14,hidden:true});
+      for(let j=0;j<serRows;j++){
+        const br=j+6,item=serialized[j]||null;
+        put(sr,'H'+br,'IFERROR(MATCH($B$3&"|"&'+(j+1)+','+
+          baseRef+'$X$6:$X$'+last+',0),"")',item?item.i+1:'');
+        const idx='$H'+br;
+        const cols=['A','B','I','J','G','E','F'];
+        const vals=item?[
+          item.x.codigo_sap,item.x.descripcion,item.x.cantidad,item.x.serial,
+          item.x.lote,item.x.ubicacion,item.x.segmento
+        ]:['','','','','','',''];
+        cols.forEach((source,k)=>put(sr,XLSX.utils.encode_col(k)+br,
+          'IF('+idx+'="","",INDEX('+baseRef+'$'+source+'$6:$'+source+'$'+last+
+          ','+idx+'))',vals[k]));
+      }
+      bookRow(sr,'H',5+serRows);
     });
 
     // MODELO ESTRUCTURA: llave incluye la planilla asignada.
