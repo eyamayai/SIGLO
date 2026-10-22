@@ -226,6 +226,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const fiscalIndices=partitionUnique(fiscalRaw);
     const modelIndices=partitionUnique(modelRaw);
+    const flags=items=>{const seen=new Set(),out=new Map();items.forEach(({i,key})=>{
+      out.set(i,!seen.has(key));seen.add(key);
+    });return out;};
+    const initialFiscal=flags(fiscalRaw),initialModel=flags(modelRaw);
+    const actaRaw=data.map((d,i)=>{
+      const annotation=(groups.annotations.get(d.codigo_sap)||'CERTIFICADO').toUpperCase();
+      return {i,key:[d.segmento,d.almacen,annotation,d.codigo_sap,d.ubicacion,d.lote].join('|')};
+    });
+    const initialActa=flags(actaRaw);
     // Columnas auxiliares: Q clave de Acta; R/S/T marcadores de primera
     // aparición de Acta, llave Fiscal y llave Modelo, respectivamente.
     base['Q5']={t:'s',v:'CLAVE ACTA'};
@@ -244,8 +253,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const makeView=(name,head,widths,heading,desc)=>{
       return sheetNamed(book,name,head,widths,heading,desc);
     };
+    const initialVisibility=form=>{
+      const match=String(form).match(/\$([RST])(\d+)=1/);
+      if(!match)return true;
+      const index=Number(match[2])-6;
+      if(match[1]==='S')return initialFiscal.get(index)!==false;
+      if(match[1]==='T')return initialModel.get(index)!==false;
+      return initialActa.get(index)!==false;
+    };
     const put=(ws,address,form,value)=>{
-      ws[address]={t:typeof value==='number'?'n':'s',f:form,v:value==null?'':value};
+      const visible=initialVisibility(form);
+      const cached=visible?(value==null?'':value):'';
+      ws[address]={t:typeof cached==='number'?'n':'s',f:form,v:cached};
     };
     const copyIf=(ws,address,condition,origin,value)=>{
       put(ws,address,'IF('+condition+','+baseRef+origin+',"")',value);
