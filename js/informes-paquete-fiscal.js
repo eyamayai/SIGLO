@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const map=sheetNamed(book,'MAPA FISCAL',['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','STOCK','NOMBRE DEL EQUIPO','FECHA'],[18,14,14,18,22,12,48,16],'MAPA FISCAL','Una fila por llave fiscal única; se recalcula al editar BASE MAESTRA.');
     assignFormat(map,5,[18,14,14,18,22,12,48,16]);
     arrayFormula(map,'A6',
-      'IFERROR(SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8,2),'+masterCodes+'<>""))),"")',
+      'IFERROR(LET(k,SORT(UNIQUE(FILTER(CHOOSECOLS('+masterRange+',1,3,4,7,5,8),'+masterCodes+'<>""))),n,BYROW(k,LAMBDA(r,IFERROR(INDEX('+master+'$B$6:$B$'+rowsLimit+',MATCH(TEXTJOIN("|",FALSE,r),'+fiscalKey+',0)),""))),HSTACK(k,n)),"")',
       7,data.length+100);
     // Fecha de consulta: referencia fija de la exportación, sin modificar existencias.
     for(let r=6;r<=Math.min(rowsLimit,data.length+205);r++)formula(map,'H'+r,'IF(A'+r+'="","","'+today()+'")');
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
       formula(actSummary,'C'+r,'COUNTIF('+groupRange+',A'+r+')');
       formula(actSummary,'D'+r,'SUMIF('+groupRange+',A'+r+','+qtyRange+')');
       formula(actSummary,'E'+r,'COUNTIFS('+groupRange+',A'+r+','+serialFlag+',1)');
-      actSummary['F'+r]={t:'s',v:safeSheet('ACTA_'+String(i+1).padStart(3,'0')+'_'+key).slice(0,31)};
+      actSummary['F'+r]={t:'s',v:'ACTA_'+String(i+1).padStart(3,'0')};
     });
 
     groups.keys.forEach((key,i)=>{
