@@ -230,9 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     ws['!cols']=[{wch:18},{wch:52},{wch:28}];
     XLSX.utils.book_append_sheet(wb,ws,'DISTRIBUCION');
 
-    const scopeInstruction = target==='modelo'
-      ? 'La matriz define el alcance del Modelo Estructura. Los códigos con inventario físico que no aparezcan en ella se excluirán del Excel y solo generarán una advertencia informativa.'
-      : 'Los códigos con inventario físico que no aparezcan en esta matriz se exportarán en NO_CLASIFICADOS.';
+    const scopeInstruction = 'Todo código SAP con inventario fiscal vigente en SIGLO y ausente de esta matriz se clasificará automáticamente como CERTIFICADO, en Actas de Conteo y Modelo Estructura.';
 
     const instructions=XLSX.utils.aoa_to_sheet([
       [target==='modelo' ? 'SIGLO · Modelo Estructura' : 'SIGLO · Actas de Conteo'],
@@ -406,6 +404,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       .sort((a,b)=>compareSap(a.codigo_sap,b.codigo_sap));
 
     const conflictedCodes=new Set(conflicts.map(x=>x.codigo_sap));
+    // Respetar clasificaciones explícitas. Si el Cliente omitió un Código SAP,
+    // usar la anotación CERTIFICADO (preferentemente su misma nomenclatura).
+    const certificateAnnotation=[...displayAnnotation.values()].find(value=>
+      normalizeHeader(value)==='CERTIFICADO'
+    ) || [...displayAnnotation.values()].find(value=>
+      /^CERTIFICAD/.test(normalizeHeader(value))
+    ) || 'CERTIFICADO';
+    const autoCertificateCodes=new Set();
     const groupMap=new Map();
     const unclassified=[];
     const inventoryCodes=new Set();
@@ -428,12 +434,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       if(row.cantidad<=0) return;
       inventoryCodes.add(row.codigo_sap);
 
-      if(!annotationSets.has(row.codigo_sap) || conflictedCodes.has(row.codigo_sap)){
+      if(conflictedCodes.has(row.codigo_sap)){
+        // Una contradicción explícita del Cliente sigue bloqueando la exportación.
         unclassified.push(row);
         return;
       }
 
-      const annotation=displayAnnotation.get(row.codigo_sap);
+      const isAutoCertificate=!annotationSets.has(row.codigo_sap);
+      if(isAutoCertificate)autoCertificateCodes.add(row.codigo_sap);
+      const annotation=isAutoCertificate
+        ? certificateAnnotation
+        : displayAnnotation.get(row.codigo_sap);
       const key=[row.segmento,row.almacen,normalizeHeader(annotation)].join('|');
       if(!groupMap.has(key)){
         groupMap.set(key,{segmento:row.segmento,almacen:row.almacen,anotacion:annotation,rows:[]});
@@ -473,6 +484,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       unclassifiedMain,
       unclassifiedSerial,
       unclassifiedCodes:[...new Set(unclassified.map(x=>x.codigo_sap))].sort(compareSap),
+      autoCertificateCodes:[...autoCertificateCodes].sort(compareSap),
       matrixWithoutStock,
       serialMismatch
     };
@@ -483,7 +495,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('actasMatrixCount').textContent=preparedActas.matrixCount;
     document.getElementById('actasCount').textContent=preparedActas.groups.length;
-    document.getElementById('actasUnclassifiedCount').textContent=preparedActas.unclassifiedCodes.length;
+    document.getElementById('actasUnclassifiedCount').textContent=preparedActas.autoCertificateCodes.length;
     document.getElementById('actasConflictCount').textContent=preparedActas.conflicts.length;
 
     document.getElementById('actasPreviewBody').innerHTML=preparedActas.groups.length
@@ -504,8 +516,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     preparedActas.conflicts.forEach(item=>{
       issues.push('<div class="actas-issue error"><strong>Conflicto '+escapeHtml(item.codigo_sap)+':</strong> aparece con más de una anotación ('+escapeHtml(item.anotaciones.join(' / '))+'). Corrige la matriz antes de exportar.</div>');
     });
-    if(preparedActas.unclassifiedCodes.length){
-      issues.push('<div class="actas-issue"><strong>NO CLASIFICADOS:</strong> '+preparedActas.unclassifiedCodes.length+' Código(s) SAP con inventario no aparecen en la matriz del cliente. Se incluirán en una hoja de control separada.</div>');
+    if(preparedActas.autoCertificateCodes.length){
+      issues.push('<div class="actas-issue"><strong>Certificados automáticos:</strong> '+preparedActas.autoCertificateCodes.length+' Código(s) SAP con existencia fiscal no figuran en la matriz del Cliente. Se incluirán en las actas CERTIFICADO de su segmento y almacén.</div>');
     }
     if(preparedActas.matrixWithoutStock.length){
       issues.push('<div class="actas-issue"><strong>Sin existencia actual:</strong> '+preparedActas.matrixWithoutStock.length+' Código(s) SAP de la matriz no tienen inventario físico en SIGLO y no generan filas.</div>');
@@ -519,7 +531,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     issueBox.hidden=issues.length===0;
 
     const blocked=preparedActas.conflicts.length>0 || preparedActas.serialMismatch.length>0;
-    exportActasBtn.disabled=blocked || (preparedActas.groups.length===0 && preparedActas.unclassifiedMain.length===0);
+    exportActasBtn.disabled=blocked || preparedActas.groups.length===0;
     actasResult.hidden=false;
 
     if(blocked){
@@ -599,8 +611,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modelData=buildModelStructure(preparedModel);
     preparedModel.modelData=modelData;
 
-    const modelSerialMismatch=preparedModel.serialMismatch
-      .filter(item=>!String(item).startsWith('NO_CLASIFICADOS:'));
+    const modelSerialMismatch=preparedModel.serialMismatch;
 
     const blockCount=
       preparedModel.conflicts.length+
@@ -629,8 +640,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     preparedModel.conflicts.forEach(item=>{
       issues.push('<div class="actas-issue error"><strong>Conflicto '+escapeHtml(item.codigo_sap)+':</strong> aparece con más de una anotación. Corrige la matriz.</div>');
     });
-    if(preparedModel.unclassifiedCodes.length){
-      issues.push('<div class="actas-issue"><strong>Fuera del alcance:</strong> '+preparedModel.unclassifiedCodes.length+' Código(s) SAP tienen inventario físico en SIGLO, pero no están incluidos en la matriz del cliente. No se incluirán en el Modelo Estructura.</div>');
+    if(preparedModel.autoCertificateCodes.length){
+      issues.push('<div class="actas-issue"><strong>Certificados automáticos:</strong> '+preparedModel.autoCertificateCodes.length+' Código(s) SAP ausentes de la matriz se incluyen como CERTIFICADO en el Modelo Estructura y las planillas correspondientes.</div>');
     }
     modelSerialMismatch.forEach(item=>{
       issues.push('<div class="actas-issue error"><strong>Seriales:</strong> '+escapeHtml(item)+'</div>');
@@ -649,10 +660,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(blockCount>0){
       setModelMessage('El Modelo Estructura tiene bloqueos dentro del alcance solicitado. Corrige la matriz o las diferencias antes de exportar.','error');
     }else{
-      const outsideScope=preparedModel.unclassifiedCodes.length;
+      const automatic=preparedModel.autoCertificateCodes.length;
       setModelMessage(
         'Modelo preparado correctamente con '+preparedModel.groups.length+' planilla(s).'+
-        (outsideScope ? ' '+outsideScope+' Código(s) SAP fuera del alcance serán omitidos del Excel.' : ''),
+        (automatic ? ' '+automatic+' Código(s) SAP ausentes en la matriz fueron clasificados como CERTIFICADO.' : ''),
         'success'
       );
     }
@@ -721,26 +732,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         );
       }
     });
-
-    if(preparedActas.unclassifiedMain.length){
-      appendSheet(
-        wb,
-        'NO_CLASIFICADOS',
-        ['CÓDIGO SAP','DESCRIPCIÓN','ALMACÉN','UBICACIÓN','LOTE','CANTIDAD','OBSERVACIÓN'],
-        preparedActas.unclassifiedMain.map(row=>[row.codigo_sap,row.descripcion,row.almacen,row.ubicacion,row.lote,row.cantidad,row.segmento]),
-        [16,48,14,18,16,12,20]
-      );
-    }
-
-    if(preparedActas.unclassifiedSerial.length){
-      appendSheet(
-        wb,
-        'NO_CLASIFICADOS_SER',
-        ['CÓDIGO SAP','DESCRIPCIÓN','ALMACÉN','CANTIDAD','SERIAL','LOTE','UBICACIÓN','OBSERVACIONES'],
-        preparedActas.unclassifiedSerial.map(row=>[row.codigo_sap,row.descripcion,row.almacen,1,clientSerial(row.codigo_sap,row.serial),row.lote,row.ubicacion,row.segmento]),
-        [16,48,14,10,28,16,18,20]
-      );
-    }
 
     XLSX.writeFile(wb,'SIGLO_Actas_de_Conteo_'+fileDate()+'.xlsx');
     setActasMessage('Excel de Actas de Conteo generado correctamente.','success');
