@@ -202,6 +202,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const last=rowsLimit;
     const baseRef="'BASE MAESTRA'!";
     const firstRef='$6';
+    const fiscalTotals=new Map(),actaTotals=new Map(),modelTotals=new Map();
+    data.forEach(d=>{
+      const fiscal=[d.codigo_sap,d.centro,d.almacen,d.lote,d.ubicacion,d.stock].join('|');
+      fiscalTotals.set(fiscal,(fiscalTotals.get(fiscal)||0)+d.cantidad);
+      const annotation=(groups.annotations.get(d.codigo_sap)||'CERTIFICADO').toUpperCase();
+      const group=[d.segmento,d.almacen,annotation].join('|');
+      const acta=[group,d.codigo_sap,d.ubicacion,d.lote].join('|');
+      actaTotals.set(acta,(actaTotals.get(acta)||0)+d.cantidad);
+      const model=[groups.keys.indexOf(group)+1,fiscal].join('|');
+      modelTotals.set(model,(modelTotals.get(model)||0)+d.cantidad);
+    });
     const fiscalRaw=data.map((d,i)=>({
       i,key:[d.codigo_sap,d.centro,d.almacen,d.lote,d.ubicacion,d.stock].join('|')
     }));
@@ -215,23 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const fiscalIndices=partitionUnique(fiscalRaw);
     const modelIndices=partitionUnique(modelRaw);
-    const rowLink=(ws,outIndex,baseIndex,fields,visible)=>{
-      const tr=outIndex+6,sr=baseIndex+6,checker=baseRef+'$'+visible+sr+'=1';
-      fields.forEach((field,j)=>{
-        const target=XLSX.utils.encode_col(j)+tr;
-        const origin=field.from;
-        let expression;
-        if(origin){
-          expression='IF('+checker+','+baseRef+origin+sr+',"")';
-        }else if(field.formula){
-          expression='IF('+checker+','+field.formula(sr)+',"")';
-        }else{
-          expression='IF('+checker+',"'+field.value+'","")';
-        }
-        const snapshot=field.snapshot?field.snapshot(data[baseIndex]):(origin?(data[baseIndex][field.key]??''):'');
-        ws[target]={t:typeof snapshot==='number'?'n':'s',f:expression};
-      });
-    };
     // Columnas auxiliares: Q clave de Acta; R/S/T marcadores de primera
     // aparición de Acta, llave Fiscal y llave Modelo, respectivamente.
     base['Q5']={t:'s',v:'CLAVE ACTA'};
@@ -288,9 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fillDate(inventario,'F'+br,cond);
       copyIf(inventario,'G'+br,cond,'H'+rr,source.stock);
       put(inventario,'H'+br,'IF('+cond+',SUMIF('+fiscalKey+','+baseRef+'N'+rr+','+qtyRange+'),"")',
-        data.filter(a=>[a.codigo_sap,a.centro,a.almacen,a.lote,a.ubicacion,a.stock].join('|')===
-          [source.codigo_sap,source.centro,source.almacen,source.lote,source.ubicacion,source.stock].join('|'))
-          .reduce((sum,x)=>sum+x.cantidad,0));
+        fiscalTotals.get([source.codigo_sap,source.centro,source.almacen,source.lote,source.ubicacion,source.stock].join('|'))||0);
     });
     bookRow(inventario,'H',5+fiscalIndices.length);
 
@@ -330,7 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const rr=idx+6,br=j+6,x=data[idx],cond='AND('+baseRef+'$M'+rr+'=$B$3,'+baseRef+'$R'+rr+'=1)';
         [['A',x.codigo_sap],['B',x.descripcion],['E',x.ubicacion],['G',x.lote]].forEach(([column,val],k)=>
           copyIf(a,XLSX.utils.encode_col(k)+br,cond,column+rr,val));
-        put(a,'E'+br,'IF('+cond+',SUMIF('+baseRef+'$Q$6:$Q$'+last+','+baseRef+'Q'+rr+','+qtyRange+'),"")',x.cantidad);
+        put(a,'E'+br,'IF('+cond+',SUMIF('+baseRef+'$Q$6:$Q$'+last+','+baseRef+'Q'+rr+','+qtyRange+'),"")',
+          actaTotals.get([key,x.codigo_sap,x.ubicacion,x.lote].join('|'))||0);
         copyIf(a,'F'+br,cond,'F'+rr,x.segmento);
       });
       bookRow(a,'F',5+sorted.length);
@@ -362,8 +355,12 @@ document.addEventListener('DOMContentLoaded', () => {
       copyIf(me,'G'+br,cond,'H'+rr,x.stock);
       copyIf(me,'H'+br,cond,'P'+rr,'');
       const amount='IF('+cond+',SUMIF('+modelKey+','+baseRef+'O'+rr+','+qtyRange+'),"")';
-      put(me,'I'+br,amount,x.cantidad);
-      put(me,'J'+br,amount,x.cantidad);
+      const g=(groups.annotations.get(x.codigo_sap)||'CERTIFICADO').toUpperCase();
+      const initialModel=[groups.keys.indexOf([x.segmento,x.almacen,g].join('|'))+1,
+        [x.codigo_sap,x.centro,x.almacen,x.lote,x.ubicacion,x.stock].join('|')].join('|');
+      const modelTotal=modelTotals.get(initialModel)||0;
+      put(me,'I'+br,amount,modelTotal);
+      put(me,'J'+br,amount,modelTotal);
     });
     bookRow(me,'J',5+modelIndices.length);
 
@@ -371,9 +368,11 @@ document.addEventListener('DOMContentLoaded', () => {
       ['CODIGO SAP','DESCRIPCION','SERIAL','CANTIDAD','LOTE','UBICACION','TIPO STOCK','SERIAL RR','ESTADO RR','NRO PLANILLA'],
       [18,47,27,13,18,21,16,27,15,19],
       'MODELO SERIALIZADOS','Anexo serializado dinámico vinculado a BASE MAESTRA.');
+    let countSerial=0;
     data.forEach((x,idx)=>{
       if(!x.serializado)return;
-      const rr=idx+6,br=5+data.slice(0,idx+1).filter(y=>y.serializado).length;
+      countSerial++;
+      const rr=idx+6,br=5+countSerial;
       const cond=baseRef+'$M'+rr+'<>""';
       [['A',x.codigo_sap],['B',x.descripcion],['J',x.serial],['I',x.cantidad],['G',x.lote],
         ['E',x.ubicacion],['H',x.stock],['J',x.serial]]
