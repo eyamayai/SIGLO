@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
     description.font={name:'Calibri',size:36,bold:true,color:{argb:'FF000000'}};
 
     const lot=ws.getCell(row+2,column);
-    lot.value=item.lote;
+    lot.value=item.lote+' - '+item.almacen;
     lot.font={name:'Calibri',size:40,bold:true,color:{argb:'FF000000'}};
 
     const sap=ws.getCell(row+3,column);
@@ -171,8 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
       cell.alignment={
         horizontal:'center',
         vertical:'middle',
-        wrapText:true,
-        shrinkToFit:index===1||index===3
+        wrapText:index!==2,
+        shrinkToFit:index===1||index===2||index===3
       };
       cell.border=labelBorder(index);
     }
