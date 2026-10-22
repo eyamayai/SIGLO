@@ -117,6 +117,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.location.href='informes-rotulos.html';
       return;
     }
+    if(key==='paquete_fiscal'){
+      window.location.href='informes-paquete-fiscal.html';
+      return;
+    }
     selected=key;
     buttons.forEach(btn=>btn.classList.toggle('active',btn.dataset.report===key));
 
