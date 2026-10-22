@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#1976c9">
+  <title>SIGLO | Informes · Paquete Fiscal Dinámico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260921-1">
+  <link rel="stylesheet" href="css/styles.css?v=20260924-1">
+  <link rel="stylesheet" href="css/informes.css?v=20260922-4">
+  <link rel="stylesheet" href="css/informes-paquete-fiscal.css?v=20261022-1">
+</head>
+<body class="dashboard-body">
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-brand"><img src="assets/icono-siglo.png?v=20260921-1" alt="Icono SIGLO"><strong>SIGLO</strong></div>
+  <nav aria-label="Navegación principal">
+    <a class="nav-link" href="inicio.html"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3Z"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
+    <a class="nav-link" href="ingresos.html"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Ingresos</a>
+    <a class="nav-link" href="despachos.html"><svg viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Despachos</a>
+    <a class="nav-link" href="salidas.html"><svg viewBox="0 0 24 24"><path d="M4 12h13"/><path d="m13 7 5 5-5 5"/><path d="M4 5v14"/></svg>Salidas</a>
+    <a class="nav-link" href="devoluciones.html"><svg viewBox="0 0 24 24"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8"/></svg>Devoluciones</a>
+    <a class="nav-link" href="desmonte.html"><svg viewBox="0 0 24 24"><path d="M4 6h16v4H4z"/><path d="M7 10v8h10v-8"/><path d="M9 14h6"/></svg>Desmonte</a>
+    <a class="nav-link" href="prealerta.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M8 9h8"/><path d="M8 13h5"/><path d="m14 16 2 2 4-4"/></svg>Prealerta</a>
+    <a class="nav-link" href="saldos.html"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Saldos</a>
+    <a class="nav-link" href="movimientos.html"><svg viewBox="0 0 24 24"><path d="M4 6h12"/><path d="m13 3 3 3-3 3"/><path d="M20 18H8"/><path d="m11 15-3 3 3 3"/></svg>Movimientos</a>
+    <a class="nav-link" href="auditoria.html"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>Auditoría</a>
+    <a class="nav-link active" href="informes.html"><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10"/><path d="M10 20V4h4v16"/><path d="M16 20v-7h4v7"/><path d="M2 20h20"/></svg>Informes</a>
+  </nav>
+  <div class="sidebar-bottom"><a class="nav-link" id="logoutBtn" href="index.html"><svg viewBox="0 0 24 24"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M14 4h5v16h-5"/></svg>Cerrar sesión</a></div>
+</aside>
+
+
+<main class="dashboard-main reports-main">
+  <div class="dashboard-top">
+    <div class="dashboard-title">
+      <div class="breadcrumb"><a href="inicio.html">Inicio</a><span>›</span><a href="informes.html">Informes</a><span>›</span><strong>Paquete Fiscal Dinámico</strong></div>
+      <h1>Paquete Fiscal Dinámico</h1>
+      <p>Una base de trabajo independiente para Mapa Fiscal, Inventario Fiscal, Actas de Conteo y Modelo Estructura.</p>
+    </div>
+    <div class="user-chip"><div class="user-avatar">S</div><span id="userLabel">Usuario SIGLO</span></div>
+  </div>
+  <section class="report-card paquete-card">
+    <div class="paquete-head">
+      <div><span class="step-badge">1</span><div><h2>Crear paquete desde SIGLO</h2><p>Adjunta la matriz de distribución enviada por Claro. La descarga combina las existencias fiscales vigentes con la clasificación de Conteo con Acompañamiento / Certificado. Los SAP ausentes serán Certificado.</p></div></div>
+      <a href="informes.html" class="outline-action">← Volver a Informes</a>
+    </div>
+    <div class="paquete-file">
+      <label class="paquete-picker" for="paqueteMatriz"><strong>Matriz del Cliente</strong><span>Excel .xlsx o .xls con las columnas CÓDIGO SAP, DESCRIPCIÓN y ANOTACIÓN</span><input type="file" id="paqueteMatriz" accept=".xlsx,.xls"></label>
+      <button class="primary-action" type="button" id="paqueteGenerar" disabled>Consultar SIGLO y descargar paquete <span>→</span></button>
+    </div>
+  </section>
+  <section class="report-card paquete-card">
+    <div class="paquete-head"><div><span class="step-badge">2</span><div><h2>Reorganizar un paquete corregido</h2><p>Si cambias de almacén, segmento o clasificación y necesitas crear nuevas pestañas de acta, adjunta aquí el Excel corregido. SIGLO lo reorganiza exclusivamente con el contenido del archivo, sin cargar los cambios a Supabase.</p></div></div></div>
+    <div class="paquete-file">
+      <label class="paquete-picker" for="paqueteEditado"><strong>Paquete Fiscal Dinámico editado</strong><span>Archivo .xlsx generado por esta misma funcionalidad</span><input type="file" id="paqueteEditado" accept=".xlsx"></label>
+      <button class="outline-action" type="button" id="paqueteRegenerar" disabled>Regenerar actas y descargar Excel</button>
+    </div>
+  </section>
+  <section class="report-card paquete-card paquete-note">
+    <h2>¿Cómo funciona el archivo?</h2>
+    <div class="paquete-features">
+      <div><strong>BASE MAESTRA</strong><span>Edita una sola vez: serial, lote, almacén, ubicación o cantidades.</span></div>
+      <div><strong>Informes vinculados</strong><span>Las fórmulas de Microsoft 365 recalculan Mapa Fiscal, Inventario Fiscal, actas y Modelo Estructura.</span></div>
+      <div><strong>Actas separadas</strong><span>Cada grupo Segmento + Almacén + Anotación tiene su pestaña y anexo serializado.</span></div>
+      <div><strong>Sin cambios en SIGLO</strong><span>Todo ajuste permanece en el Excel. La regeneración solo lee ese archivo local.</span></div>
+    </div>
+    <p class="paquete-alert"><strong>Formato de esta primera versión:</strong> .xlsx con fórmulas dinámicas de Microsoft Excel 365 y sin macros. No requiere habilitar VBA. Para grupos de acta nuevos utiliza «Regenerar». La exportación .xlsm con botón VBA integrado aún no forma parte de esta versión.</p>
+  </section>
+  <div id="paqueteEstado" class="report-message" role="status" aria-live="polite">Selecciona la matriz del Cliente para empezar.</div>
+  <div id="paqueteEstadisticas" class="paquete-stats"></div>
+  <footer class="dashboard-footer">SIGLO v0.1 · Paquete Fiscal Dinámico</footer>
+</main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js?v=20260918-1"></script>
+<script src="js/app.js?v=20261009-2"></script>
+<script src="js/informes-paquete-fiscal.js?v=20261022-2"></script>
+</body>
+</html>
