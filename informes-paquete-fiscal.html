@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" href="assets/icono-siglo.png?v=20260921-1">
   <link rel="stylesheet" href="css/styles.css?v=20260924-1">
   <link rel="stylesheet" href="css/informes.css?v=20260922-4">
-  <link rel="stylesheet" href="css/informes-paquete-fiscal.css?v=20261022-1">
+  <link rel="stylesheet" href="css/informes-paquete-fiscal.css?v=20261022-2">
 </head>
 <body class="dashboard-body">
 <div class="app-shell">
@@ -34,7 +34,7 @@
 </aside>
 
 
-<main class="dashboard-main reports-main">
+<main class="dashboard-main reports-main paquete-main">
   <div class="dashboard-top">
     <div class="dashboard-title">
       <div class="breadcrumb"><a href="inicio.html">Inicio</a><span>›</span><a href="informes.html">Informes</a><span>›</span><strong>Paquete Fiscal Dinámico</strong></div>
@@ -45,7 +45,7 @@
   </div>
   <section class="report-card paquete-card">
     <div class="paquete-head">
-      <div><span class="step-badge">1</span><div><h2>Crear paquete desde SIGLO</h2><p>Adjunta la matriz de distribución enviada por Claro. La descarga combina las existencias fiscales vigentes con la clasificación de Conteo con Acompañamiento / Certificado. Los SAP ausentes serán Certificado.</p></div></div>
+      <div class="paquete-title"><span class="step-badge">1</span><div><h2>Crear paquete desde SIGLO</h2><p>Adjunta la matriz de distribución enviada por Claro. La descarga combina las existencias fiscales vigentes con la clasificación de Conteo con Acompañamiento / Certificado. Los SAP ausentes serán Certificado.</p></div></div>
       <a href="informes.html" class="outline-action">← Volver a Informes</a>
     </div>
     <div class="paquete-file">
@@ -54,7 +54,7 @@
     </div>
   </section>
   <section class="report-card paquete-card">
-    <div class="paquete-head"><div><span class="step-badge">2</span><div><h2>Reorganizar un paquete corregido</h2><p>Si cambias de almacén, segmento o clasificación y necesitas crear nuevas pestañas de acta, adjunta aquí el Excel corregido. SIGLO lo reorganiza exclusivamente con el contenido del archivo, sin cargar los cambios a Supabase.</p></div></div></div>
+    <div class="paquete-head"><div class="paquete-title"><span class="step-badge">2</span><div><h2>Reorganizar un paquete corregido</h2><p>Si cambias de almacén, segmento o clasificación y necesitas crear nuevas pestañas de acta, adjunta aquí el Excel corregido. SIGLO lo reorganiza exclusivamente con el contenido del archivo, sin cargar los cambios a Supabase.</p></div></div></div>
     <div class="paquete-file">
       <label class="paquete-picker" for="paqueteEditado"><strong>Paquete Fiscal Dinámico editado</strong><span>Archivo .xlsx generado por esta misma funcionalidad</span><input type="file" id="paqueteEditado" accept=".xlsx"></label>
       <button class="outline-action" type="button" id="paqueteRegenerar" disabled>Regenerar actas y descargar Excel</button>
@@ -70,7 +70,7 @@
     </div>
     <p class="paquete-alert"><strong>Formato de esta primera versión:</strong> .xlsx con fórmulas dinámicas de Microsoft Excel 365 y sin macros. No requiere habilitar VBA. Para grupos de acta nuevos utiliza «Regenerar». La exportación .xlsm con botón VBA integrado aún no forma parte de esta versión.</p>
   </section>
-  <div id="paqueteEstado" class="report-message" role="status" aria-live="polite">Selecciona la matriz del Cliente para empezar.</div>
+  <div id="paqueteEstado" class="report-message paquete-status" role="status" aria-live="polite">Selecciona la matriz del Cliente para empezar.</div>
   <div id="paqueteEstadisticas" class="paquete-stats"></div>
   <footer class="dashboard-footer">SIGLO v0.1 · Paquete Fiscal Dinámico</footer>
 </main>
