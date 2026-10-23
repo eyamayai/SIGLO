@@ -309,7 +309,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function reserveSheetPair(segmento,almacen,anotacion,hasSerial,used){
-    const raw=[cleanSheetToken(segmento),cleanSheetToken(almacen),cleanSheetToken(anotacion)].join('_');
+    const raw=String(segmento).toUpperCase()==='INVERSA'
+      ? [cleanSheetToken(segmento),cleanSheetToken(almacen)].join('_')
+      : [cleanSheetToken(segmento),cleanSheetToken(almacen),cleanSheetToken(anotacion)].join('_');
     let attempt=1;
 
     while(true){
