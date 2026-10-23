@@ -524,7 +524,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       issues.push('<div class="actas-issue error"><strong>Conflicto '+escapeHtml(item.codigo_sap)+':</strong> aparece con más de una anotación ('+escapeHtml(item.anotaciones.join(' / '))+'). Corrige la matriz antes de exportar.</div>');
     });
     if(preparedActas.autoAlliedCodes.length){
-      issues.push('<div class="actas-issue"><strong>Conteo Aliado automático:</strong> '+preparedActas.autoAlliedCodes.length+' Código(s) SAP con existencia fiscal no figuran en la matriz del Cliente. Se incluirán en las actas de CONTEO ALIADO de su segmento y almacén.</div>');
+      issues.push('<div class="actas-issue"><strong>Conteo Aliado automático:</strong> '+preparedActas.autoAlliedCodes.length+' Código(s) SAP con existencia fiscal no figuran en la matriz del Cliente. Se incluirán en CONTEO ALIADO para Libre, o en la acta de Inversa correspondiente al almacén.</div>');
     }
     if(preparedActas.matrixWithoutStock.length){
       issues.push('<div class="actas-issue"><strong>Sin existencia actual:</strong> '+preparedActas.matrixWithoutStock.length+' Código(s) SAP de la matriz no tienen inventario físico en SIGLO y no generan filas.</div>');
