@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     ws['!cols']=[{wch:18},{wch:52},{wch:28}];
     XLSX.utils.book_append_sheet(wb,ws,'DISTRIBUCION');
 
-    const scopeInstruction = 'Todo código SAP con inventario fiscal vigente en SIGLO y ausente de esta matriz se clasificará automáticamente como CERTIFICADO, en Actas de Conteo y Modelo Estructura.';
+    const scopeInstruction = 'Los SAP ausentes de la matriz se clasifican como CONTEO ALIADO. El material de INVERSA se genera en actas propias, una por almacén, separado de LIBRE.';
 
     const instructions=XLSX.utils.aoa_to_sheet([
       [target==='modelo' ? 'SIGLO · Modelo Estructura' : 'SIGLO · Actas de Conteo'],
@@ -408,14 +408,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       .sort((a,b)=>compareSap(a.codigo_sap,b.codigo_sap));
 
     const conflictedCodes=new Set(conflicts.map(x=>x.codigo_sap));
-    // Respetar clasificaciones explícitas. Si el Cliente omitió un Código SAP,
-    // usar la anotación CERTIFICADO (preferentemente su misma nomenclatura).
-    const certificateAnnotation=[...displayAnnotation.values()].find(value=>
-      normalizeHeader(value)==='CERTIFICADO'
-    ) || [...displayAnnotation.values()].find(value=>
-      /^CERTIFICAD/.test(normalizeHeader(value))
-    ) || 'CERTIFICADO';
-    const autoCertificateCodes=new Set();
+    // Los códigos omitidos en la matriz del Cliente se cuentan como CONTEO ALIADO.
+    // Respetar la denominación de la matriz cuando esté presente.
+    const alliedAnnotation=[...displayAnnotation.values()].find(value=>
+      normalizeHeader(value)==='CONTEO ALIADO'
+    ) || 'Conteo Aliado';
+    const autoAlliedCodes=new Set();
     const groupMap=new Map();
     const unclassified=[];
     const inventoryCodes=new Set();
@@ -444,14 +442,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      const isAutoCertificate=!annotationSets.has(row.codigo_sap);
-      if(isAutoCertificate)autoCertificateCodes.add(row.codigo_sap);
-      const annotation=isAutoCertificate
-        ? certificateAnnotation
+      const isAutoAllied=!annotationSets.has(row.codigo_sap);
+      if(isAutoAllied)autoAlliedCodes.add(row.codigo_sap);
+      const annotation=isAutoAllied
+        ? alliedAnnotation
         : displayAnnotation.get(row.codigo_sap);
-      const key=[row.segmento,row.almacen,normalizeHeader(annotation)].join('|');
+      const isInverse=row.stock===4 || normalizeHeader(row.tipo)==='DESMONTE';
+      // Inversa: acta única por almacén, independiente de segmentos/anotaciones de Libre.
+      const segmentGroup=isInverse?'INVERSA':row.segmento;
+      const groupAnnotation=isInverse?'Inversa':annotation;
+      const key=[segmentGroup,row.almacen,normalizeHeader(groupAnnotation)].join('|');
       if(!groupMap.has(key)){
-        groupMap.set(key,{segmento:row.segmento,almacen:row.almacen,anotacion:annotation,rows:[]});
+        groupMap.set(key,{segmento:segmentGroup,almacen:row.almacen,
+          anotacion:groupAnnotation,tipo:isInverse?'INVERSA':'LIBRE',rows:[]});
       }
       groupMap.get(key).rows.push(row);
     });
@@ -488,7 +491,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       unclassifiedMain,
       unclassifiedSerial,
       unclassifiedCodes:[...new Set(unclassified.map(x=>x.codigo_sap))].sort(compareSap),
-      autoCertificateCodes:[...autoCertificateCodes].sort(compareSap),
+      autoAlliedCodes:[...autoAlliedCodes].sort(compareSap),
       matrixWithoutStock,
       serialMismatch
     };
@@ -499,7 +502,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('actasMatrixCount').textContent=preparedActas.matrixCount;
     document.getElementById('actasCount').textContent=preparedActas.groups.length;
-    document.getElementById('actasUnclassifiedCount').textContent=preparedActas.autoCertificateCodes.length;
+    document.getElementById('actasUnclassifiedCount').textContent=preparedActas.autoAlliedCodes.length;
     document.getElementById('actasConflictCount').textContent=preparedActas.conflicts.length;
 
     document.getElementById('actasPreviewBody').innerHTML=preparedActas.groups.length
@@ -520,8 +523,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     preparedActas.conflicts.forEach(item=>{
       issues.push('<div class="actas-issue error"><strong>Conflicto '+escapeHtml(item.codigo_sap)+':</strong> aparece con más de una anotación ('+escapeHtml(item.anotaciones.join(' / '))+'). Corrige la matriz antes de exportar.</div>');
     });
-    if(preparedActas.autoCertificateCodes.length){
-      issues.push('<div class="actas-issue"><strong>Certificados automáticos:</strong> '+preparedActas.autoCertificateCodes.length+' Código(s) SAP con existencia fiscal no figuran en la matriz del Cliente. Se incluirán en las actas CERTIFICADO de su segmento y almacén.</div>');
+    if(preparedActas.autoAlliedCodes.length){
+      issues.push('<div class="actas-issue"><strong>Conteo Aliado automático:</strong> '+preparedActas.autoAlliedCodes.length+' Código(s) SAP con existencia fiscal no figuran en la matriz del Cliente. Se incluirán en las actas de CONTEO ALIADO de su segmento y almacén.</div>');
     }
     if(preparedActas.matrixWithoutStock.length){
       issues.push('<div class="actas-issue"><strong>Sin existencia actual:</strong> '+preparedActas.matrixWithoutStock.length+' Código(s) SAP de la matriz no tienen inventario físico en SIGLO y no generan filas.</div>');
@@ -644,8 +647,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     preparedModel.conflicts.forEach(item=>{
       issues.push('<div class="actas-issue error"><strong>Conflicto '+escapeHtml(item.codigo_sap)+':</strong> aparece con más de una anotación. Corrige la matriz.</div>');
     });
-    if(preparedModel.autoCertificateCodes.length){
-      issues.push('<div class="actas-issue"><strong>Certificados automáticos:</strong> '+preparedModel.autoCertificateCodes.length+' Código(s) SAP ausentes de la matriz se incluyen como CERTIFICADO en el Modelo Estructura y las planillas correspondientes.</div>');
+    if(preparedModel.autoAlliedCodes.length){
+      issues.push('<div class="actas-issue"><strong>Conteo Aliado automático:</strong> '+preparedModel.autoAlliedCodes.length+' Código(s) SAP ausentes de la matriz se incluyen como CONTEO ALIADO en el Modelo Estructura y las planillas correspondientes.</div>');
     }
     modelSerialMismatch.forEach(item=>{
       issues.push('<div class="actas-issue error"><strong>Seriales:</strong> '+escapeHtml(item)+'</div>');
@@ -664,10 +667,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(blockCount>0){
       setModelMessage('El Modelo Estructura tiene bloqueos dentro del alcance solicitado. Corrige la matriz o las diferencias antes de exportar.','error');
     }else{
-      const automatic=preparedModel.autoCertificateCodes.length;
+      const automatic=preparedModel.autoAlliedCodes.length;
       setModelMessage(
         'Modelo preparado correctamente con '+preparedModel.groups.length+' planilla(s).'+
-        (automatic ? ' '+automatic+' Código(s) SAP ausentes en la matriz fueron clasificados como CERTIFICADO.' : ''),
+        (automatic ? ' '+automatic+' Código(s) SAP ausentes en la matriz fueron clasificados como CONTEO ALIADO.' : ''),
         'success'
       );
     }
