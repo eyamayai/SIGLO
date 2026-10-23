@@ -93,22 +93,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     return {data:cleanData(data),matrix};
   }
+  const DEFAULT_CLASS='Conteo Aliado';
+  const defaultGroupLabel='CONTEO ALIADO';
+  // Inversa (stock 4) va en una sola acta por almacén, aparte de Libre.
+  const groupKeyFor=(item,annotations)=>{
+    if(Number(item.stock)===4)return ['INVERSA',item.almacen,'INVERSA'].join('|');
+    const label=annotations.get(item.codigo_sap);
+    const annotation=label?clean(label).toUpperCase():defaultGroupLabel;
+    return [item.segmento,item.almacen,annotation].join('|');
+  };
   function groupsFor(data,matrix){
     const annotations=new Map(matrix.map(x=>[x.codigo_sap,x.anotacion]));
-    const segments=[...new Set(data.map(x=>x.segmento))].sort();
-    const warehouses=[...new Set(data.map(x=>x.almacen))].sort();
     const active=new Map();
     for(const item of data){
-      // Excel UPPER conserva tildes: usar exactamente la misma clave para las actas.
-      const annotation=annotations.has(item.codigo_sap)?clean(annotations.get(item.codigo_sap)).toUpperCase():'CERTIFICADO';
-      const key=[item.segmento,item.almacen,annotation].join('|');
+      const key=groupKeyFor(item,annotations);
       active.set(key,(active.get(key)||0)+1);
     }
-    // Una pestaña por grupo fiscal con existencias al momento de exportar.
-    // Un grupo completamente nuevo se incorpora mediante la regeneración local.
     const keys=[...active.keys()].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
     if(keys.length>120)throw Error('Demasiadas combinaciones potenciales de Actas ('+keys.length+').');
-    return {keys,active,annotations,warehouses,segments};
+    return {keys,active,annotations};
   }
   function worksheet(book,name,head,rows,widths){
     const data=[head,...rows];
@@ -181,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ['Actas','Las filas de cada ACTA y SER se compactan al cambiar BASE MAESTRA. Un grupo completamente nuevo exige regenerar el paquete.'],
       ['Grupo nuevo','Si agregas un nuevo almacén, segmento o anotación, vuelve a SIGLO y usa REGENERAR DESDE EXCEL.'],
       ['Preliminar Cliente','No se modifica ninguna información original del Cliente.'],
-      ['Matriz','La hoja MATRIZ conserva las anotaciones del Cliente; SAP ausente se trata como CERTIFICADO.'],
+      ['Matriz','La matriz conserva anotaciones de Claro. SAP ausente = Conteo Aliado; Inversa (stock 4) se separa en actas por almacén.'],
       ['Histórico','Guarda una copia independiente cuando el inventario sea firmado o entregado.'],
       ['Versión','Fórmulas estándar de Excel de escritorio, sin funciones matriciales dinámicas ni macros VBA.'],
       ['Fecha exportación',today()]
@@ -193,8 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
     for(let index=0;index<data.length+1000;index++){
       const r=index+6;
       // Fórmulas adicionales hasta mil registros para permitir ampliar la base sin perder cálculos.
-      formula(base,'L'+r,'IF(A'+r+'="","",IFERROR(VLOOKUP(A'+r+',MATRIZ!$A$6:$C$'+matrixLimit+',3,FALSE),"CERTIFICADO"))');
-      formula(base,'M'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",F'+r+'&"|"&D'+r+'&"|"&UPPER(L'+r+'))');
+      formula(base,'L'+r,'IF(A'+r+'="","",IFERROR(VLOOKUP(A'+r+',MATRIZ!$A$6:$C$'+matrixLimit+',3,FALSE),"' + DEFAULT_CLASS + '"))');
+      formula(base,'M'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",IF(H'+r+'=4,"INVERSA|"&D'+r+'&"|INVERSA",F'+r+'&"|"&D'+r+'&"|"&UPPER(L'+r+')) )');
       formula(base,'N'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",A'+r+'&"|"&C'+r+'&"|"&D'+r+'&"|"&G'+r+'&"|"&E'+r+'&"|"&H'+r+')');
       formula(base,'O'+r,'IF(N'+r+'="","",P'+r+'&"|"&N'+r+')');
       formula(base,'P'+r,'IF(M'+r+'="","",IFERROR(VLOOKUP(M'+r+',PLANILLAS!$A$6:$B$'+(groups.keys.length+5)+',2,FALSE),"REGENERAR ACTAS"))');
@@ -219,8 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     data.forEach(d=>{
       const fiscal=[d.codigo_sap,d.centro,d.almacen,d.lote,d.ubicacion,d.stock].join('|');
       fiscalTotals.set(fiscal,(fiscalTotals.get(fiscal)||0)+d.cantidad);
-      const annotation=(groups.annotations.get(d.codigo_sap)||'CERTIFICADO').toUpperCase();
-      const group=[d.segmento,d.almacen,annotation].join('|');
+      const group=groupKeyFor(d,groups.annotations);
       const acta=[group,d.codigo_sap,d.ubicacion,d.lote].join('|');
       actaTotals.set(acta,(actaTotals.get(acta)||0)+d.cantidad);
       const model=[groups.keys.indexOf(group)+1,fiscal].join('|');
@@ -230,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       i,key:[d.codigo_sap,d.centro,d.almacen,d.lote,d.ubicacion,d.stock].join('|')
     }));
     const modelRaw=data.map((d,i)=>({
-      i,key:[groups.keys.indexOf([d.segmento,d.almacen,(groups.annotations.get(d.codigo_sap)||'CERTIFICADO').toUpperCase()].join('|'))+1,
+      i,key:[groups.keys.indexOf(groupKeyFor(d,groups.annotations))+1,
         d.codigo_sap,d.centro,d.almacen,d.lote,d.ubicacion,d.stock].join('|')
     }));
     const partitionUnique=(entries)=>{const seen=new Set(),a=[],b=[];
@@ -244,8 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });return out;};
     const initialFiscal=flags(fiscalRaw),initialModel=flags(modelRaw);
     const actaRaw=data.map((d,i)=>{
-      const annotation=(groups.annotations.get(d.codigo_sap)||'CERTIFICADO').toUpperCase();
-      return {i,key:[d.segmento,d.almacen,annotation,d.codigo_sap,d.ubicacion,d.lote].join('|')};
+      return {i,key:[groupKeyFor(d,groups.annotations),d.codigo_sap,d.ubicacion,d.lote].join('|')};
     });
     const initialActa=flags(actaRaw);
     // Columnas auxiliares: Q clave de Acta; R/S/T marcadores de primera
@@ -332,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const report=makeView('ACTAS DE CONTEO',
       ['GRUPO ACTA','NRO PLANILLA','REGISTROS','UNIDADES','SERIALIZADOS','HOJA ACTA'],
       [62,18,15,15,18,22],'ACTAS DE CONTEO',
-      'Una planilla por Segmento + Almacén + Anotación; las clasificaciones ausentes son CERTIFICADO.');
+      'Libre: Segmento + Almacén + Anotación. Inversa: una planilla por almacén. SAP ausente: CONTEO ALIADO.');
     groups.keys.forEach((key,i)=>{
       const r=i+6;
       report['A'+r]={t:'s',v:key};
@@ -350,8 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
     groups.keys.forEach((key,gi)=>{
       const short=String(gi+1).padStart(3,'0');
       const positions=data.map((x,i)=>({x,i})).filter(({x})=>{
-        const annotation=(groups.annotations.get(x.codigo_sap)||'CERTIFICADO').toUpperCase();
-        return [x.segmento,x.almacen,annotation].join('|')===key;
+        return groupKeyFor(x,groups.annotations)===key;
       });
       // En las actas se consolida por SAP + ubicación + lote dentro del grupo.
       const seen=new Set();
@@ -435,8 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
       copyIf(me,'G'+br,cond,'H'+rr,x.stock);
       copyIf(me,'H'+br,cond,'P'+rr,'');
       const amount='IF('+cond+',SUMIF('+modelKey+','+baseRef+'O'+rr+','+qtyRange+'),"")';
-      const g=(groups.annotations.get(x.codigo_sap)||'CERTIFICADO').toUpperCase();
-      const initialModel=[groups.keys.indexOf([x.segmento,x.almacen,g].join('|'))+1,
+      const initialModel=[groups.keys.indexOf(groupKeyFor(x,groups.annotations))+1,
         [x.codigo_sap,x.centro,x.almacen,x.lote,x.ubicacion,x.stock].join('|')].join('|');
       const modelTotal=modelTotals.get(initialModel)||0;
       put(me,'I'+br,amount,modelTotal);
@@ -476,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     return {format:macroEnabled?'xlsm':'xlsx',records:data.length,groups:groups.keys.length,activeGroups:groups.active.size,
       serials:data.filter(x=>x.serializado).length,
-      autoCertificate:[...new Set(data.filter(x=>!groups.annotations.has(x.codigo_sap)).map(x=>x.codigo_sap))].length};
+      autoAllied:[...new Set(data.filter(x=>!groups.annotations.has(x.codigo_sap)).map(x=>x.codigo_sap))].length};
   }
 
   syncMacroStatus();
@@ -518,7 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(error)throw error;
       if(!Array.isArray(data)||!data.length)throw Error('La base fiscal de SIGLO está vacía.');
       const out=await exportWorkbook(data,matrix);
-      stats.innerHTML='<strong>'+out.records+'</strong> registros · <strong>'+out.activeGroups+'</strong> actas con inventario · <strong>'+out.serials+'</strong> seriales · <strong>'+out.autoCertificate+'</strong> SAP certificados automáticamente.';
+      stats.innerHTML='<strong>'+out.records+'</strong> registros · <strong>'+out.activeGroups+'</strong> actas con inventario · <strong>'+out.serials+'</strong> seriales · <strong>'+out.autoAllied+'</strong> SAP clasificados como Conteo Aliado.';
       notify('Paquete '+out.format+' generado. BASE MAESTRA puede corregirse sin cambiar SIGLO.','success');
     }catch(err){console.error(err);notify(err.message||'No se pudo generar el paquete fiscal.','error');}
     finally{generate.disabled=false;}
