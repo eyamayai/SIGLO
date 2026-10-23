@@ -53,7 +53,7 @@
       <span class="report-icon">IF</span><strong>Inventario Fiscal</strong><small>Saldos por ubicación y stock</small>
     </button>
     <button class="report-option" data-report="actas_conteo" type="button">
-      <span class="report-icon">AC</span><strong>Actas de Conteo</strong><small>Incluye códigos no listados como Certificado</small>
+      <span class="report-icon">AC</span><strong>Actas de Conteo</strong><small>SAP no listados: Conteo Aliado; Inversa separada</small>
     </button>
     <button class="report-option" data-report="modelo_estructura" type="button">
       <span class="report-icon">ME</span><strong>Modelo Estructura</strong><small>Estructura consolidada y detalle serializado por planilla</small>
@@ -85,7 +85,7 @@
         <span class="step-badge">1</span>
         <div>
           <h2>Actas de Conteo</h2>
-          <p>Sube la distribución del Cliente. SIGLO generará actas por Segmento + Almacén + Anotación; los SAP con inventario que no aparezcan en la matriz se incluirán automáticamente como CERTIFICADO.</p>
+          <p>Sube la distribución del Cliente. SIGLO genera actas de Libre por Segmento + Almacén + Anotación y de Inversa por almacén. Los SAP no listados se clasifican como Conteo Aliado.</p>
         </div>
       </div>
       <button id="downloadActasTemplateBtn" class="outline-action" type="button">Descargar plantilla</button>
@@ -112,7 +112,7 @@
     <div class="actas-summary">
       <div class="actas-kpi"><span>Códigos matriz</span><strong id="actasMatrixCount">0</strong></div>
       <div class="actas-kpi"><span>Actas</span><strong id="actasCount">0</strong></div>
-      <div class="actas-kpi warning"><span>Certificados automáticos</span><strong id="actasUnclassifiedCount">0</strong></div>
+      <div class="actas-kpi warning"><span>Conteo Aliado automático</span><strong id="actasUnclassifiedCount">0</strong></div>
       <div class="actas-kpi error"><span>Conflictos</span><strong id="actasConflictCount">0</strong></div>
     </div>
 
@@ -133,7 +133,7 @@
         <span class="step-badge">1</span>
         <div>
           <h2>Modelo Estructura</h2>
-          <p>Sube la misma distribución de Actas de Conteo. Los códigos SAP no incluidos en la matriz se clasificarán como CERTIFICADO y se incorporarán en ESTRUCTURA y SERIALIZADOS.</p>
+          <p>Sube la misma distribución de Actas de Conteo. Los SAP ausentes de la matriz se clasifican como Conteo Aliado. Inversa se registra en planillas independientes por almacén, tanto en ESTRUCTURA como en SERIALIZADOS.</p>
         </div>
       </div>
       <button id="downloadModelTemplateBtn" class="outline-action" type="button">Descargar plantilla</button>
@@ -202,6 +202,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20261009-2"></script>
-<script src="js/informes.js?v=20261022-3"></script>
+<script src="js/informes.js?v=20261023-1"></script>
 </body>
 </html>
