@@ -95,12 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const DEFAULT_CLASS='Conteo Aliado';
   const defaultGroupLabel='CONTEO ALIADO';
-  // Inversa (stock 4) va en una sola acta por almacén, aparte de Libre.
+  // Inversa se separa de Libre, pero conserva la anotación de Claro.
+  // Libre: Segmento + Almacén + Anotación; Inversa: Almacén + Anotación.
   const groupKeyFor=(item,annotations)=>{
-    if(Number(item.stock)===4)return ['INVERSA',item.almacen,'INVERSA'].join('|');
     const label=annotations.get(item.codigo_sap);
     const annotation=label?clean(label).toUpperCase():defaultGroupLabel;
-    return [item.segmento,item.almacen,annotation].join('|');
+    const segment=Number(item.stock)===4?'INVERSA':item.segmento;
+    return [segment,item.almacen,annotation].join('|');
   };
   function groupsFor(data,matrix){
     const annotations=new Map(matrix.map(x=>[x.codigo_sap,x.anotacion]));
@@ -184,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ['Actas','Las filas de cada ACTA y SER se compactan al cambiar BASE MAESTRA. Un grupo completamente nuevo exige regenerar el paquete.'],
       ['Grupo nuevo','Si agregas un nuevo almacén, segmento o anotación, vuelve a SIGLO y usa REGENERAR DESDE EXCEL.'],
       ['Preliminar Cliente','No se modifica ninguna información original del Cliente.'],
-      ['Matriz','La matriz conserva anotaciones de Claro. SAP ausente = Conteo Aliado; Inversa (stock 4) se separa en actas por almacén.'],
+      ['Matriz','La matriz conserva anotaciones de Claro. SAP ausente = Conteo Aliado; Inversa (stock 4) se separa por almacén y anotación.'],
       ['Histórico','Guarda una copia independiente cuando el inventario sea firmado o entregado.'],
       ['Versión','Fórmulas estándar de Excel de escritorio, sin funciones matriciales dinámicas ni macros VBA.'],
       ['Fecha exportación',today()]
@@ -197,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const r=index+6;
       // Fórmulas adicionales hasta mil registros para permitir ampliar la base sin perder cálculos.
       formula(base,'L'+r,'IF(A'+r+'="","",IFERROR(VLOOKUP(A'+r+',MATRIZ!$A$6:$C$'+matrixLimit+',3,FALSE),"' + DEFAULT_CLASS + '"))');
-      formula(base,'M'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",IF(H'+r+'=4,"INVERSA|"&D'+r+'&"|INVERSA",F'+r+'&"|"&D'+r+'&"|"&UPPER(L'+r+')) )');
+      formula(base,'M'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",IF(H'+r+'=4,"INVERSA",F'+r+')&"|"&D'+r+'&"|"&UPPER(L'+r+'))');
       formula(base,'N'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",A'+r+'&"|"&C'+r+'&"|"&D'+r+'&"|"&G'+r+'&"|"&E'+r+'&"|"&H'+r+')');
       formula(base,'O'+r,'IF(N'+r+'="","",P'+r+'&"|"&N'+r+')');
       formula(base,'P'+r,'IF(M'+r+'="","",IFERROR(VLOOKUP(M'+r+',PLANILLAS!$A$6:$B$'+(groups.keys.length+5)+',2,FALSE),"REGENERAR ACTAS"))');
@@ -333,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const report=makeView('ACTAS DE CONTEO',
       ['GRUPO ACTA','NRO PLANILLA','REGISTROS','UNIDADES','SERIALIZADOS','HOJA ACTA'],
       [62,18,15,15,18,22],'ACTAS DE CONTEO',
-      'Libre: Segmento + Almacén + Anotación. Inversa: una planilla por almacén. SAP ausente: CONTEO ALIADO.');
+      'Libre: Segmento + Almacén + Anotación. Inversa: Almacén + Anotación. SAP ausente: CONTEO ALIADO.');
     groups.keys.forEach((key,i)=>{
       const r=i+6;
       report['A'+r]={t:'s',v:key};
