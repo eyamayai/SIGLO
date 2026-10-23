@@ -49,14 +49,14 @@
         <span class="step-badge">VBA</span>
         <div>
           <h2>Activar automatización en este navegador</h2>
-          <p>Selecciona una sola vez tu archivo .xlsm validado. SIGLO extrae localmente el proyecto VBA y el diseño del botón ACTUALIZAR INFORMES. La BASE MAESTRA y los datos del archivo no se almacenan ni se envían al servidor.</p>
+          <p>Selecciona tu archivo .xlsm con VBA 1.3. SIGLO extrae localmente el proyecto VBA y el diseño del botón ACTUALIZAR INFORMES. La BASE MAESTRA y los datos del archivo no se almacenan ni se envían al servidor.</p>
         </div>
       </div>
     </div>
     <div class="paquete-file">
       <label class="paquete-picker" for="paquetePlantillaMacros">
         <strong>Plantilla .xlsm funcional</strong>
-        <span>El archivo con la macro VBA 1.2 y el botón de actualizar comprobado</span>
+        <span>El archivo con la macro VBA 1.3 y el botón ACTUALIZAR INFORMES probado</span>
         <input type="file" id="paquetePlantillaMacros" accept=".xlsm">
       </label>
       <button id="paqueteActivarMacros" class="outline-action" type="button" disabled>Activar macros para mis descargas</button>
@@ -65,7 +65,7 @@
   </section>
   <section class="report-card paquete-card">
     <div class="paquete-head">
-      <div class="paquete-title"><span class="step-badge">1</span><div><h2>Crear paquete desde SIGLO</h2><p>Adjunta la matriz de distribución enviada por Claro. La descarga combina las existencias fiscales vigentes con la clasificación de Conteo con Acompañamiento / Certificado. Los SAP ausentes serán Certificado.</p></div></div>
+      <div class="paquete-title"><span class="step-badge">1</span><div><h2>Crear paquete desde SIGLO</h2><p>Adjunta la matriz de distribución enviada por Claro. La descarga combina las existencias fiscales vigentes con la clasificación de Conteo con Acompañamiento / Certificado. Los SAP ausentes serán Conteo Aliado. Inversa tendrá actas independientes para A221 y U020.</p></div></div>
       <a href="informes.html" class="outline-action">← Volver a Informes</a>
     </div>
     <div class="paquete-file">
@@ -85,7 +85,7 @@
     <div class="paquete-features">
       <div><strong>BASE MAESTRA</strong><span>Edita una sola vez: serial, lote, almacén, ubicación o cantidades.</span></div>
       <div><strong>Informes vinculados</strong><span>Fórmulas estándar de Excel mantienen relacionados los cuatro informes sin cambiar SIGLO.</span></div>
-      <div><strong>Actas sin huecos</strong><span>Cada grupo tiene su acta y anexo serializado. Las filas se reacomodan al editar BASE MAESTRA.</span></div>
+      <div><strong>Actas independientes</strong><span>Libre conserva la clasificación de Claro; Inversa tiene una acta por almacén. Sin espacios entre registros.</span></div>
       <div><strong>Sin cambios en SIGLO</strong><span>Todo ajuste permanece en el Excel. La regeneración solo lee ese archivo local.</span></div>
     </div>
     <p class="paquete-alert"><strong>Descarga automática:</strong> después de activar tu plantilla, los nuevos paquetes se descargan como .xlsm e incluyen la macro y el botón de actualización. Sin plantilla activada, permanece disponible el .xlsx tradicional. La activación se realiza una sola vez por navegador. Para ejecutar macros, utiliza Excel de escritorio y autoriza el archivo descargado únicamente si reconoces su procedencia.</p>
@@ -102,7 +102,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20261009-2"></script>
-<script src="js/informes-paquete-macros.js?v=20261022-1"></script>
-<script src="js/informes-paquete-fiscal.js?v=20261022-8"></script>
+<script src="js/informes-paquete-macros.js?v=20261023-1"></script>
+<script src="js/informes-paquete-fiscal.js?v=20261023-1"></script>
 </body>
 </html>
