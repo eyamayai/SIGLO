@@ -53,7 +53,7 @@
       <span class="report-icon">IF</span><strong>Inventario Fiscal</strong><small>Saldos por ubicación y stock</small>
     </button>
     <button class="report-option" data-report="actas_conteo" type="button">
-      <span class="report-icon">AC</span><strong>Actas de Conteo</strong><small>SAP no listados: Conteo Aliado; Inversa separada</small>
+      <span class="report-icon">AC</span><strong>Actas de Conteo</strong><small>SAP sin matriz: Conteo Aliado; Inversa separada por anotación</small>
     </button>
     <button class="report-option" data-report="modelo_estructura" type="button">
       <span class="report-icon">ME</span><strong>Modelo Estructura</strong><small>Estructura consolidada y detalle serializado por planilla</small>
@@ -85,7 +85,7 @@
         <span class="step-badge">1</span>
         <div>
           <h2>Actas de Conteo</h2>
-          <p>Sube la distribución del Cliente. SIGLO genera actas de Libre por Segmento + Almacén + Anotación y de Inversa por almacén. Los SAP no listados se clasifican como Conteo Aliado.</p>
+          <p>Sube la distribución del Cliente. SIGLO genera actas de Libre por Segmento + Almacén + Anotación y de Inversa por almacén y anotación. Los SAP no listados se clasifican como Conteo Aliado.</p>
         </div>
       </div>
       <button id="downloadActasTemplateBtn" class="outline-action" type="button">Descargar plantilla</button>
@@ -133,7 +133,7 @@
         <span class="step-badge">1</span>
         <div>
           <h2>Modelo Estructura</h2>
-          <p>Sube la misma distribución de Actas de Conteo. Los SAP ausentes de la matriz se clasifican como Conteo Aliado. Inversa se registra en planillas independientes por almacén, tanto en ESTRUCTURA como en SERIALIZADOS.</p>
+          <p>Sube la misma distribución de Actas de Conteo. Los SAP ausentes de la matriz se clasifican como Conteo Aliado. Inversa se registra en planillas independientes por almacén y anotación, tanto en ESTRUCTURA como en SERIALIZADOS.</p>
         </div>
       </div>
       <button id="downloadModelTemplateBtn" class="outline-action" type="button">Descargar plantilla</button>
@@ -202,6 +202,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20261009-2"></script>
-<script src="js/informes.js?v=20261023-2"></script>
+<script src="js/informes.js?v=20261023-3"></script>
 </body>
 </html>
