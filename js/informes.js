@@ -309,9 +309,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function reserveSheetPair(segmento,almacen,anotacion,hasSerial,used){
-    const raw=String(segmento).toUpperCase()==='INVERSA'
-      ? [cleanSheetToken(segmento),cleanSheetToken(almacen)].join('_')
-      : [cleanSheetToken(segmento),cleanSheetToken(almacen),cleanSheetToken(anotacion)].join('_');
+    const raw=[cleanSheetToken(segmento),cleanSheetToken(almacen),cleanSheetToken(anotacion)].join('_');
     let attempt=1;
 
     while(true){
@@ -450,9 +448,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         ? alliedAnnotation
         : displayAnnotation.get(row.codigo_sap);
       const isInverse=row.stock===4 || normalizeHeader(row.tipo)==='DESMONTE';
-      // Inversa: acta única por almacén, independiente de segmentos/anotaciones de Libre.
+      // Inversa: agrupación por almacén + anotación, independiente del segmento.
+      // Libre mantiene la agrupación por segmento + almacén + anotación.
       const segmentGroup=isInverse?'INVERSA':row.segmento;
-      const groupAnnotation=isInverse?'Inversa':annotation;
+      const groupAnnotation=annotation;
       const key=[segmentGroup,row.almacen,normalizeHeader(groupAnnotation)].join('|');
       if(!groupMap.has(key)){
         groupMap.set(key,{segmento:segmentGroup,almacen:row.almacen,
@@ -526,7 +525,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       issues.push('<div class="actas-issue error"><strong>Conflicto '+escapeHtml(item.codigo_sap)+':</strong> aparece con más de una anotación ('+escapeHtml(item.anotaciones.join(' / '))+'). Corrige la matriz antes de exportar.</div>');
     });
     if(preparedActas.autoAlliedCodes.length){
-      issues.push('<div class="actas-issue"><strong>Conteo Aliado automático:</strong> '+preparedActas.autoAlliedCodes.length+' Código(s) SAP con existencia fiscal no figuran en la matriz del Cliente. Se incluirán en CONTEO ALIADO para Libre, o en la acta de Inversa correspondiente al almacén.</div>');
+      issues.push('<div class="actas-issue"><strong>Conteo Aliado automático:</strong> '+preparedActas.autoAlliedCodes.length+' Código(s) SAP con existencia fiscal no figuran en la matriz del Cliente. Se incluirán en CONTEO ALIADO, en Libre o Inversa según tipo y almacén.</div>');
     }
     if(preparedActas.matrixWithoutStock.length){
       issues.push('<div class="actas-issue"><strong>Sin existencia actual:</strong> '+preparedActas.matrixWithoutStock.length+' Código(s) SAP de la matriz no tienen inventario físico en SIGLO y no generan filas.</div>');
