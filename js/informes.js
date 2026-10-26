@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     ws['!cols']=[{wch:18},{wch:52},{wch:28}];
     XLSX.utils.book_append_sheet(wb,ws,'DISTRIBUCION');
 
-    const scopeInstruction = 'Los SAP ausentes de la matriz se clasifican como CONTEO ALIADO. El material de INVERSA se genera en actas propias, una por almacén, separado de LIBRE.';
+    const scopeInstruction = 'SAP sin matriz = CONTEO ALIADO. LIBRE: segmento + almacén + anotación. INVERSA: ubicación + almacén + anotación. Actas y anexos se separan por tipo.';
 
     const instructions=XLSX.utils.aoa_to_sheet([
       [target==='modelo' ? 'SIGLO · Modelo Estructura' : 'SIGLO · Actas de Conteo'],
@@ -462,20 +462,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         ? alliedAnnotation
         : displayAnnotation.get(row.codigo_sap);
       const isInverse=row.stock===4 || normalizeHeader(row.tipo)==='DESMONTE';
-      // Inversa: agrupación por almacén + anotación, independiente del segmento.
-      // Libre mantiene la agrupación por segmento + almacén + anotación.
-      const segmentGroup=isInverse?'INVERSA':row.segmento;
-      const groupAnnotation=annotation;
-      const key=[segmentGroup,row.almacen,normalizeHeader(groupAnnotation)].join('|');
+      // Inversa utiliza UBICACION; Libre utiliza SEGMENTO.
+      // Añadir el tipo evita fusionar nombres coincidentes.
+      const tipo=isInverse?'INVERSA':'LIBRE';
+      const ambit=isInverse?row.ubicacion:row.segmento;
+      const key=[tipo,ambit,row.almacen,normalizeHeader(annotation)].join('|');
       if(!groupMap.has(key)){
-        groupMap.set(key,{segmento:segmentGroup,almacen:row.almacen,
-          anotacion:groupAnnotation,tipo:isInverse?'INVERSA':'LIBRE',rows:[]});
+        groupMap.set(key,{
+          segmento:isInverse?'INVERSA':row.segmento,
+          ubicacion:isInverse?row.ubicacion:'',
+          ambit,almacen:row.almacen,anotacion:annotation,tipo,rows:[]
+        });
       }
       groupMap.get(key).rows.push(row);
     });
 
     const groups=[...groupMap.values()].sort((a,b)=>
-      String(a.segmento).localeCompare(String(b.segmento),'es',{sensitivity:'base'}) ||
+      (a.tipo==='LIBRE'?0:1)-(b.tipo==='LIBRE'?0:1) ||
+      String(a.ambit).localeCompare(String(b.ambit),'es',{sensitivity:'base',numeric:true}) ||
       warehouseOrder(a.almacen)-warehouseOrder(b.almacen) ||
       String(a.anotacion).localeCompare(String(b.anotacion),'es',{sensitivity:'base'})
     );
@@ -486,7 +490,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       group.planilla=index+1;
       group.mainRows=aggregateActaRows(group.rows);
       group.serialRows=serialRows(group.rows);
-      const names=reserveSheetPair(group.segmento,group.almacen,group.anotacion,group.serialRows.length>0,usedNames);
+      const sheetScope=group.tipo==='INVERSA'?'INVERSA_'+group.ubicacion:group.segmento;
+      const names=reserveSheetPair(sheetScope,group.almacen,group.anotacion,group.serialRows.length>0,usedNames);
       group.sheetName=names.main;
       group.serialSheetName=names.serial;
       validateSerialReconciliation(group.mainRows,group.serialRows).forEach(msg=>serialMismatch.push(group.sheetName+': '+msg));
@@ -539,7 +544,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       issues.push('<div class="actas-issue error"><strong>Conflicto '+escapeHtml(item.codigo_sap)+':</strong> aparece con más de una anotación ('+escapeHtml(item.anotaciones.join(' / '))+'). Corrige la matriz antes de exportar.</div>');
     });
     if(preparedActas.autoAlliedCodes.length){
-      issues.push('<div class="actas-issue"><strong>Conteo Aliado automático:</strong> '+preparedActas.autoAlliedCodes.length+' Código(s) SAP con existencia fiscal no figuran en la matriz del Cliente. Se incluirán en CONTEO ALIADO, en Libre o Inversa según tipo y almacén.</div>');
+      issues.push('<div class="actas-issue"><strong>Conteo Aliado automático:</strong> '+preparedActas.autoAlliedCodes.length+' Código(s) SAP con existencia fiscal no figuran en la matriz del Cliente. Se incluirán en CONTEO ALIADO: Libre según segmento y almacén, e Inversa según ubicación y almacén.</div>');
     }
     if(preparedActas.matrixWithoutStock.length){
       issues.push('<div class="actas-issue"><strong>Sin existencia actual:</strong> '+preparedActas.matrixWithoutStock.length+' Código(s) SAP de la matriz no tienen inventario físico en SIGLO y no generan filas.</div>');
