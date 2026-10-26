@@ -251,30 +251,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function parseClientMatrix(fileBuffer){
     const wb=XLSX.read(fileBuffer,{type:'array',cellDates:false});
-    const sheet=wb.Sheets.DISTRIBUCION || wb.Sheets[wb.SheetNames[0]];
-    if(!sheet) throw new Error('El Excel no contiene hojas para procesar.');
+    if(!wb.SheetNames?.length)throw new Error('El Excel no contiene hojas para procesar.');
 
-    const raw=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:false});
-    if(!raw.length) throw new Error('La matriz del cliente no contiene registros.');
-
-    const available=Object.keys(raw[0]).reduce((acc,key)=>{
-      acc[normalizeHeader(key)]=key;
-      return acc;
-    },{});
-
-    const codeCol=available['CODIGO SAP'] || available['CODIGO'] || available['SAP'];
-    const descriptionCol=available['DESCRIPCION'];
-    const annotationCol=available['ANOTACION'] || available['OBSERVACION'];
-
-    if(!codeCol) throw new Error('Falta la columna CÓDIGO SAP.');
-    if(!descriptionCol) throw new Error('Falta la columna DESCRIPCIÓN.');
-    if(!annotationCol) throw new Error('Falta la columna ANOTACIÓN.');
-
-    return raw.map((row,index)=>({
+    // La matriz puede ser una hoja de un libro de Claro con varias pestañas.
+    // Preferir DISTRIBUCION o Códigos a contar, pero validar los encabezados
+    // antes de aceptar una hoja. No asumir que la primera es la correcta.
+    const names=[...wb.SheetNames].sort((a,b)=>{
+      const rank=name=>{
+        const n=normalizeHeader(name);
+        return n==='DISTRIBUCION'?0:(n==='CODIGOS A CONTAR'?1:2);
+      };
+      return rank(a)-rank(b);
+    });
+    let selected=null;
+    for(const name of names){
+      const sheet=wb.Sheets[name];
+      if(!sheet)continue;
+      const raw=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:false});
+      if(!raw.length)continue;
+      const available=Object.keys(raw[0]).reduce((acc,key)=>{
+        acc[normalizeHeader(key)]=key;
+        return acc;
+      },{});
+      const codeCol=available['CODIGO SAP']||available['CODIGO']||available['SAP'];
+      const descriptionCol=available['DESCRIPCION'];
+      const annotationCol=available['ANOTACION']||available['OBSERVACION'];
+      if(codeCol && descriptionCol && annotationCol){
+        selected={raw,codeCol,descriptionCol,annotationCol};
+        break;
+      }
+    }
+    if(!selected)throw new Error(
+      'No se encontró una hoja con CÓDIGO SAP, DESCRIPCIÓN y ANOTACIÓN. Hojas revisadas: '+wb.SheetNames.join(', ')+'.'
+    );
+    return selected.raw.map((row,index)=>({
       row:index+2,
-      codigo_sap:normalizeCode(row[codeCol]),
-      descripcion:normalizeText(row[descriptionCol]),
-      anotacion:normalizeText(row[annotationCol])
+      codigo_sap:normalizeCode(row[selected.codeCol]),
+      descripcion:normalizeText(row[selected.descriptionCol]),
+      anotacion:normalizeText(row[selected.annotationCol])
     })).filter(row=>row.codigo_sap || row.descripcion || row.anotacion);
   }
 
