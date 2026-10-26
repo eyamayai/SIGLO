@@ -48,26 +48,41 @@ document.addEventListener('DOMContentLoaded', () => {
     })).filter(x=>x.codigo_sap&&x.cantidad>0&&x.almacen);
   }
   function readMatrix(workbook){
-    const sheet=workbook.Sheets.DISTRIBUCION||workbook.Sheets.MATRIZ||workbook.Sheets[workbook.SheetNames[0]];
-    if(!sheet)throw Error('No se encontró la matriz del Cliente.');
-    const data=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:false});
-    if(!data.length)throw Error('La matriz está vacía.');
-    const cols=Object.keys(data[0]);
-    const col=name=>cols.find(c=>norm(c)===name);
-    const a=col('CODIGO SAP')||col('CODIGO')||col('SAP');
-    const b=col('DESCRIPCION');
-    const c=col('ANOTACION')||col('OBSERVACION');
-    if(!a||!b||!c)throw Error('La matriz necesita CÓDIGO SAP, DESCRIPCIÓN y ANOTACIÓN.');
+    const names=[...workbook.SheetNames].sort((a,b)=>{
+      const rank=name=>{
+        const n=norm(name);
+        return n==='DISTRIBUCION'?0:(n==='CODIGOS A CONTAR'?1:2);
+      };
+      return rank(a)-rank(b);
+    });
+    let selected=null;
+    for(const name of names){
+      const sheet=workbook.Sheets[name];
+      if(!sheet)continue;
+      const data=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:false});
+      if(!data.length)continue;
+      const cols=Object.keys(data[0]);
+      const col=key=>cols.find(c=>norm(c)===key);
+      const a=col('CODIGO SAP')||col('CODIGO')||col('SAP');
+      const b=col('DESCRIPCION');
+      const c=col('ANOTACION')||col('OBSERVACION');
+      if(a&&b&&c){selected={data,a,b,c};break;}
+    }
+    if(!selected)throw Error(
+      'No se encontró una hoja con CÓDIGO SAP, DESCRIPCIÓN y ANOTACIÓN. Hojas revisadas: '+names.join(', ')+'.'
+    );
     const map=new Map();
-    for(const row of data){
-      const code=sap(row[a]);
+    for(const row of selected.data){
+      const code=sap(row[selected.a]);
       if(!code)continue;
-      const annotation=norm(row[c]);
+      const annotation=norm(row[selected.c]);
       if(!annotation)throw Error('Falta ANOTACIÓN para el código '+code+'.');
       const before=map.get(code);
       if(before&&norm(before.anotacion)!==annotation)
         throw Error('El SAP '+code+' tiene anotaciones contradictorias en la matriz del Cliente.');
-      if(!before)map.set(code,{codigo_sap:code,descripcion:clean(row[b]),anotacion:clean(row[c])});
+      if(!before)map.set(code,{
+        codigo_sap:code,descripcion:clean(row[selected.b]),anotacion:clean(row[selected.c])
+      });
     }
     return [...map.values()];
   }
