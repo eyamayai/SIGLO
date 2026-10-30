@@ -4,7 +4,7 @@
  */
 (function(){
   'use strict';
-  const KEY='siglo_paquete_fiscal_vba_v15';
+  const KEY='siglo_paquete_fiscal_vba_v16';
 
   const encode=(bytes)=>{
     const step=16384;let binary='';
@@ -25,7 +25,7 @@
   const saved=()=>{
     try{
       const value=JSON.parse(localStorage.getItem(KEY)||'null');
-      return value&&value.version===4&&value.vba&&value.drawing?value:null;
+      return value&&value.version===5&&value.vba&&value.drawing?value:null;
     }catch(_){return null;}
   };
 
@@ -35,8 +35,8 @@
     // No permitir que el módulo VBA anterior rehaga las actas con la regla obsoleta.
     if(!window.XLSX)throw new Error('No se cargó el motor de Excel.');
     const excel=window.XLSX.read(bytes,{type:'array',cellFormula:false});
-    if(String(excel.Sheets?.LEEME?.D12?.v||'').trim()!=='SIGLO-FISCAL-1.5'){
-      throw new Error('Esta plantilla todavía utiliza VBA anterior. Importa la versión 1.5, ejecuta ConfigurarPaqueteFiscal, guarda el .xlsm y vuelve a activarlo.');
+    if(String(excel.Sheets?.LEEME?.D12?.v||'').trim()!=='SIGLO-FISCAL-1.6'){
+      throw new Error('Esta plantilla todavía utiliza VBA anterior. Importa la versión 1.6, ejecuta ConfigurarPaqueteFiscal, guarda el .xlsm y vuelve a activarlo.');
     }
     const ZIP=requireZip(),zip=await ZIP.loadAsync(bytes);
     const bin=zip.file('xl/vbaProject.bin');
@@ -55,7 +55,7 @@
       !/name="LEEME"/.test(workbookXml)){
       throw new Error('Esta plantilla no corresponde al Paquete Fiscal SIGLO con la macro validada.');
     }
-    const payload={version:4,vba:encode(project),drawing};
+    const payload={version:5,vba:encode(project),drawing};
     try{
       localStorage.setItem(KEY,JSON.stringify(payload));
     }catch(_){
