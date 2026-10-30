@@ -608,7 +608,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           ubicacion:row.ubicacion,
           stock:row.stock,
           serial_rr:row.serial||'',
-          estado_rr:normalizeHeader(row.ubicacion)==='QMINTIC'?'':'E272',
+          estado_rr:normalizeHeader(row.ubicacion)==='QMINTI'?'':'E272',
           planilla:group.planilla
         });
       });
