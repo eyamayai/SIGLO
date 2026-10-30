@@ -473,8 +473,8 @@ document.addEventListener('DOMContentLoaded', () => {
       [['A',x.codigo_sap],['B',x.descripcion],['J',x.serial],['I',x.cantidad],['G',x.lote],
         ['E',x.ubicacion],['H',x.stock],['J',x.serial]]
         .forEach(([col,val],k)=>copyIf(ms,XLSX.utils.encode_col(k)+br,cond,col+rr,val));
-      put(ms,'I'+br,'IF('+cond+',IF('+baseRef+'E'+rr+'="QMINTIC","","E272"),"")',
-        x.ubicacion==='QMINTIC'?'':'E272');
+      put(ms,'I'+br,'IF('+cond+',IF('+baseRef+'E'+rr+'="QMINTI","","E272"),"")',
+        x.ubicacion==='QMINTI'?'':'E272');
       copyIf(ms,'J'+br,cond,'P'+rr,'');
     });
     bookRow(ms,'J',5+data.filter(x=>x.serializado).length);
