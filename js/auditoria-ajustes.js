@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       const segment=upper(desmonteSegmentSelect.value||current?.equipo?.segmento||'');
       if(segment && [...desmonteSegmentSelect.options].some(o=>o.value===segment)) desmonteSegmentSelect.value=segment;
       segmentInput.value=desmonteSegmentSelect.value||segment;
-      resultLocationInput.value=segmentInput.value==='MINTIC'?'QMINTIC':'QQ01Q1';
+      resultLocationInput.value=segmentInput.value==='MINTIC'?'QMINTI':'QQ01Q1';
       physicalStateInput.value='Dañado';
       stockInput.value='4';
     }else{
