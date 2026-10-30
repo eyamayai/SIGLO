@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
       destinationEffect.classList.add('desmonte');
       destinationEffect.textContent=ubicacion
         ? 'Desmonte: material → Garantía / Dañado · Stock 4 · NOVALORADO · A221 · '+ubicacion+'. El Segmento se conserva/infiere'+(segmentoManual?' o usa manualmente '+segmentoManual:'')+'.'
-        : 'Desmonte: selecciona QMINTIC o QQ01Q1. El Segmento se conserva o se infiere; usa el selector manual solo si hace falta.';
+        : 'Desmonte: selecciona QMINTI o QQ01Q1. El Segmento se conserva o se infiere; usa el selector manual solo si hace falta.';
     }else{
       desmonteLocationWrap.hidden=true;
       desmonteSegmentWrap.hidden=true;
@@ -589,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if(destino==='DESMONTE'&&!ubicacionDesmonte){
       registerBtn.disabled=true;bar.classList.remove('ready','error');
-      title.textContent='Selecciona la ubicación de Desmonte';help.textContent='Elige QMINTIC o QQ01Q1. La ubicación aplica a todo el PDF.';return;
+      title.textContent='Selecciona la ubicación de Desmonte';help.textContent='Elige QMINTI o QQ01Q1. La ubicación aplica a todo el PDF.';return;
     }
     if(destino==='LIBRE'&&requiereLibre&&pendientesLibre.length){
       registerBtn.disabled=true;bar.classList.remove('ready','error');
