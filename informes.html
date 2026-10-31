@@ -56,7 +56,7 @@
       <span class="report-icon">AC</span><strong>Actas de Conteo</strong><small>SAP sin matriz: Conteo Aliado; Inversa por ubicación</small>
     </button>
     <button class="report-option" data-report="modelo_estructura" type="button">
-      <span class="report-icon">ME</span><strong>Modelo Estructura</strong><small>Estructura y serializados separados por A221 y U020</small>
+      <span class="report-icon">ME</span><strong>Modelo Estructura</strong><small>Formatos Claro de 11 y 8 columnas, separados por almacén</small>
     </button>
     <button class="report-option" data-report="rotulos" type="button">
       <span class="report-icon">RT</span><strong>Rótulos</strong><small>Etiquetas para impresión por ubicación y lote</small>
@@ -152,7 +152,7 @@
     <div class="result-heading">
       <div>
         <span class="step-badge">2</span>
-        <div><h2>Modelo Estructura preparado</h2><p>Genera cuatro pestañas: ESTRUCTURA_A221, ESTRUCTURA_U020, SERIALIZADOS_A221 y SERIALIZADOS_U020. La numeración de planillas sigue ligada a las Actas de Conteo.</p></div>
+        <div><h2>Modelo Estructura preparado</h2><p>Genera cuatro pestañas con las columnas de Claro: ESTRUCTURA_A221 y ESTRUCTURA_U020 (11 columnas), SERIALIZADOS_A221 y SERIALIZADOS_U020 (8 columnas). Ambos conteos reflejan la cantidad de SIGLO; la FECHA corresponde al día de exportación. La numeración de las planillas es global.</p></div>
       </div>
       <button id="exportModelBtn" class="outline-action" type="button" disabled>Generar Modelo Estructura</button>
     </div>
@@ -203,6 +203,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20261009-2"></script>
-<script src="js/informes.js?v=20261031-1"></script>
+<script src="js/informes.js?v=20261031-2"></script>
 </body>
 </html>
