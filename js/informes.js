@@ -602,6 +602,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         serials.push({
           codigo_sap:row.codigo_sap,
           descripcion:row.descripcion||'',
+          almacen:row.almacen,
+          centro:row.centro,
           serial:row.serial||'',
           cantidad:1,
           lote:row.lote,
@@ -702,30 +704,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modelData=preparedModel.modelData || buildModelStructure(preparedModel);
     const wb=XLSX.utils.book_new();
 
-    appendSheet(
-      wb,
-      'ESTRUCTURA',
-      ['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','FECHA','TIPO DE STOCK','NUMERO PLANILLA','CONTEO1','CONTEO2'],
-      modelData.structure.map(row=>[
-        row.codigo_sap,row.centro,row.almacen,row.lote,row.ubicacion,todayCompact(),
-        row.stock,row.planilla,row.cantidad,row.cantidad
-      ]),
-      [16,12,14,16,18,14,15,17,12,12]
-    );
+    // Entregar dos pestañas por modelo: una A221 y otra U020.
+    // Conservan exactamente las columnas y los números de planilla originales.
+    ['A221','U020'].forEach(almacen=>{
+      const structure=modelData.structure.filter(row=>
+        String(row.almacen||'').trim().toUpperCase()===almacen);
+      const serials=modelData.serials.filter(row=>
+        String(row.almacen||'').trim().toUpperCase()===almacen);
 
-    appendSheet(
-      wb,
-      'SERIALIZADOS',
-      ['CÓDIGO SAP','DESCRIPCIÓN','SERIAL','CANTIDAD','LOTE','UBICACION','TIPO STOCK','SERIAL RR','ESTADO RR','NRO PLANILLA'],
-      modelData.serials.map(row=>[
-        row.codigo_sap,row.descripcion,clientSerial(row.codigo_sap,row.serial),1,row.lote,row.ubicacion,row.stock,
-        clientSerial(row.codigo_sap,row.serial_rr),row.estado_rr,row.planilla
-      ]),
-      [16,48,28,10,16,18,14,28,14,16]
-    );
+      appendSheet(
+        wb,
+        'ESTRUCTURA_'+almacen,
+        ['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','FECHA','TIPO DE STOCK','NUMERO PLANILLA','CONTEO1','CONTEO2'],
+        structure.map(row=>[
+          row.codigo_sap,row.centro,row.almacen,row.lote,row.ubicacion,todayCompact(),
+          row.stock,row.planilla,row.cantidad,row.cantidad
+        ]),
+        [16,12,14,16,18,14,15,17,12,12]
+      );
+
+      appendSheet(
+        wb,
+        'SERIALIZADOS_'+almacen,
+        ['CÓDIGO SAP','DESCRIPCIÓN','SERIAL','CANTIDAD','LOTE','UBICACION','TIPO STOCK','SERIAL RR','ESTADO RR','NRO PLANILLA'],
+        serials.map(row=>[
+          row.codigo_sap,row.descripcion,clientSerial(row.codigo_sap,row.serial),1,
+          row.lote,row.ubicacion,row.stock,clientSerial(row.codigo_sap,row.serial_rr),
+          row.estado_rr,row.planilla
+        ]),
+        [16,48,28,10,16,18,14,28,14,16]
+      );
+    });
 
     XLSX.writeFile(wb,'SIGLO_Modelo_Estructura_'+fileDate()+'.xlsx');
-    setModelMessage('Modelo Estructura generado correctamente.','success');
+    setModelMessage('Modelo Estructura y Modelo Serializados generados en 4 pestañas: A221 y U020 por cada modelo.','success');
   }
 
   function appendSheet(wb,name,headers,rows,widths){
