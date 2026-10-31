@@ -715,24 +715,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       appendSheet(
         wb,
         'ESTRUCTURA_'+almacen,
-        ['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','FECHA','TIPO DE STOCK','NUMERO PLANILLA','CONTEO1','CONTEO2'],
+        ['Material','Texto breve de material','Ce.','Alm.','Lote','UBICACIÓN',
+          'FECHA','TIPO DE STOK','1er Conteo','2do Conteo','# Planilla'],
         structure.map(row=>[
-          row.codigo_sap,row.centro,row.almacen,row.lote,row.ubicacion,todayCompact(),
-          row.stock,row.planilla,row.cantidad,row.cantidad
+          row.codigo_sap,row.descripcion,row.centro,row.almacen,row.lote,
+          row.ubicacion,todayCompact(),row.stock,row.cantidad,row.cantidad,row.planilla
         ]),
-        [16,12,14,16,18,14,15,17,12,12]
+        [16,52,11,12,18,19,16,17,16,16,17]
       );
 
       appendSheet(
         wb,
         'SERIALIZADOS_'+almacen,
-        ['CÓDIGO SAP','DESCRIPCIÓN','SERIAL','CANTIDAD','LOTE','UBICACION','TIPO STOCK','SERIAL RR','ESTADO RR','NRO PLANILLA'],
+        ['Centro','Almacén','Código sap','Número de lote','Ubicación',
+          'Tipo de stocks (inventario)','Número de serie','Número de planilla'],
         serials.map(row=>[
-          row.codigo_sap,row.descripcion,clientSerial(row.codigo_sap,row.serial),1,
-          row.lote,row.ubicacion,row.stock,clientSerial(row.codigo_sap,row.serial_rr),
-          row.estado_rr,row.planilla
+          row.centro,row.almacen,row.codigo_sap,row.lote,row.ubicacion,
+          row.stock,clientSerial(row.codigo_sap,row.serial),row.planilla
         ]),
-        [16,48,28,10,16,18,14,28,14,16]
+        [13,14,17,21,20,29,31,23]
       );
     });
 
