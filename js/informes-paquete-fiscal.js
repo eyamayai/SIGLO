@@ -450,9 +450,9 @@ document.addEventListener('DOMContentLoaded', () => {
       bookRow(sr,'H',5+serRows);
     });
 
-    // Un Modelo Estructura y un Modelo Serializados para cada almacén.
-    // Se generan los cuatro, incluso cuando alguno no tiene existencias.
-    // El índice del registro está en la columna K oculta de cada hoja.
+    // Modelos separados por almacén, formato EXACTO solicitado por Claro.
+    // La numeración de planillas sigue siendo global en todo SIGLO.
+    // L es auxiliar oculta en ESTRUCTURA, I en SERIALIZADOS.
     const modelVisible=modelIndices.filter(i=>initialModel.get(i)!==false);
     const modelByWarehouse=new Map();
     const serialByWarehouse=new Map();
@@ -463,35 +463,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const reserve=length=>Math.min(rowsLimit-5,
       Math.max(100,length+Math.max(100,Math.ceil(length*0.25))));
-    const modelHeaders=['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','FECHA',
-      'TIPO DE STOCK','NUMERO PLANILLA','CONTEO1','CONTEO2'];
-    const serialHeaders=['CODIGO SAP','DESCRIPCION','SERIAL','CANTIDAD','LOTE',
-      'UBICACION','TIPO STOCK','SERIAL RR','ESTADO RR','NRO PLANILLA'];
+    const modelHeaders=['Material','Texto breve de material','Ce.','Alm.','Lote',
+      'UBICACIÓN','FECHA','TIPO DE STOK','1er Conteo','2do Conteo','# Planilla'];
+    const serialHeaders=['Centro','Almacén','Código sap','Número de lote',
+      'Ubicación','Tipo de stocks (inventario)','Número de serie','Número de planilla'];
     ['A221','U020'].forEach(warehouse=>{
       const modelSource=modelByWarehouse.get(warehouse);
       const modelRows=reserve(modelSource.length);
       const me=makeView('ESTRUCTURA_'+warehouse,modelHeaders,
-        [18,13,14,17,22,16,16,19,15,15],
+        [18,55,12,13,18,22,17,20,15,15,19],
         'MODELO ESTRUCTURA · '+warehouse,
-        'Solo almacén '+warehouse+'. Recalcula al editar BASE MAESTRA; grupos nuevos se regeneran desde SIGLO.');
+        'Formato Claro. Conteos = saldo de SIGLO. Fecha fija de generación y planilla global.');
       me['B3']={t:'s',v:warehouse};
-      me['K5']={t:'s',v:'INDICE BASE'};
+      me['L5']={t:'s',v:'INDICE BASE'};
       me['!cols'].push({wch:16,hidden:true});
       for(let i=0;i<modelRows;i++){
         const rr=i+6,idx=modelSource[i];
         const x=idx===undefined?null:data[idx];
-        put(me,'K'+rr,'IFERROR(MATCH($B$3&"|"&'+(i+1)+','+
+        put(me,'L'+rr,'IFERROR(MATCH($B$3&"|"&'+(i+1)+','+
           baseRef+'$Z$6:$Z$'+last+',0),"")',x?idx+1:'');
-        const ptr='$K'+rr;
-        const mk=(column,val)=>{
-          const range=baseRef+'$'+column+'$6:$'+column+'$'+last;
-          return {formula:'IF('+ptr+'="","",INDEX('+range+','+ptr+'))',value:val??''};
-        };
+        const ptr='$L'+rr;
+        const mk=(col,val)=>({
+          formula:'IF('+ptr+'="","",INDEX('+baseRef+'$'+col+'$6:$'+col+'$'+last+','+ptr+'))',
+          value:val??''
+        });
         const cols=[
-          mk('A',x?.codigo_sap),mk('C',x?.centro),mk('D',x?.almacen),
-          mk('G',x?.lote),mk('E',x?.ubicacion),
-          {formula:'IF('+ptr+'="","",'+JSON.stringify(dateCompact())+')',value:x?dateCompact():''},
-          mk('H',x?.stock),mk('P',''),
+          mk('A',x?.codigo_sap),mk('B',x?.descripcion),mk('C',x?.centro),
+          mk('D',x?.almacen),mk('G',x?.lote),mk('E',x?.ubicacion),
+          {formula:'IF('+ptr+'="","",'+JSON.stringify(dateCompact())+')',
+           value:x?dateCompact():''},
+          mk('H',x?.stock)
         ];
         cols.forEach((c,j)=>put(me,XLSX.utils.encode_col(j)+rr,c.formula,c.value));
         const total=x?(modelTotals.get([
@@ -502,37 +503,38 @@ document.addEventListener('DOMContentLoaded', () => {
           baseRef+'$O$6:$O$'+last+','+ptr+'),'+qtyRange+'))';
         put(me,'I'+rr,sum,total);
         put(me,'J'+rr,sum,total);
+        put(me,'K'+rr,mk('P',x?groups.keys.indexOf(groupKeyFor(x,groups.annotations))+1:'').formula,
+          x?groups.keys.indexOf(groupKeyFor(x,groups.annotations))+1:'');
       }
-      bookRow(me,'K',5+modelRows);
+      bookRow(me,'L',5+modelRows);
 
       const serialSource=serialByWarehouse.get(warehouse);
       const serialRows=reserve(serialSource.length);
       const ms=makeView('SERIALIZADOS_'+warehouse,serialHeaders,
-        [18,47,27,13,18,21,16,27,15,19],
+        [15,16,19,20,22,31,31,23],
         'MODELO SERIALIZADOS · '+warehouse,
-        'Solo almacén '+warehouse+'. Un registro por serial, sin mezclar almacenes.');
+        'Formato Claro. Solo almacén '+warehouse+'; número de planilla global.');
       ms['B3']={t:'s',v:warehouse};
-      ms['K5']={t:'s',v:'INDICE BASE'};
+      ms['I5']={t:'s',v:'INDICE BASE'};
       ms['!cols'].push({wch:16,hidden:true});
       for(let i=0;i<serialRows;i++){
         const rr=i+6,idx=serialSource[i];
         const x=idx===undefined?null:data[idx];
-        put(ms,'K'+rr,'IFERROR(MATCH($B$3&"|"&'+(i+1)+','+
+        put(ms,'I'+rr,'IFERROR(MATCH($B$3&"|"&'+(i+1)+','+
           baseRef+'$AB$6:$AB$'+last+',0),"")',x?idx+1:'');
-        const ptr='$K'+rr;
-        ['A','B','J','I','G','E','H','J'].forEach((col,j)=>{
+        const ptr='$I'+rr;
+        const cols=['C','D','A','G','E','H','J','P'];
+        const vals=x?[
+          x.centro,x.almacen,x.codigo_sap,x.lote,x.ubicacion,x.stock,x.serial,
+          groups.keys.indexOf(groupKeyFor(x,groups.annotations))+1
+        ]:Array(8).fill('');
+        cols.forEach((col,j)=>{
           put(ms,XLSX.utils.encode_col(j)+rr,
             'IF('+ptr+'="","",INDEX('+baseRef+'$'+col+'$6:$'+col+'$'+last+
-            ','+ptr+'))',
-            x?[x.codigo_sap,x.descripcion,x.serial,x.cantidad,x.lote,x.ubicacion,
-              x.stock,x.serial][j]:'');
+            ','+ptr+'))',vals[j]);
         });
-        const location='INDEX('+baseRef+'$E$6:$E$'+last+','+ptr+')';
-        put(ms,'I'+rr,'IF('+ptr+'="","",IF('+location+'="QMINTI","","E272"))',
-          x?(x.ubicacion==='QMINTI'?'':'E272'):'');
-        put(ms,'J'+rr,'IF('+ptr+'="","",INDEX('+baseRef+'$P$6:$P$'+last+','+ptr+'))','');
       }
-      bookRow(ms,'K',5+serialRows);
+      bookRow(ms,'I',5+serialRows);
     });
 
     // El libro se construye con IF, VLOOKUP, COUNTIF y SUMIF:
