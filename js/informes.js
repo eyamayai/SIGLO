@@ -586,6 +586,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const current=structureMap.get(key)||{
           codigo_sap:row.codigo_sap,
+          descripcion:row.descripcion||'',
           centro:row.centro,
           almacen:row.almacen,
           lote:row.lote,
