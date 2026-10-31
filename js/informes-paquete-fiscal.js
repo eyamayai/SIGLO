@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const headers=['CODIGO SAP','DESCRIPCION','CENTRO','ALMACEN','UBICACION','SEGMENTO','LOTE','STOCK','CANTIDAD','SERIAL','SERIALIZADO','ANOTACION','GRUPO ACTA','CLAVE FISCAL','CLAVE MODELO','PLANILLA'];
     const guide=worksheet(book,'LEEME',['PAQUETE FISCAL DINÁMICO','INSTRUCCIONES'],[
       ['Fuente','Exportación puntual de SIGLO. Este libro no escribe en Supabase.'],
-      ['Edición','Modifica solo columnas A:K de BASE MAESTRA. No sobrescribas las fórmulas de L:X.'],
+      ['Edición','Modifica solo columnas A:K de BASE MAESTRA. No sobrescribas las fórmulas de L:AB.'],
       ['Recalcular','Excel de escritorio: Fórmulas > Opciones para el cálculo > Automático.'],
       ['Actualización','Los informes dependen de fórmulas dinámicas, se recalculan al editar BASE MAESTRA.'],
       ['Actas','Las filas de cada ACTA y SER se compactan al cambiar BASE MAESTRA. Un grupo completamente nuevo exige regenerar el paquete.'],
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
     guide['!rows']=[{hpt:28}];
     const matr=polished(book,'MATRIZ',titleRows('MATRIZ DEL CLIENTE','Fuente de clasificación para Actas y Modelo','No cambiar las anotaciones de Claro sin validación.'),5,matrix.map(x=>[x.codigo_sap,x.descripcion,x.anotacion]),['CODIGO SAP','DESCRIPCION','ANOTACION'],[19,58,38]);
     const masterData=data.map(x=>[x.codigo_sap,x.descripcion,x.centro,x.almacen,x.ubicacion,x.segmento,x.lote,x.stock,x.cantidad,x.serial,x.serializado,null,null,null,null,null]);
-    const base=polished(book,'BASE MAESTRA',titleRows('BASE MAESTRA EDITABLE','Cambios exclusivos de este Excel. Columnas A:K editables.','Columnas L:X calculadas. Para retirar una existencia poner CANTIDAD=0.'),5,masterData,headers,[18,45,12,14,19,22,18,11,13,27,14,30,45,65,76,19]);
+    const base=polished(book,'BASE MAESTRA',titleRows('BASE MAESTRA EDITABLE','Cambios exclusivos de este Excel. Columnas A:K editables.','Columnas L:AB calculadas. Para retirar una existencia poner CANTIDAD=0.'),5,masterData,headers,[18,45,12,14,19,22,18,11,13,27,14,30,45,65,76,19]);
     for(let index=0;index<data.length+1000;index++){
       const r=index+6;
       // Fórmulas adicionales hasta mil registros para permitir ampliar la base sin perder cálculos.
@@ -278,6 +278,12 @@ document.addEventListener('DOMContentLoaded', () => {
     base['V5']={t:'s',v:'BUSQUEDA ACTA'};
     base['W5']={t:'s',v:'NRO FILA SERIAL'};
     base['X5']={t:'s',v:'BUSQUEDA SERIAL'};
+    // Índices consecutivos por almacén para los dos Modelos.
+    // Permiten reacomodar equipos al cambiar A221/U020 en BASE MAESTRA.
+    base['Y5']={t:'s',v:'NRO MODELO ALMACEN'};
+    base['Z5']={t:'s',v:'BUSQUEDA MODELO ALMACEN'};
+    base['AA5']={t:'s',v:'NRO SERIAL ALMACEN'};
+    base['AB5']={t:'s',v:'BUSQUEDA SERIAL ALMACEN'};
     for(let index=0;index<data.length+1000;index++){
       const rr=index+6;
       formula(base,'Q'+rr,'IF(M'+rr+'="","",M'+rr+'&"|"&A'+rr+'&"|"&E'+rr+'&"|"&G'+rr+')');
@@ -288,10 +294,15 @@ document.addEventListener('DOMContentLoaded', () => {
       formula(base,'V'+rr,'IF(U'+rr+'="","",M'+rr+'&"|"&U'+rr+')');
       formula(base,'W'+rr,'IF(AND(M'+rr+'<>"",K'+rr+'=1),COUNTIFS($M$6:M'+rr+',M'+rr+',$K$6:K'+rr+',1),"")');
       formula(base,'X'+rr,'IF(W'+rr+'="","",M'+rr+'&"|"&W'+rr+')');
+      formula(base,'Y'+rr,'IF(AND(D'+rr+'<>"",T'+rr+'=1),COUNTIFS($D$6:D'+rr+',D'+rr+',$T$6:T'+rr+',1),"")');
+      formula(base,'Z'+rr,'IF(Y'+rr+'="","",D'+rr+'&"|"&Y'+rr+')');
+      formula(base,'AA'+rr,'IF(AND(D'+rr+'<>"",K'+rr+'=1,M'+rr+'<>""),COUNTIFS($D$6:D'+rr+',D'+rr+',$K$6:K'+rr+',1,$M$6:M'+rr+',"<>"),"")');
+      formula(base,'AB'+rr,'IF(AA'+rr+'="","",D'+rr+'&"|"&AA'+rr+')');
     }
     base['!cols']=base['!cols'].concat([{wch:85},{wch:16},{wch:18},{wch:18},
-      {wch:16},{wch:85},{wch:16},{wch:85}]);
-    base['!ref']='A1:X'+rowsLimit;
+      {wch:16},{wch:85},{wch:16},{wch:85},
+      {wch:18,hidden:true},{wch:52,hidden:true},{wch:18,hidden:true},{wch:52,hidden:true}]);
+    base['!ref']='A1:AB'+rowsLimit;
     const makeView=(name,head,widths,heading,desc)=>{
       return sheetNamed(book,name,head,widths,heading,desc);
     };
@@ -439,45 +450,90 @@ document.addEventListener('DOMContentLoaded', () => {
       bookRow(sr,'H',5+serRows);
     });
 
-    // MODELO ESTRUCTURA: llave incluye la planilla asignada.
-    const me=makeView('MODELO ESTRUCTURA',
-      ['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','FECHA','TIPO DE STOCK','NUMERO PLANILLA','CONTEO1','CONTEO2'],
-      [18,13,14,17,22,16,16,19,15,15],
-      'MODELO ESTRUCTURA','Estructura dinámica agrupada por Planilla + llave fiscal editable.');
-    modelIndices.forEach((idx,j)=>{
-      const rr=idx+6,br=j+6,x=data[idx],cond=baseRef+'$T'+rr+'=1';
-      [['A',x.codigo_sap],['C',x.centro],['D',x.almacen],['G',x.lote],['E',x.ubicacion]]
-       .forEach(([col,val],k)=>copyIf(me,XLSX.utils.encode_col(k)+br,cond,col+rr,val));
-      fillDate(me,'F'+br,cond);
-      copyIf(me,'G'+br,cond,'H'+rr,x.stock);
-      copyIf(me,'H'+br,cond,'P'+rr,'');
-      const amount='IF('+cond+',SUMIF('+modelKey+','+baseRef+'O'+rr+','+qtyRange+'),"")';
-      const initialModel=[groups.keys.indexOf(groupKeyFor(x,groups.annotations))+1,
-        [x.codigo_sap,x.centro,x.almacen,x.lote,x.ubicacion,x.stock].join('|')].join('|');
-      const modelTotal=modelTotals.get(initialModel)||0;
-      put(me,'I'+br,amount,modelTotal);
-      put(me,'J'+br,amount,modelTotal);
+    // Un Modelo Estructura y un Modelo Serializados para cada almacén.
+    // Se generan los cuatro, incluso cuando alguno no tiene existencias.
+    // El índice del registro está en la columna K oculta de cada hoja.
+    const modelVisible=modelIndices.filter(i=>initialModel.get(i)!==false);
+    const modelByWarehouse=new Map();
+    const serialByWarehouse=new Map();
+    ['A221','U020'].forEach(w=>{
+      modelByWarehouse.set(w,modelVisible.filter(i=>data[i].almacen===w));
+      serialByWarehouse.set(w,data.map((x,i)=>({x,i}))
+        .filter(v=>v.x.almacen===w && v.x.serializado).map(v=>v.i));
     });
-    bookRow(me,'J',5+modelIndices.length);
+    const reserve=length=>Math.min(rowsLimit-5,
+      Math.max(100,length+Math.max(100,Math.ceil(length*0.25))));
+    const modelHeaders=['CODIGO SAP','CENTRO','ALMACEN','LOTE','UBICACION','FECHA',
+      'TIPO DE STOCK','NUMERO PLANILLA','CONTEO1','CONTEO2'];
+    const serialHeaders=['CODIGO SAP','DESCRIPCION','SERIAL','CANTIDAD','LOTE',
+      'UBICACION','TIPO STOCK','SERIAL RR','ESTADO RR','NRO PLANILLA'];
+    ['A221','U020'].forEach(warehouse=>{
+      const modelSource=modelByWarehouse.get(warehouse);
+      const modelRows=reserve(modelSource.length);
+      const me=makeView('ESTRUCTURA_'+warehouse,modelHeaders,
+        [18,13,14,17,22,16,16,19,15,15],
+        'MODELO ESTRUCTURA · '+warehouse,
+        'Solo almacén '+warehouse+'. Recalcula al editar BASE MAESTRA; grupos nuevos se regeneran desde SIGLO.');
+      me['B3']={t:'s',v:warehouse};
+      me['K5']={t:'s',v:'INDICE BASE'};
+      me['!cols'].push({wch:16,hidden:true});
+      for(let i=0;i<modelRows;i++){
+        const rr=i+6,idx=modelSource[i];
+        const x=idx===undefined?null:data[idx];
+        put(me,'K'+rr,'IFERROR(MATCH($B$3&"|"&'+(i+1)+','+
+          baseRef+'$Z$6:$Z$'+last+',0),"")',x?idx+1:'');
+        const ptr='$K'+rr;
+        const mk=(column,val)=>{
+          const range=baseRef+'$'+column+'$6:$'+column+'$'+last;
+          return {formula:'IF('+ptr+'="","",INDEX('+range+','+ptr+'))',value:val??''};
+        };
+        const cols=[
+          mk('A',x?.codigo_sap),mk('C',x?.centro),mk('D',x?.almacen),
+          mk('G',x?.lote),mk('E',x?.ubicacion),
+          {formula:'IF('+ptr+'="","",'+JSON.stringify(dateCompact())+')',value:x?dateCompact():''},
+          mk('H',x?.stock),mk('P',''),
+        ];
+        cols.forEach((c,j)=>put(me,XLSX.utils.encode_col(j)+rr,c.formula,c.value));
+        const total=x?(modelTotals.get([
+          groups.keys.indexOf(groupKeyFor(x,groups.annotations))+1,
+          [x.codigo_sap,x.centro,x.almacen,x.lote,x.ubicacion,x.stock].join('|')
+        ].join('|'))||0):'';
+        const sum='IF('+ptr+'="","",SUMIF('+modelKey+',INDEX('+
+          baseRef+'$O$6:$O$'+last+','+ptr+'),'+qtyRange+'))';
+        put(me,'I'+rr,sum,total);
+        put(me,'J'+rr,sum,total);
+      }
+      bookRow(me,'K',5+modelRows);
 
-    const ms=makeView('MODELO SERIALIZADOS',
-      ['CODIGO SAP','DESCRIPCION','SERIAL','CANTIDAD','LOTE','UBICACION','TIPO STOCK','SERIAL RR','ESTADO RR','NRO PLANILLA'],
-      [18,47,27,13,18,21,16,27,15,19],
-      'MODELO SERIALIZADOS','Anexo serializado dinámico vinculado a BASE MAESTRA.');
-    let countSerial=0;
-    data.forEach((x,idx)=>{
-      if(!x.serializado)return;
-      countSerial++;
-      const rr=idx+6,br=5+countSerial;
-      const cond=baseRef+'$M'+rr+'<>""';
-      [['A',x.codigo_sap],['B',x.descripcion],['J',x.serial],['I',x.cantidad],['G',x.lote],
-        ['E',x.ubicacion],['H',x.stock],['J',x.serial]]
-        .forEach(([col,val],k)=>copyIf(ms,XLSX.utils.encode_col(k)+br,cond,col+rr,val));
-      put(ms,'I'+br,'IF('+cond+',IF('+baseRef+'E'+rr+'="QMINTI","","E272"),"")',
-        x.ubicacion==='QMINTI'?'':'E272');
-      copyIf(ms,'J'+br,cond,'P'+rr,'');
+      const serialSource=serialByWarehouse.get(warehouse);
+      const serialRows=reserve(serialSource.length);
+      const ms=makeView('SERIALIZADOS_'+warehouse,serialHeaders,
+        [18,47,27,13,18,21,16,27,15,19],
+        'MODELO SERIALIZADOS · '+warehouse,
+        'Solo almacén '+warehouse+'. Un registro por serial, sin mezclar almacenes.');
+      ms['B3']={t:'s',v:warehouse};
+      ms['K5']={t:'s',v:'INDICE BASE'};
+      ms['!cols'].push({wch:16,hidden:true});
+      for(let i=0;i<serialRows;i++){
+        const rr=i+6,idx=serialSource[i];
+        const x=idx===undefined?null:data[idx];
+        put(ms,'K'+rr,'IFERROR(MATCH($B$3&"|"&'+(i+1)+','+
+          baseRef+'$AB$6:$AB$'+last+',0),"")',x?idx+1:'');
+        const ptr='$K'+rr;
+        ['A','B','J','I','G','E','H','J'].forEach((col,j)=>{
+          put(ms,XLSX.utils.encode_col(j)+rr,
+            'IF('+ptr+'="","",INDEX('+baseRef+'$'+col+'$6:$'+col+'$'+last+
+            ','+ptr+'))',
+            x?[x.codigo_sap,x.descripcion,x.serial,x.cantidad,x.lote,x.ubicacion,
+              x.stock,x.serial][j]:'');
+        });
+        const location='INDEX('+baseRef+'$E$6:$E$'+last+','+ptr+')';
+        put(ms,'I'+rr,'IF('+ptr+'="","",IF('+location+'="QMINTI","","E272"))',
+          x?(x.ubicacion==='QMINTI'?'':'E272'):'');
+        put(ms,'J'+rr,'IF('+ptr+'="","",INDEX('+baseRef+'$P$6:$P$'+last+','+ptr+'))','');
+      }
+      bookRow(ms,'K',5+serialRows);
     });
-    bookRow(ms,'J',5+data.filter(x=>x.serializado).length);
 
     // El libro se construye con IF, VLOOKUP, COUNTIF y SUMIF:
     // no contiene fórmulas matriciales que Excel pueda eliminar al repararlo.
