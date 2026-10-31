@@ -698,11 +698,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function exportModelWorkbook(){
+  async function exportModelWorkbook(){
     if(!preparedModel || exportModelBtn.disabled || !window.XLSX) return;
 
     const modelData=preparedModel.modelData || buildModelStructure(preparedModel);
     const wb=XLSX.utils.book_new();
+    const modelSheets=[];
 
     // Entregar dos pestañas por modelo: una A221 y otra U020.
     // Conservan exactamente las columnas y los números de planilla originales.
@@ -712,33 +713,79 @@ document.addEventListener('DOMContentLoaded', async () => {
       const serials=modelData.serials.filter(row=>
         String(row.almacen||'').trim().toUpperCase()===almacen);
 
-      appendSheet(
-        wb,
-        'ESTRUCTURA_'+almacen,
-        ['Material','Texto breve de material','Ce.','Alm.','Lote','UBICACIÓN',
-          'FECHA','TIPO DE STOK','1er Conteo','2do Conteo','# Planilla'],
-        structure.map(row=>[
-          row.codigo_sap,row.descripcion,row.centro,row.almacen,row.lote,
-          row.ubicacion,todayCompact(),row.stock,row.cantidad,row.cantidad,row.planilla
-        ]),
-        [16,52,11,12,18,19,16,17,16,16,17]
-      );
+      const structHeaders=['Material','Texto breve de material','Ce.','Alm.','Lote','UBICACIÓN',
+        'FECHA','TIPO DE STOK','1er Conteo','2do Conteo','# Planilla'];
+      const structRows=structure.map(row=>[
+        row.codigo_sap,row.descripcion,row.centro,row.almacen,row.lote,row.ubicacion,
+        todayCompact(),row.stock,row.cantidad,row.cantidad,row.planilla
+      ]);
+      const structWidths=[16,52,11,12,18,19,16,17,16,16,17];
+      appendSheet(wb,'ESTRUCTURA_'+almacen,structHeaders,structRows,structWidths);
+      modelSheets.push({name:'ESTRUCTURA_'+almacen,headers:structHeaders,
+        rows:structRows,widths:structWidths,structure:true});
 
-      appendSheet(
-        wb,
-        'SERIALIZADOS_'+almacen,
-        ['Centro','Almacén','Código sap','Número de lote','Ubicación',
-          'Tipo de stocks (inventario)','Número de serie','Número de planilla'],
-        serials.map(row=>[
-          row.centro,row.almacen,row.codigo_sap,row.lote,row.ubicacion,
-          row.stock,clientSerial(row.codigo_sap,row.serial),row.planilla
-        ]),
-        [13,14,17,21,20,29,31,23]
-      );
+      const serialHeaders=['Centro','Almacén','Código sap','Número de lote','Ubicación',
+        'Tipo de stocks (inventario)','Número de serie','Número de planilla'];
+      const serialRows=serials.map(row=>[
+        row.centro,row.almacen,row.codigo_sap,row.lote,row.ubicacion,
+        row.stock,clientSerial(row.codigo_sap,row.serial),row.planilla
+      ]);
+      const serialWidths=[13,14,17,21,20,29,31,23];
+      appendSheet(wb,'SERIALIZADOS_'+almacen,serialHeaders,serialRows,serialWidths);
+      modelSheets.push({name:'SERIALIZADOS_'+almacen,headers:serialHeaders,
+        rows:serialRows,widths:serialWidths,structure:false});
     });
 
-    XLSX.writeFile(wb,'SIGLO_Modelo_Estructura_'+fileDate()+'.xlsx');
-    setModelMessage('Modelo Estructura y Modelo Serializados generados en 4 pestañas: A221 y U020 por cada modelo.','success');
+    const name='SIGLO_Modelo_Estructura_'+fileDate()+'.xlsx';
+    if(window.ExcelJS){
+      // Encabezados oficiales de Claro con colores y alineación de las capturas.
+      const styled=new window.ExcelJS.Workbook();
+      styled.creator='SIGLO';
+      styled.created=new Date();
+      modelSheets.forEach(item=>{
+        const ws=styled.addWorksheet(item.name,{views:[{state:'frozen',ySplit:1}]});
+        ws.columns=item.headers.map((header,i)=>({
+          header,key:'c'+i,width:item.widths[i]
+        }));
+        item.rows.forEach(values=>ws.addRow(values));
+        ws.autoFilter={from:{row:1,column:1},
+          to:{row:1,column:item.headers.length}};
+        ws.getRow(1).height=item.structure?24:39;
+        ws.getRow(1).eachCell((cell,i)=>{
+          cell.font={name:'Calibri',size:10,bold:true,
+            color:{argb:item.structure?'FFFFFFFF':'FF000000'}};
+          const rgb=item.structure?(i<=5||i===11?'FFFF0000':'FF0070C0'):'FFF8CBAD';
+          cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:rgb}};
+          cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};
+          cell.border={bottom:{style:'thin',color:{argb:'FFD9E0E9'}}};
+        });
+        for(let r=2;r<=item.rows.length+1;r++){
+          ws.getRow(r).eachCell({includeEmpty:true},(cell,c)=>{
+            cell.font={name:'Calibri',size:10};
+            cell.alignment={vertical:'middle',
+              horizontal:(!item.structure||c!==2)?'center':'left'};
+            cell.border={bottom:{style:'hair',color:{argb:'FFE4E9EF'}}};
+          });
+          const codeCol=item.structure?1:3;
+          ws.getCell(r,codeCol).numFmt='@';
+          if(item.structure){
+            ws.getCell(r,7).numFmt='@';
+            ws.getCell(r,9).numFmt='0.###';
+            ws.getCell(r,10).numFmt='0.###';
+          }else ws.getCell(r,7).numFmt='@';
+        }
+      });
+      const buffer=await styled.xlsx.writeBuffer();
+      const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement('a');
+      link.href=url;link.download=name;link.style.display='none';
+      document.body.appendChild(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }else{
+      XLSX.writeFile(wb,name);
+    }
+    setModelMessage('Modelos de Claro generados: cuatro pestañas A221 y U020, con numeración global.','success');
   }
 
   function appendSheet(wb,name,headers,rows,widths){
