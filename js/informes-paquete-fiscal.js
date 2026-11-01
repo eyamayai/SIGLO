@@ -13,12 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const macroEngine=window.SIGLOPaqueteMacro;
   function syncMacroStatus(){
     const ready=Boolean(macroEngine?.active());
-    macroStatus.textContent=ready
-      ? 'Automatización VBA activa en este navegador. Las descargas serán .xlsm con el botón ACTUALIZAR INFORMES.'
-      : 'VBA sin activar. Las descargas continuarán en .xlsx hasta seleccionar tu plantilla validada.';
-    macroStatus.className='report-message'+(ready?' success':'');
-    generate.textContent=ready?'Consultar SIGLO y descargar .xlsm':'Consultar SIGLO y descargar .xlsx';
-    rebuild.textContent=ready?'Regenerar y descargar .xlsm':'Regenerar y descargar .xlsx';
+    const modern=ready&&Number(macroEngine?.version?.()||0)>=19;
+    macroStatus.textContent=modern
+      ? 'Automatización VBA 1.9 activa. Los paquetes incluirán ACTUALIZAR INFORMES, la excepción MOVIL1 y el nuevo orden de actas.'
+      : ready
+        ? 'Hay una plantilla VBA 1.8 antigua. Las descargas serán .xlsx para evitar que ACTUALIZAR INFORMES revierta la clasificación y el orden. Activa la plantilla VBA 1.9.'
+        : 'VBA sin activar. Las descargas serán .xlsx hasta seleccionar tu plantilla VBA 1.9.';
+    macroStatus.className='report-message'+(modern?' success':'');
+    generate.textContent=modern?'Consultar SIGLO y descargar .xlsm':'Consultar SIGLO y descargar .xlsx';
+    rebuild.textContent=modern?'Regenerar y descargar .xlsm':'Regenerar y descargar .xlsx';
   }
   const clean=v=>String(v??'').trim().replace(/\s+/g,' ');
   const norm=v=>clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
@@ -249,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ['Preliminar Cliente','No se modifica ninguna información original del Cliente.'],
       ['Matriz','SAP ausente = Conteo Aliado. Libre por Segmento e Inversa por Ubicación. MOVIL1 es independiente, siempre CONTEO ALIADO y al final.'],
       ['Histórico','Guarda una copia independiente cuando el inventario sea firmado o entregado.'],
-      ['VBA 1.8','Si hay MOVIL1, SIGLO exporta .xlsx hasta que la macro ACTUALIZAR INFORMES incorpore esta excepción. No uses el botón VBA 1.8 de libros antiguos para MOVIL1.'],
+      ['VBA 1.9','La macro ACTUALIZAR INFORMES necesita el módulo 1.9 para conservar el orden fiscal y la excepción MOVIL1. Si solo está activa la plantilla 1.8, SIGLO exporta .xlsx por seguridad.'],
       ['Versión','Fórmulas estándar de Excel de escritorio, sin funciones matriciales dinámicas ni macros VBA.'],
       ['Fecha exportación',today()]
     ],[34,110]);
@@ -590,7 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
     book.Workbook.CalcPr={calcMode:'auto',fullCalcOnLoad:true};
     const downloadName=fileName||'SIGLO_Paquete_Fiscal_Dinamico_'+today()+'.xlsx';
     const macroEnabled=Boolean(macroEngine?.active());
-    const macroSkipped=macroEnabled&&data.some(isMovil1);
+    const macroSkipped=macroEnabled&&Number(macroEngine?.version?.()||0)<19;
     if(macroEnabled&&!macroSkipped){
       await macroEngine.download(book,downloadName);
     }else{
@@ -614,7 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try{
         const info=await macroEngine.install(file);
         syncMacroStatus();
-        notify('Macros activadas correctamente ('+info.size+' bytes de proyecto VBA). Ya puedes descargar .xlsm.','success');
+        notify('Plantilla VBA '+info.version+' activada correctamente ('+info.size+' bytes). '+(info.version==='1.9'?'Ya puedes descargar .xlsm con el orden fiscal y MOVIL1.':'Necesitas VBA 1.9 para generar .xlsm con el orden fiscal nuevo.'),'success');
       }catch(err){
         console.error('VBA local',err);
         macroStatus.textContent=err.message||'No se pudo registrar la plantilla VBA.';
@@ -641,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!Array.isArray(data)||!data.length)throw Error('La base fiscal de SIGLO está vacía.');
       const out=await exportWorkbook(data,matrix);
       stats.innerHTML='<strong>'+out.records+'</strong> registros · <strong>'+out.activeGroups+'</strong> actas con inventario · <strong>'+out.serials+'</strong> seriales · <strong>'+out.autoAllied+'</strong> SAP clasificados como Conteo Aliado.';
-      notify('Paquete '+out.format+' generado. BASE MAESTRA puede corregirse sin cambiar SIGLO.'+(out.macroSkipped?' Se descargó .xlsx para evitar incorporar VBA 1.8, que todavía reagrupa MOVIL1 incorrectamente. Usa REGENERAR desde Excel para crear nuevas actas.':''),'success');
+      notify('Paquete '+out.format+' generado. BASE MAESTRA puede corregirse sin cambiar SIGLO.'+(out.macroSkipped?' Se descargó .xlsx para evitar incorporar VBA 1.8, que no respeta el nuevo orden de actas ni MOVIL1. Usa REGENERAR desde Excel para crear nuevas actas.':''),'success');
     }catch(err){console.error(err);notify(err.message||'No se pudo generar el paquete fiscal.','error');}
     finally{generate.disabled=false;}
   });
@@ -655,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const {data,matrix}=readEdited(await file.arrayBuffer());
       const out=await exportWorkbook(data,matrix,'SIGLO_Paquete_Fiscal_Reorganizado_'+today()+'.xlsx');
       stats.innerHTML='<strong>'+out.records+'</strong> registros · <strong>'+out.activeGroups+'</strong> actas con inventario · <strong>'+out.serials+'</strong> seriales.';
-      notify('Paquete '+out.format+' regenerado desde el Excel, sin leer ni modificar la base de datos de SIGLO.'+(out.macroSkipped?' No se incorporó VBA 1.8 para impedir que ACTUALIZAR INFORMES revierta la regla MOVIL1.':''),'success');
+      notify('Paquete '+out.format+' regenerado desde el Excel, sin leer ni modificar la base de datos de SIGLO.'+(out.macroSkipped?' No se incorporó VBA 1.8 para impedir que ACTUALIZAR INFORMES revierta el orden fiscal o la regla MOVIL1.':''),'success');
     }catch(err){console.error(err);notify(err.message||'No se pudo regenerar el archivo.','error');}
     finally{rebuild.disabled=false;}
   });
