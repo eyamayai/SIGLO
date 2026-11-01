@@ -4,7 +4,8 @@
  */
 (function(){
   'use strict';
-  const KEY='siglo_paquete_fiscal_vba_v18';
+  const KEY18='siglo_paquete_fiscal_vba_v18';
+  const KEY19='siglo_paquete_fiscal_vba_v19';
 
   const encode=(bytes)=>{
     const step=16384;let binary='';
@@ -24,8 +25,10 @@
   };
   const saved=()=>{
     try{
-      const value=JSON.parse(localStorage.getItem(KEY)||'null');
-      return value&&value.version===7&&value.vba&&value.drawing?value:null;
+      const modern=JSON.parse(localStorage.getItem(KEY19)||'null');
+      if(modern&&modern.version===8&&modern.vba&&modern.drawing)return modern;
+      const legacy=JSON.parse(localStorage.getItem(KEY18)||'null');
+      return legacy&&legacy.version===7&&legacy.vba&&legacy.drawing?legacy:null;
     }catch(_){return null;}
   };
 
@@ -35,9 +38,11 @@
     // No permitir que el módulo VBA anterior rehaga las actas con la regla obsoleta.
     if(!window.XLSX)throw new Error('No se cargó el motor de Excel.');
     const excel=window.XLSX.read(bytes,{type:'array',cellFormula:false});
-    if(String(excel.Sheets?.LEEME?.D12?.v||'').trim()!=='SIGLO-FISCAL-1.8'){
-      throw new Error('Esta plantilla todavía utiliza VBA anterior. Importa la versión 1.8, ejecuta ConfigurarPaqueteFiscal, guarda el .xlsm y vuelve a activarlo.');
+    const versionMarker=String(excel.Sheets?.LEEME?.D12?.v||'').trim();
+    if(!['SIGLO-FISCAL-1.8','SIGLO-FISCAL-1.9'].includes(versionMarker)){
+      throw new Error('Esta plantilla no tiene VBA válido. Para el orden fiscal MOVIL1 importa VBA 1.9, ejecuta ConfigurarPaqueteFiscal y guarda el .xlsm.');
     }
+    const isModern=versionMarker==='SIGLO-FISCAL-1.9';
     const ZIP=requireZip(),zip=await ZIP.loadAsync(bytes);
     const bin=zip.file('xl/vbaProject.bin');
     const xml=zip.file('xl/drawings/drawing1.xml');
@@ -55,13 +60,16 @@
       !/name="LEEME"/.test(workbookXml)){
       throw new Error('Esta plantilla no corresponde al Paquete Fiscal SIGLO con la macro validada.');
     }
-    const payload={version:7,vba:encode(project),drawing};
+    if(isModern&&!new TextDecoder('windows-1252').decode(project).includes('SIGLO-FISCAL-1.9')){
+      throw new Error('El VBA incrustado no corresponde a la versión 1.9. Importa y compila el módulo 1.9 en Excel antes de activarlo.');
+    }
+    const payload={version:isModern?8:7,vba:encode(project),drawing};
     try{
-      localStorage.setItem(KEY,JSON.stringify(payload));
+      localStorage.setItem(isModern?KEY19:KEY18,JSON.stringify(payload));
     }catch(_){
       throw new Error('El navegador no permitió guardar la plantilla VBA. Revisa el almacenamiento del sitio.');
     }
-    return {size:project.length};
+    return {size:project.length,version:isModern?'1.9':'1.8'};
   }
 
   function nextRelationshipId(rels){
@@ -147,6 +155,7 @@
 
   window.SIGLOPaqueteMacro={
     active:()=>Boolean(saved()),
+    version:()=>saved()?.version===8?19:(saved()?.version===7?18:0),
     install,download
   };
 })();
