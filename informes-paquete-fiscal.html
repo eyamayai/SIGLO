@@ -49,7 +49,7 @@
         <span class="step-badge">VBA</span>
         <div>
           <h2>Activar automatización en este navegador</h2>
-          <p>Selecciona tu archivo .xlsm con VBA 1.8. SIGLO extrae localmente el proyecto VBA y el diseño del botón ACTUALIZAR INFORMES. La BASE MAESTRA y los datos del archivo no se almacenan ni se envían al servidor.</p>
+          <p>Selecciona tu archivo .xlsm con VBA 1.8 para los paquetes sin MOVIL1. SIGLO extrae localmente el proyecto VBA y el diseño del botón ACTUALIZAR INFORMES. La BASE MAESTRA y los datos del archivo no se almacenan ni se envían al servidor.</p>
         </div>
       </div>
     </div>
@@ -85,10 +85,10 @@
     <div class="paquete-features">
       <div><strong>BASE MAESTRA</strong><span>Edita una sola vez: serial, lote, almacén, ubicación o cantidades.</span></div>
       <div><strong>Informes vinculados</strong><span>Fórmulas estándar de Excel mantienen relacionados los cuatro informes sin cambiar SIGLO.</span></div>
-      <div><strong>Actas independientes</strong><span>Libre conserva la clasificación de Claro; Inversa se agrupa por ubicación, almacén y anotación. Sin espacios entre registros.</span></div>
+      <div><strong>Actas independientes</strong><span>Libre se agrupa por segmento e Inversa por ubicación. MOVIL1 siempre crea actas propias de CONTEO ALIADO y se coloca al final.</span></div>
       <div><strong>Sin cambios en SIGLO</strong><span>Todo ajuste permanece en el Excel. La regeneración solo lee ese archivo local.</span></div>
     </div>
-    <p class="paquete-alert"><strong>Descarga automática:</strong> después de activar tu plantilla, los nuevos paquetes se descargan como .xlsm e incluyen la macro y el botón de actualización. Sin plantilla activada, permanece disponible el .xlsx tradicional. La activación se realiza una sola vez por navegador. Para ejecutar macros, utiliza Excel de escritorio y autoriza el archivo descargado únicamente si reconoces su procedencia.</p>
+    <p class="paquete-alert"><strong>Descarga automática:</strong> después de activar tu plantilla, los nuevos paquetes se descargan como .xlsm e incluyen la macro y el botón de actualización. Para paquetes con MOVIL1 se descargará .xlsx aunque tengas la plantilla VBA 1.8 activada, para evitar que la macro antigua deshaga la separación de MOVIL1. Sin plantilla activada, permanece disponible el .xlsx tradicional. La activación se realiza una sola vez por navegador. Para ejecutar macros, utiliza Excel de escritorio y autoriza el archivo descargado únicamente si reconoces su procedencia.</p>
   </section>
   <div id="paqueteEstado" class="report-message paquete-status" role="status" aria-live="polite">Selecciona la matriz del Cliente para empezar.</div>
   <div id="paqueteEstadisticas" class="paquete-stats"></div>
@@ -103,6 +103,6 @@
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20261009-2"></script>
 <script src="js/informes-paquete-macros.js?v=20261031-2"></script>
-<script src="js/informes-paquete-fiscal.js?v=20261031-2"></script>
+<script src="js/informes-paquete-fiscal.js?v=20261101-movil1-orden-1"></script>
 </body>
 </html>
