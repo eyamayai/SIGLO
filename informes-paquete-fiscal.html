@@ -49,14 +49,14 @@
         <span class="step-badge">VBA</span>
         <div>
           <h2>Activar automatización en este navegador</h2>
-          <p>Activa tu archivo .xlsm con VBA 1.9 para conservar MOVIL1 separado y las actas ordenadas al pulsar ACTUALIZAR INFORMES. SIGLO extrae localmente el proyecto VBA y el diseño del botón. La BASE MAESTRA y los datos del archivo no se almacenan ni se envían al servidor.</p>
+          <p>Activa tu archivo .xlsm con VBA 2.0 para mantener MOVIL1 y MOLRED separados, con MOLRED después de MOVIL1, al pulsar ACTUALIZAR INFORMES. SIGLO extrae localmente el proyecto VBA y el diseño del botón. La BASE MAESTRA y los datos del archivo no se almacenan ni se envían al servidor.</p>
         </div>
       </div>
     </div>
     <div class="paquete-file">
       <label class="paquete-picker" for="paquetePlantillaMacros">
         <strong>Plantilla .xlsm funcional</strong>
-        <span>Archivo .xlsm con módulo VBA 1.9 compilado y botón ACTUALIZAR INFORMES; también se admite 1.8 para lectura.</span>
+        <span>Archivo .xlsm con módulo VBA 2.0 compilado y botón ACTUALIZAR INFORMES; se reconocen 1.8 y 1.9, pero para descargar con macros se requiere 2.0.</span>
         <input type="file" id="paquetePlantillaMacros" accept=".xlsm">
       </label>
       <button id="paqueteActivarMacros" class="outline-action" type="button" disabled>Activar macros para mis descargas</button>
@@ -85,10 +85,10 @@
     <div class="paquete-features">
       <div><strong>BASE MAESTRA</strong><span>Edita una sola vez: serial, lote, almacén, ubicación o cantidades.</span></div>
       <div><strong>Informes vinculados</strong><span>Fórmulas estándar de Excel mantienen relacionados los cuatro informes sin cambiar SIGLO.</span></div>
-      <div><strong>Actas independientes</strong><span>Libre se agrupa por segmento e Inversa por ubicación. MOVIL1 siempre crea actas propias de CONTEO ALIADO y se coloca al final.</span></div>
+      <div><strong>Actas independientes</strong><span>Libre se agrupa por segmento e Inversa por ubicación. MOVIL1 y MOLRED generan actas propias de CONTEO ALIADO; MOLRED se coloca después de MOVIL1.</span></div>
       <div><strong>Sin cambios en SIGLO</strong><span>Todo ajuste permanece en el Excel. La regeneración solo lee ese archivo local.</span></div>
     </div>
-    <p class="paquete-alert"><strong>Descarga automática:</strong> después de activar tu plantilla, los nuevos paquetes se descargan como .xlsm e incluyen la macro y el botón de actualización. Solo con plantilla VBA 1.9 activa las nuevas descargas serán .xlsm con ACTUALIZAR INFORMES compatible. Con VBA 1.8 o sin plantilla se descargará .xlsx, para evitar que la macro antigua altere MOVIL1 o el orden fiscal. La activación se realiza una sola vez por navegador. Para ejecutar macros, utiliza Excel de escritorio y autoriza el archivo descargado únicamente si reconoces su procedencia.</p>
+    <p class="paquete-alert"><strong>Descarga automática:</strong> después de activar tu plantilla, los nuevos paquetes se descargan como .xlsm e incluyen la macro y el botón de actualización. Solo con plantilla VBA 2.0 activa las nuevas descargas serán .xlsm con ACTUALIZAR INFORMES compatible. Con VBA 1.8, 1.9 o sin plantilla se descargará .xlsx, para evitar que la macro antigua altere MOVIL1, MOLRED o el orden fiscal. La activación se realiza una sola vez por navegador. Para ejecutar macros, utiliza Excel de escritorio y autoriza el archivo descargado únicamente si reconoces su procedencia.</p>
   </section>
   <div id="paqueteEstado" class="report-message paquete-status" role="status" aria-live="polite">Selecciona la matriz del Cliente para empezar.</div>
   <div id="paqueteEstadisticas" class="paquete-stats"></div>
@@ -102,7 +102,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js?v=20260918-1"></script>
 <script src="js/app.js?v=20261009-2"></script>
-<script src="js/informes-paquete-macros.js?v=20261101-v19-1"></script>
-<script src="js/informes-paquete-fiscal.js?v=20261101-movil1-orden-2"></script>
+<script src="js/informes-paquete-macros.js?v=20261102-v20-1"></script>
+<script src="js/informes-paquete-fiscal.js?v=20261102-molred-orden-1"></script>
 </body>
 </html>
