@@ -6,6 +6,7 @@
   'use strict';
   const KEY18='siglo_paquete_fiscal_vba_v18';
   const KEY19='siglo_paquete_fiscal_vba_v19';
+  const KEY20='siglo_paquete_fiscal_vba_v20';
 
   const encode=(bytes)=>{
     const step=16384;let binary='';
@@ -25,6 +26,8 @@
   };
   const saved=()=>{
     try{
+      const newest=JSON.parse(localStorage.getItem(KEY20)||'null');
+      if(newest&&newest.version===9&&newest.vba&&newest.drawing)return newest;
       const modern=JSON.parse(localStorage.getItem(KEY19)||'null');
       if(modern&&modern.version===8&&modern.vba&&modern.drawing)return modern;
       const legacy=JSON.parse(localStorage.getItem(KEY18)||'null');
@@ -39,10 +42,11 @@
     if(!window.XLSX)throw new Error('No se cargó el motor de Excel.');
     const excel=window.XLSX.read(bytes,{type:'array',cellFormula:false});
     const versionMarker=String(excel.Sheets?.LEEME?.D12?.v||'').trim();
-    if(!['SIGLO-FISCAL-1.8','SIGLO-FISCAL-1.9'].includes(versionMarker)){
-      throw new Error('Esta plantilla no tiene VBA válido. Para el orden fiscal MOVIL1 importa VBA 1.9, ejecuta ConfigurarPaqueteFiscal y guarda el .xlsm.');
+    if(!['SIGLO-FISCAL-1.8','SIGLO-FISCAL-1.9','SIGLO-FISCAL-2.0'].includes(versionMarker)){
+      throw new Error('La versión de LEEME!D12 no es compatible. Para respetar MOVIL1 y MOLRED, importa VBA 2.0, ejecuta ConfigurarPaqueteFiscal y guarda el .xlsm.');
     }
-    const isModern=versionMarker==='SIGLO-FISCAL-1.9';
+    const isV20=versionMarker==='SIGLO-FISCAL-2.0';
+    const isV19=versionMarker==='SIGLO-FISCAL-1.9';
     const ZIP=requireZip(),zip=await ZIP.loadAsync(bytes);
     const bin=zip.file('xl/vbaProject.bin');
     const xml=zip.file('xl/drawings/drawing1.xml');
@@ -60,16 +64,16 @@
       !/name="LEEME"/.test(workbookXml)){
       throw new Error('Esta plantilla no corresponde al Paquete Fiscal SIGLO con la macro validada.');
     }
-    if(isModern&&!new TextDecoder('windows-1252').decode(project).includes('SIGLO-FISCAL-1.9')){
-      throw new Error('El VBA incrustado no corresponde a la versión 1.9. Importa y compila el módulo 1.9 en Excel antes de activarlo.');
+    if((isV20||isV19)&&!new TextDecoder('windows-1252').decode(project).includes(versionMarker)){
+      throw new Error('La versión del VBA incrustado no coincide con LEEME!D12. Importa y compila la versión correcta antes de activarla.');
     }
-    const payload={version:isModern?8:7,vba:encode(project),drawing};
+    const payload={version:isV20?9:(isV19?8:7),vba:encode(project),drawing};
     try{
-      localStorage.setItem(isModern?KEY19:KEY18,JSON.stringify(payload));
+      localStorage.setItem(isV20?KEY20:(isV19?KEY19:KEY18),JSON.stringify(payload));
     }catch(_){
       throw new Error('El navegador no permitió guardar la plantilla VBA. Revisa el almacenamiento del sitio.');
     }
-    return {size:project.length,version:isModern?'1.9':'1.8'};
+    return {size:project.length,version:isV20?'2.0':(isV19?'1.9':'1.8')};
   }
 
   function nextRelationshipId(rels){
@@ -123,7 +127,7 @@
 
   async function download(book,name){
     const template=saved();
-    if(!template)throw new Error('Primero activa la plantilla .xlsm validada en este navegador.');
+    if(!template||template.version!==9)throw new Error('Para descargar .xlsm con MOVIL1 y MOLRED separados, activa una plantilla VBA 2.0.');
     if(!window.XLSX)throw new Error('No se cargó el motor Excel.');
     const ZIP=requireZip();
     book.vbaraw=decode(template.vba);
@@ -155,7 +159,7 @@
 
   window.SIGLOPaqueteMacro={
     active:()=>Boolean(saved()),
-    version:()=>saved()?.version===8?19:(saved()?.version===7?18:0),
+    version:()=>{const v=saved()?.version;return v===9?20:(v===8?19:(v===7?18:0));},
     install,download
   };
 })();
