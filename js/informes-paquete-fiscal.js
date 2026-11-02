@@ -13,15 +13,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const macroEngine=window.SIGLOPaqueteMacro;
   function syncMacroStatus(){
     const ready=Boolean(macroEngine?.active());
-    const modern=ready&&Number(macroEngine?.version?.()||0)>=19;
-    macroStatus.textContent=modern
-      ? 'Automatización VBA 1.9 activa. Los paquetes incluirán ACTUALIZAR INFORMES, la excepción MOVIL1 y el nuevo orden de actas.'
+    const version=Number(macroEngine?.version?.()||0);
+    const compatible=ready&&version>=20;
+    macroStatus.textContent=compatible
+      ? 'Automatización VBA 2.0 activa. MOVIL1 y MOLRED serán actas independientes; MOLRED quedará después de MOVIL1.'
       : ready
-        ? 'Hay una plantilla VBA 1.8 antigua. Las descargas serán .xlsx para evitar que ACTUALIZAR INFORMES revierta la clasificación y el orden. Activa la plantilla VBA 1.9.'
-        : 'VBA sin activar. Las descargas serán .xlsx hasta seleccionar tu plantilla VBA 1.9.';
-    macroStatus.className='report-message'+(modern?' success':'');
-    generate.textContent=modern?'Consultar SIGLO y descargar .xlsm':'Consultar SIGLO y descargar .xlsx';
-    rebuild.textContent=modern?'Regenerar y descargar .xlsm':'Regenerar y descargar .xlsx';
+        ? 'Plantilla VBA '+(version===19?'1.9':'1.8')+' reconocida, pero antigua para MOLRED. Las descargas serán .xlsx hasta activar VBA 2.0.'
+        : 'VBA sin activar. Las descargas serán .xlsx hasta seleccionar una plantilla VBA 2.0.';
+    macroStatus.className='report-message'+(compatible?' success':'');
+    generate.textContent=compatible?'Consultar SIGLO y descargar .xlsm':'Consultar SIGLO y descargar .xlsx';
+    rebuild.textContent=compatible?'Regenerar y descargar .xlsm':'Regenerar y descargar .xlsx';
   }
   const clean=v=>String(v??'').trim().replace(/\s+/g,' ');
   const norm=v=>clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
@@ -113,7 +114,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const DEFAULT_CLASS='Conteo Aliado';
   const defaultGroupLabel='CONTEO ALIADO';
-  const isMovil1=item=>norm(item.ubicacion)==='MOVIL1';
+  // Prioridad: actas normales, MOVIL1 y al final MOLRED.
+  const specialRank=item=>{
+    const loc=norm(item.ubicacion);
+    return loc==='MOVIL1'?1:(loc==='MOLRED'?2:0);
+  };
+  const isSpecial=item=>specialRank(item)>0;
   const segmentPriority=['CPES','RED EXTERNA','CORPORATIVO','MINTIC'];
   const warehousePriority=['A221','U020'];
   const rank=(value,ordered)=>{
@@ -125,18 +131,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return label.includes('CLARO')&&label.includes('ALIADO')?0:
       label==='CONTEO ALIADO'?1:2;
   };
-  // MOVIL1 es ubicación especial tanto para LIBRE como para INVERSA.
-  // Su clasificación de acta siempre es CONTEO ALIADO, aunque MATRIZ diga otra cosa.
+  // MOVIL1 y MOLRED son ubicaciones especiales para LIBRE e INVERSA;
+  // ambas usan CONTEO ALIADO, incluso si la MATRIZ indica otra clasificación.
   const annotationFor=(item,annotations)=>{
-    if(isMovil1(item))return defaultGroupLabel;
+    if(isSpecial(item))return defaultGroupLabel;
     const label=annotations.get(item.codigo_sap);
     return label?norm(label):defaultGroupLabel;
   };
-  // LIBRE: segmento + almacén + anotación, excepto MOVIL1.
+  // LIBRE: segmento + almacén + anotación, excepto MOVIL1 y MOLRED.
   // INVERSA: ubicación + almacén + anotación.
   const groupKeyFor=(item,annotations)=>{
     const inversa=Number(item.stock)===4;
-    const scope=isMovil1(item)?'MOVIL1':(inversa?item.ubicacion:item.segmento);
+    const scope=isSpecial(item)?norm(item.ubicacion):(inversa?item.ubicacion:item.segmento);
     return [inversa?'INVERSA':'LIBRE',scope,item.almacen,
       annotationFor(item,annotations)].join('|');
   };
@@ -147,18 +153,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const key=groupKeyFor(item,annotations);
       active.set(key,(active.get(key)||0)+1);
       if(!details.has(key))details.set(key,{
-        movable:isMovil1(item),type:Number(item.stock)===4?1:0,
+        special:specialRank(item),type:Number(item.stock)===4?1:0,
         segment:norm(item.segmento),warehouse:norm(item.almacen),
         location:norm(item.ubicacion),annotation:annotationFor(item,annotations)
       });
     }
     const keys=[...active.keys()].sort((a,b)=>{
       const x=details.get(a),y=details.get(b);
-      // Todas las actas MOVIL1 van después de las actas normales,
-      // incluso después de INVERSA; dentro de MOVIL1, LIBRE antes de INVERSA.
-      if(x.movable!==y.movable)return x.movable?1:-1;
+      // Primero ordinarias; luego MOVIL1 y por último MOLRED.
+      if(x.special!==y.special)return x.special-y.special;
       if(x.type!==y.type)return x.type-y.type;
-      if(!x.movable){
+      if(!x.special){
         const sr=rank(x.segment,segmentPriority)-rank(y.segment,segmentPriority);
         if(sr)return sr;
         if(rank(x.segment,segmentPriority)===segmentPriority.length &&
@@ -250,21 +255,29 @@ document.addEventListener('DOMContentLoaded', () => {
       ['Actas','Las filas de cada ACTA y SER se compactan al cambiar BASE MAESTRA. Un grupo completamente nuevo exige regenerar el paquete.'],
       ['Grupo nuevo','Si agregas un nuevo almacén, segmento o anotación, vuelve a SIGLO y usa REGENERAR DESDE EXCEL.'],
       ['Preliminar Cliente','No se modifica ninguna información original del Cliente.'],
-      ['Matriz','SAP ausente = Conteo Aliado. Libre por Segmento e Inversa por Ubicación. MOVIL1 es independiente, siempre CONTEO ALIADO y al final.'],
+      ['Matriz','SAP ausente = Conteo Aliado. Libre por Segmento e Inversa por Ubicación. MOVIL1 y MOLRED son independientes, CONTEO ALIADO; MOLRED después de MOVIL1.'],
       ['Histórico','Guarda una copia independiente cuando el inventario sea firmado o entregado.'],
-      ['VBA 1.9','La macro ACTUALIZAR INFORMES necesita el módulo 1.9 para conservar el orden fiscal y la excepción MOVIL1. Si solo está activa la plantilla 1.8, SIGLO exporta .xlsx por seguridad.'],
-      ['Versión','Fórmulas estándar de Excel de escritorio, sin funciones matriciales dinámicas ni macros VBA.'],
+      ['VBA 2.0','ACTUALIZAR INFORMES necesita VBA 2.0 para mantener MOVIL1 y MOLRED separados y MOLRED última. Con 1.8 o 1.9 se exporta .xlsx por seguridad.'],
+      ['Versión','Fórmulas estándar de Excel, sin matrices dinámicas. La macro y el botón se agregan al activar la plantilla 2.0.'],
       ['Fecha exportación',today()]
     ],[34,110]);
     guide['!rows']=[{hpt:28}];
+    // Las futuras descargas .xlsm se pueden volver a usar como plantilla VBA 2.0.
+    if(Number(macroEngine?.version?.()||0)>=20){
+      guide['D12']={t:'s',v:'SIGLO-FISCAL-2.0'};
+      const range=XLSX.utils.decode_range(guide['!ref']);
+      range.e.c=Math.max(range.e.c,3);
+      range.e.r=Math.max(range.e.r,11);
+      guide['!ref']=XLSX.utils.encode_range(range);
+    }
     const matr=polished(book,'MATRIZ',titleRows('MATRIZ DEL CLIENTE','Fuente de clasificación para Actas y Modelo','No cambiar las anotaciones de Claro sin validación.'),5,matrix.map(x=>[x.codigo_sap,x.descripcion,x.anotacion]),['CODIGO SAP','DESCRIPCION','ANOTACION'],[19,58,38]);
     const masterData=data.map(x=>[x.codigo_sap,x.descripcion,x.centro,x.almacen,x.ubicacion,x.segmento,x.lote,x.stock,x.cantidad,x.serial,x.serializado,null,null,null,null,null]);
     const base=polished(book,'BASE MAESTRA',titleRows('BASE MAESTRA EDITABLE','Cambios exclusivos de este Excel. Columnas A:K editables.','Columnas L:AB calculadas. Para retirar una existencia poner CANTIDAD=0.'),5,masterData,headers,[18,45,12,14,19,22,18,11,13,27,14,30,45,65,76,19]);
     for(let index=0;index<data.length+1000;index++){
       const r=index+6;
       // Fórmulas adicionales hasta mil registros para permitir ampliar la base sin perder cálculos.
-      formula(base,'L'+r,'IF(A'+r+'="","",IF(UPPER(TRIM(E'+r+'))="MOVIL1","' + DEFAULT_CLASS + '",IFERROR(VLOOKUP(A'+r+',MATRIZ!$A$6:$C$'+matrixLimit+',3,FALSE),"' + DEFAULT_CLASS + '")))');
-      formula(base,'M'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",IF(H'+r+'=4,"INVERSA|"&E'+r+',"LIBRE|"&IF(UPPER(TRIM(E'+r+'))="MOVIL1","MOVIL1",F'+r+'))&"|"&D'+r+'&"|"&UPPER(L'+r+'))');
+      formula(base,'L'+r,'IF(A'+r+'="","",IF(OR(UPPER(TRIM(E'+r+'))="MOVIL1",UPPER(TRIM(E'+r+'))="MOLRED"),"' + DEFAULT_CLASS + '",IFERROR(VLOOKUP(A'+r+',MATRIZ!$A$6:$C$'+matrixLimit+',3,FALSE),"' + DEFAULT_CLASS + '")))');
+      formula(base,'M'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",IF(H'+r+'=4,"INVERSA|"&E'+r+',"LIBRE|"&IF(OR(UPPER(TRIM(E'+r+'))="MOVIL1",UPPER(TRIM(E'+r+'))="MOLRED"),UPPER(TRIM(E'+r+')),F'+r+'))&"|"&D'+r+'&"|"&UPPER(L'+r+'))');
       formula(base,'N'+r,'IF(OR(A'+r+'="",I'+r+'<=0),"",A'+r+'&"|"&C'+r+'&"|"&D'+r+'&"|"&G'+r+'&"|"&E'+r+'&"|"&H'+r+')');
       formula(base,'O'+r,'IF(N'+r+'="","",P'+r+'&"|"&N'+r+')');
       formula(base,'P'+r,'IF(M'+r+'="","",IFERROR(VLOOKUP(M'+r+',PLANILLAS!$A$6:$B$'+(groups.keys.length+5)+',2,FALSE),"REGENERAR ACTAS"))');
@@ -411,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const report=makeView('ACTAS DE CONTEO',
       ['GRUPO ACTA','NRO PLANILLA','REGISTROS','UNIDADES','SERIALIZADOS','HOJA ACTA'],
       [62,18,15,15,18,22],'ACTAS DE CONTEO',
-      'Libre por Segmento, Inversa por Ubicación. MOVIL1 independiente y siempre CONTEO ALIADO. Orden: Libre, Inversa; CPES, RED EXTERNA, CORPORATIVO, MINTIC; A221, U020; Claro-Aliado, Aliado; MOVIL1 al final.');
+      'Libre por Segmento, Inversa por Ubicación. MOVIL1 y MOLRED independientes y CONTEO ALIADO. Orden: Libre, Inversa; CPES, RED EXTERNA, CORPORATIVO, MINTIC; A221, U020; MOVIL1 y MOLRED al final.');
     groups.keys.forEach((key,i)=>{
       const r=i+6;
       report['A'+r]={t:'s',v:key};
@@ -593,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
     book.Workbook.CalcPr={calcMode:'auto',fullCalcOnLoad:true};
     const downloadName=fileName||'SIGLO_Paquete_Fiscal_Dinamico_'+today()+'.xlsx';
     const macroEnabled=Boolean(macroEngine?.active());
-    const macroSkipped=macroEnabled&&Number(macroEngine?.version?.()||0)<19;
+    const macroSkipped=macroEnabled&&Number(macroEngine?.version?.()||0)<20;
     if(macroEnabled&&!macroSkipped){
       await macroEngine.download(book,downloadName);
     }else{
@@ -617,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try{
         const info=await macroEngine.install(file);
         syncMacroStatus();
-        notify('Plantilla VBA '+info.version+' activada correctamente ('+info.size+' bytes). '+(info.version==='1.9'?'Ya puedes descargar .xlsm con el orden fiscal y MOVIL1.':'Necesitas VBA 1.9 para generar .xlsm con el orden fiscal nuevo.'),'success');
+        notify('Plantilla VBA '+info.version+' activada correctamente ('+info.size+' bytes). '+(info.version==='2.0'?'Las próximas descargas .xlsm respetarán MOVIL1 y MOLRED, con MOLRED última.':'Versión antigua reconocida: activa VBA 2.0 para obtener .xlsm sin perder MOLRED.'),'success');
       }catch(err){
         console.error('VBA local',err);
         macroStatus.textContent=err.message||'No se pudo registrar la plantilla VBA.';
@@ -644,7 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!Array.isArray(data)||!data.length)throw Error('La base fiscal de SIGLO está vacía.');
       const out=await exportWorkbook(data,matrix);
       stats.innerHTML='<strong>'+out.records+'</strong> registros · <strong>'+out.activeGroups+'</strong> actas con inventario · <strong>'+out.serials+'</strong> seriales · <strong>'+out.autoAllied+'</strong> SAP clasificados como Conteo Aliado.';
-      notify('Paquete '+out.format+' generado. BASE MAESTRA puede corregirse sin cambiar SIGLO.'+(out.macroSkipped?' Se descargó .xlsx para evitar incorporar VBA 1.8, que no respeta el nuevo orden de actas ni MOVIL1. Usa REGENERAR desde Excel para crear nuevas actas.':''),'success');
+      notify('Paquete '+out.format+' generado. BASE MAESTRA puede corregirse sin cambiar SIGLO.'+(out.macroSkipped?' Se descargó .xlsx porque el VBA anterior a 2.0 no garantiza MOVIL1 y MOLRED independientes. Activa la plantilla 2.0 para descargar .xlsm.':''),'success');
     }catch(err){console.error(err);notify(err.message||'No se pudo generar el paquete fiscal.','error');}
     finally{generate.disabled=false;}
   });
@@ -658,7 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const {data,matrix}=readEdited(await file.arrayBuffer());
       const out=await exportWorkbook(data,matrix,'SIGLO_Paquete_Fiscal_Reorganizado_'+today()+'.xlsx');
       stats.innerHTML='<strong>'+out.records+'</strong> registros · <strong>'+out.activeGroups+'</strong> actas con inventario · <strong>'+out.serials+'</strong> seriales.';
-      notify('Paquete '+out.format+' regenerado desde el Excel, sin leer ni modificar la base de datos de SIGLO.'+(out.macroSkipped?' No se incorporó VBA 1.8 para impedir que ACTUALIZAR INFORMES revierta el orden fiscal o la regla MOVIL1.':''),'success');
+      notify('Paquete '+out.format+' regenerado desde el Excel, sin leer ni modificar la base de datos de SIGLO.'+(out.macroSkipped?' No se incorporó el VBA anterior a 2.0 para evitar que cambie la separación de MOVIL1 y MOLRED.':''),'success');
     }catch(err){console.error(err);notify(err.message||'No se pudo regenerar el archivo.','error');}
     finally{rebuild.disabled=false;}
   });
