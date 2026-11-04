@@ -145,12 +145,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = await file.arrayBuffer();
     const pdf = await window.pdfjsLib.getDocument({ data }).promise;
     const pages = [];
+    const textPages = [];
+    let inheritedLayout = null;
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
       const page = await pdf.getPage(pageNumber);
       const content = await page.getTextContent();
-      pages.push(pageToLines(content.items));
+      const rows = pageToRows(content.items);
+      const layout = findPageLayout(rows, inheritedLayout);
+      inheritedLayout = layout;
+      pages.push({ page: pageNumber, rows, layout });
+      textPages.push(pageToLines(content.items));
+      try { page.cleanup(); } catch (_) {}
     }
-    return pages.join('\n');
+    try { await pdf.destroy(); } catch (_) {}
+    return { text: textPages.join('\n'), pages };
   }
 
   function extractMetadata(text) {
@@ -173,157 +181,191 @@ document.addEventListener('DOMContentLoaded', () => {
     return { documento, cedula, nombre, fecha };
   }
 
-  function findQuantityMatch(segment) {
-    const re = /(\d+(?:[.,]\d+)?)\s+([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)\s+([\d,.]+\.\d{2})/g;
-    let match;
-    while ((match = re.exec(segment)) !== null) {
-      const value = Number(match[3].replaceAll(',', ''));
-      if (Number.isFinite(value)) return match;
+
+  // Reconstruye las filas del PDF conservando las coordenadas originales.
+  // No mezclar Producto, Serie y Cantidad: pueden estar en la misma altura.
+  function pageToRows(items) {
+    const rows = [];
+    for (const item of items) {
+      const text = String(item.str || '').trim();
+      if (!text) continue;
+      const x = Number(item.transform?.[4] ?? 0);
+      const y = Number(item.transform?.[5] ?? 0);
+      let row = rows.find(entry => Math.abs(entry.y - y) <= 2.2);
+      if (!row) {
+        row = { y, items: [] };
+        rows.push(row);
+      }
+      row.items.push({ x, text });
     }
-    return null;
-  }
-
-  function materialDataRegion(segment) {
-    const markers = [
-      /\n\s*[0-9a-f]{8,}\|/i,
-      /\n\s*Este\s+c[oó]digo\s+es\s+[uú]nico/i,
-      /\n\s*CC:\s*\d+/i,
-      /\n\s*Nombre:/i,
-      /\n\s*Bandeja:/i,
-      /\n\s*DOMINION\s+COLOMBIA\s+SAS/i,
-      /\n\s*P[aá]gina:/i
-    ];
-    let end = segment.length;
-    markers.forEach(re => {
-      const match = re.exec(segment);
-      if (match && match.index < end) end = match.index;
+    return rows.sort((a, b) => b.y - a.y).map(row => {
+      row.items.sort((a, b) => a.x - b.x);
+      return { ...row, text: row.items.map(item => item.text).join(' ') };
     });
-    return segment.slice(0, end).trim();
   }
 
-  function normalizeSerialBreaks(value) {
-    return String(value || '')
-      .replace(/[\uFFFE\uFFFD\u00AD\u2010\u2011\u2012\u2013\u2212]/g, '-')
-      .replace(/([A-Z0-9]{5,30})-\s+([A-Z0-9]{2,30})/gi, '$1-$2');
-  }
-
-  function serialCandidates(materialRegion, quantity) {
-    materialRegion = normalizeSerialBreaks(materialRegion);
-    const expected = Math.max(0, Math.round(quantity));
-    if (!expected) return [];
-
-    const isLikelySerial = token => {
-      const cleanToken = String(token || '').replace(/^[,;:]+|[,;:]+$/g, '');
-      const digits = (cleanToken.match(/\d/g) || []).length;
-      const compact = cleanToken.replaceAll('-', '');
-      const hexadecimal = /^[A-F0-9]+$/i.test(compact);
-
-      if (digits >= 6) return true;
-      if (hexadecimal && compact.length >= 10 && digits >= 2) return true;
-
-      const letters = (compact.match(/[A-Z]/gi) || []).length;
-      return compact.length >= 10 && digits >= 2 && letters >= 4;
-    };
-
-    // Primera opción: usar exclusivamente lo que el PDF ubica físicamente
-    // en la columna "Serie". Esto evita confundir modelos de producto
-    // (por ejemplo CGA2121CLC) con seriales reales.
-    const positionedStopwords = new Set(['SERIE','UNIDAD','UNID','CANTIDAD','VALORIZADO']);
-    const positionedPieces = [...materialRegion.matchAll(/\[\[SERIE:([^\]]+)\]\]/gi)]
-      .flatMap(match => String(match[1] || '').split(/[\s,;]+/))
-      .map(token => token.replace(/^[,;:]+|[,;:]+$/g, ''))
-      .filter(token => {
-        if (!token) return false;
-        const compact = token.replaceAll('-', '').toUpperCase();
-        return /^[A-Z0-9-]{2,40}$/i.test(token)
-          && /[A-Z0-9]/i.test(compact)
-          && !positionedStopwords.has(compact);
-      });
-
-    const positioned = [];
-    for (const piece of positionedPieces) {
-      if (
-        positioned.length
-        && /-$/.test(positioned[positioned.length - 1])
-        && /^[A-Z0-9]{2,30}$/i.test(piece)
-      ) {
-        positioned[positioned.length - 1] += piece;
-      } else {
-        positioned.push(piece);
+  function findPageLayout(rows, previous = null) {
+    for (const row of rows) {
+      const labels = row.items.map(item => ({ x: item.x, label: item.text.toUpperCase().trim() }));
+      const product = labels.find(item => item.label === 'PRODUCTO' || item.label === 'MATERIAL');
+      const serie = labels.find(item => item.label === 'SERIE');
+      const cantidad = labels.find(item => item.label === 'CANTIDAD');
+      const unidad = labels.find(item => item.label === 'UNIDAD' || item.label === 'UMED');
+      if (product && serie && cantidad && unidad &&
+          product.x < serie.x && serie.x < cantidad.x && cantidad.x < unidad.x) {
+        return {
+          productMin: Math.max(0, product.x - 24),
+          productMax: serie.x - 4,
+          serieMin: serie.x - 4,
+          serieMax: cantidad.x - 4,
+          quantityMin: cantidad.x - 4,
+          quantityMax: unidad.x - 4
+        };
       }
     }
+    return previous;
+  }
 
-    const validPositioned = positioned.filter(token => {
-      const compact = token.replaceAll('-', '');
-      return compact.length >= 5;
-    });
+  function cellText(row, min, max) {
+    return row.items.filter(item => item.x >= min && item.x < max)
+      .map(item => item.text).join(' ').trim();
+  }
 
-    if (validPositioned.length >= expected) {
-      return validPositioned.slice(0, expected);
-    }
+  function parseQuantityCell(value) {
+    const text = String(value || '').trim();
+    if (!/^\\d+(?:[.,]\\d+)?$/.test(text)) return null;
+    const number = Number(text.replace(',', '.'));
+    return Number.isFinite(number) ? number : null;
+  }
 
-    // Respaldo para plantillas antiguas donde PDF.js no conserve la columna.
-    const raw = materialRegion.match(/\b[A-Z0-9][A-Z0-9-]{7,30}\b/gi) || [];
-    const fallback = raw
+  function serialTokens(value) {
+    const pieces = String(value || '')
+      .replace(/[\\uFFFD\\u00AD\\u2010-\\u2013\\u2212]/g, '-')
+      .split(/[\\s,;]+/)
       .map(token => token.replace(/^[,;:]+|[,;:]+$/g, ''))
-      .filter(token => isLikelySerial(token));
-
-    const combined = [...positioned];
-    fallback.forEach(token => {
-      if (!combined.includes(token)) combined.push(token);
-    });
-    return combined.slice(-expected);
+      .filter(Boolean);
+    const result = [];
+    for (const piece of pieces) {
+      if (result.length && /-$/.test(result[result.length - 1]) &&
+          /^[A-Z0-9]{2,35}$/i.test(piece)) {
+        result[result.length - 1] += piece;
+        continue;
+      }
+      if (!/^[A-Z0-9-]{5,50}$/i.test(piece)) continue;
+      const compact = piece.replace(/-/g, '');
+      if ((compact.match(/\\d/g) || []).length < 2) continue;
+      result.push(piece.toUpperCase());
+    }
+    return result;
   }
 
-  function cleanDescription(prefix, serials) {
-    let description = prefix.replace(/\[\[SERIE:[^\]]+\]\]/gi, ' ');
-    serials.forEach(serial => {
-      description = description.replaceAll(serial, ' ');
-    });
-    return description
-      .replace(/[,;]+\s*$/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
+  function extractItemsFromPages(pages) {
+    const items = [];
+    const errors = [];
+    let current = null;
+    let totalHeaders = 0;
+    let quantityRows = 0;
 
-  function extractItems(text) {
-    const headerRegex = /\[([^/\]]+)\/([^\]]+)\]/g;
-    const headers = [];
-    let match;
-    while ((match = headerRegex.exec(text)) !== null) {
-      headers.push({ index: match.index, end: headerRegex.lastIndex, dominio: match[1].trim(), codigo_sap: match[2].trim() });
+    const resolveHeader = () => {
+      if (!current || current.headerResolved) return;
+      const match = current.headerBuffer.match(/\\[\\s*DOM\\s*-\\s*(\\d+)\\s*\\/\\s*([A-Z0-9]+)\\s*\\]/i);
+      if (!match) return;
+      current.dominio = 'DOM-' + match[1];
+      current.codigo_sap = normalizeCode(match[2].toUpperCase());
+      const remainder = current.headerBuffer.slice(match.index + match[0].length).trim();
+      if (remainder) current.descriptionParts.push(remainder);
+      current.headerResolved = true;
+    };
+
+    const finalize = () => {
+      if (!current) return;
+      resolveHeader();
+      if (!current.headerResolved) {
+        errors.push('Código Dominion/SAP incompleto en página ' + current.pagina + '.');
+      }
+      if (current.cantidad === null || current.cantidad <= 0) {
+        errors.push('Cantidad ausente o inválida en SAP ' +
+          (current.codigo_sap || 'sin identificar') + ' (página ' + current.pagina + ').');
+      }
+      const seen = new Set();
+      for (const serial of current.serials) {
+        if (seen.has(serial)) {
+          errors.push('Serial duplicado ' + serial + ' en SAP ' + current.codigo_sap + '.');
+        }
+        seen.add(serial);
+      }
+      current.serials = [...seen];
+      current.detalle = current.descriptionParts.join(' ').replace(/\\s+/g, ' ').trim();
+      delete current.headerBuffer;
+      delete current.headerResolved;
+      delete current.descriptionParts;
+      items.push(current);
+      current = null;
+    };
+
+    for (const page of pages) {
+      if (!page.layout) {
+        errors.push('No se identificaron las columnas de la tabla en página ' + page.page + '.');
+        continue;
+      }
+      const layout = page.layout;
+      for (const row of page.rows) {
+        const product = cellText(row, layout.productMin, layout.productMax);
+        const serie = cellText(row, layout.serieMin, layout.serieMax);
+        const qty = cellText(row, layout.quantityMin, layout.quantityMax);
+
+        if (/^Este c[oó]digo es [uú]nico/i.test(row.text) ||
+            /^En caso de da[ñn]o/i.test(row.text)) {
+          finalize();
+          break;
+        }
+
+        const startsHeader = /\\[\\s*DOM\\s*-/i.test(product);
+        if (startsHeader) {
+          finalize();
+          totalHeaders += 1;
+          current = {
+            pagina: page.page,
+            headerBuffer: product,
+            headerResolved: false,
+            descriptionParts: [],
+            serials: [],
+            cantidad: null,
+            dominio: '',
+            codigo_sap: ''
+          };
+          resolveHeader();
+        } else if (current) {
+          if (!current.headerResolved) {
+            if (product) current.headerBuffer += ' ' + product;
+            resolveHeader();
+          } else if (product) {
+            current.descriptionParts.push(product);
+          }
+        }
+        if (!current) continue;
+
+        if (qty && parseQuantityCell(qty) !== null) quantityRows += 1;
+        if (current.cantidad === null && qty) {
+          const cantidad = parseQuantityCell(qty);
+          if (cantidad !== null) current.cantidad = cantidad;
+          else errors.push('Cantidad ilegible en página ' + page.page + ': ' + qty);
+        }
+        if (serie) current.serials.push(...serialTokens(serie));
+      }
+    }
+    finalize();
+
+    if (items.length !== totalHeaders || quantityRows !== items.length) {
+      errors.push('Lectura incompleta: ' + totalHeaders + ' encabezados, ' +
+        quantityRows + ' cantidades y ' + items.length + ' materiales interpretados.');
     }
 
-    const items = [];
-    headers.forEach((header, index) => {
-      const end = index + 1 < headers.length ? headers[index + 1].index : text.length;
-      const segment = text.slice(header.end, end);
-      const materialRegion = materialDataRegion(segment);
-      const quantityMatch = findQuantityMatch(materialRegion);
-      if (!quantityMatch) return;
-
-      const cantidad = Number(quantityMatch[1].replace(',', '.'));
-      const unidad = quantityMatch[2];
-      const valor = Number(quantityMatch[3].replaceAll(',', ''));
-      const config = catalogMap.get(normalizeCode(header.codigo_sap));
-      const topologia = normalizeTopology(config?.topologia);
-      const isSerial = topologia.includes('CON PERFIL DE SERIE') && !topologia.includes('SIN PERFIL DE SERIE');
-      const serials = isSerial ? serialCandidates(materialRegion, cantidad) : [];
-      const detailSource = materialRegion.replace(quantityMatch[0], ' ');
-      const detalle = cleanDescription(detailSource, serials);
-
-      items.push({
-        dominio: header.dominio,
-        codigo_sap: normalizeCode(header.codigo_sap),
-        detalle,
-        cantidad,
-        unidad,
-        valor,
-        topologia: config?.topologia || 'NO CONFIGURADO',
-        serials
-      });
+    const resolved = items.map(item => {
+      const config = catalogMap.get(item.codigo_sap);
+      return { ...item, topologia: config?.topologia || 'NO CONFIGURADO' };
     });
-    return items;
+    return { items: resolved, errors };
   }
 
   function classify(items, cedula) {
@@ -331,10 +373,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const noSerialMap = new Map();
     const revisar = [];
     const serialWarnings = [];
+    const seenSerials = new Set();
 
     items.forEach(item => {
       const topologia = normalizeTopology(item.topologia);
       if (topologia.includes('SIN PERFIL DE SERIE')) {
+        if (item.serials.length) {
+          serialWarnings.push(item.codigo_sap + ': tiene seriales en el PDF pero el catálogo indica SIN PERFIL DE SERIE.');
+        }
         const key = `${item.codigo_sap}|${item.dominio}`;
         const current = noSerialMap.get(key) || {
           codigo_sap: item.codigo_sap,
@@ -348,12 +394,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (topologia.includes('CON PERFIL DE SERIE')) {
-        item.serials.forEach(serial => serializados.push({
-          serial,
-          codigo_sap: item.codigo_sap,
-          dominio: item.dominio,
-          cedula
-        }));
+        item.serials.forEach(serial => {
+          if (seenSerials.has(serial)) {
+            serialWarnings.push('Serial repetido en el despacho: ' + serial + '.');
+          }
+          seenSerials.add(serial);
+          serializados.push({
+            serial,
+            codigo_sap: item.codigo_sap,
+            dominio: item.dominio,
+            cedula
+          });
+        });
         if (item.serials.length !== Math.round(item.cantidad)) {
           serialWarnings.push(`${item.codigo_sap}: se esperaban ${Math.round(item.cantidad)} seriales y se detectaron ${item.serials.length}.`);
         }
@@ -407,6 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!metadata.documento) messages.push('No se detectó el número de documento del despacho.');
     if (!metadata.cedula) messages.push('No se detectó la cédula del técnico.');
+    messages.push(...(classification.lecturaErrores || []));
     messages.push(...classification.serialWarnings);
 
     reviewMessages.innerHTML = messages.map(message =>
@@ -460,6 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const blockers =
       (currentMetadata.documento ? 0 : 1) +
       (currentMetadata.cedula ? 0 : 1) +
+      (currentClassification?.lecturaErrores?.length || 0) +
       (currentClassification?.serialWarnings?.length || 0) +
       (currentClassification?.revisar?.length || 0);
 
@@ -494,22 +548,24 @@ document.addEventListener('DOMContentLoaded', () => {
     processMessage.className = 'process-message';
 
     try {
-      const text = await extractTextFromPdf(currentFile);
+      const { text, pages } = await extractTextFromPdf(currentFile);
       const metadata = extractMetadata(text);
-      const items = extractItems(text);
+      const { items, errors } = extractItemsFromPages(pages);
       if (!items.length) throw new Error('No se detectaron materiales en el PDF.');
 
       const classification = classify(items, metadata.cedula);
+      classification.lecturaErrores = errors;
       renderResults(metadata, classification);
 
       const warnings = [];
       if (!metadata.cedula) warnings.push('No se detectó la cédula del técnico.');
+      warnings.push(...classification.lecturaErrores);
       warnings.push(...classification.serialWarnings);
       if (warnings.length) {
         processMessage.textContent = `Procesado con observaciones: ${warnings.join(' ')}`;
         processMessage.className = 'process-message error';
       } else {
-        processMessage.textContent = `PDF procesado correctamente · ${items.length} materiales detectados.`;
+        processMessage.textContent = `PDF procesado correctamente · ${items.length} materiales y ${classification.serializados.length} seriales detectados.`;
         processMessage.className = 'process-message success';
       }
     } catch (error) {
