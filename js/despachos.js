@@ -233,15 +233,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function parseQuantityCell(value) {
     const text = String(value || '').trim();
-    if (!/^\\d+(?:[.,]\\d+)?$/.test(text)) return null;
+    if (!/^\d+(?:[.,]\d+)?$/.test(text)) return null;
     const number = Number(text.replace(',', '.'));
     return Number.isFinite(number) ? number : null;
   }
 
   function serialTokens(value) {
     const pieces = String(value || '')
-      .replace(/[\\uFFFD\\u00AD\\u2010-\\u2013\\u2212]/g, '-')
-      .split(/[\\s,;]+/)
+      .replace(/[\uFFFD\u00AD\u2010-\u2013\u2212]/g, '-')
+      .split(/[\s,;]+/)
       .map(token => token.replace(/^[,;:]+|[,;:]+$/g, ''))
       .filter(Boolean);
     const result = [];
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (!/^[A-Z0-9-]{5,50}$/i.test(piece)) continue;
       const compact = piece.replace(/-/g, '');
-      if ((compact.match(/\\d/g) || []).length < 2) continue;
+      if ((compact.match(/\d/g) || []).length < 2) continue;
       result.push(piece.toUpperCase());
     }
     return result;
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const resolveHeader = () => {
       if (!current || current.headerResolved) return;
-      const match = current.headerBuffer.match(/\\[\\s*DOM\\s*-\\s*(\\d+)\\s*\\/\\s*([A-Z0-9]+)\\s*\\]/i);
+      const match = current.headerBuffer.match(/\[\s*DOM\s*-\s*(\d+)\s*\/\s*([A-Z0-9]+)\s*\]/i);
       if (!match) return;
       current.dominio = 'DOM-' + match[1];
       current.codigo_sap = normalizeCode(match[2].toUpperCase());
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         seen.add(serial);
       }
       current.serials = [...seen];
-      current.detalle = current.descriptionParts.join(' ').replace(/\\s+/g, ' ').trim();
+      current.detalle = current.descriptionParts.join(' ').replace(/\s+/g, ' ').trim();
       delete current.headerBuffer;
       delete current.headerResolved;
       delete current.descriptionParts;
@@ -320,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
           break;
         }
 
-        const startsHeader = /\\[\\s*DOM\\s*-/i.test(product);
+        const startsHeader = /\[\s*DOM\s*-/i.test(product);
         if (startsHeader) {
           finalize();
           totalHeaders += 1;
