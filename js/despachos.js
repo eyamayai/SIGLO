@@ -287,14 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
         errors.push('Cantidad ausente o inválida en SAP ' +
           (current.codigo_sap || 'sin identificar') + ' (página ' + current.pagina + ').');
       }
-      const seen = new Set();
-      for (const serial of current.serials) {
-        if (seen.has(serial)) {
-          errors.push('Serial duplicado ' + serial + ' en SAP ' + current.codigo_sap + '.');
-        }
-        seen.add(serial);
-      }
-      current.serials = [...seen];
+      // No validar seriales al extraer: la Maestra SAP decide primero
+      // si el artículo es CON PERFIL o SIN PERFIL.
+      // La validación de duplicados se hace solo para CON PERFIL en classify().
       current.detalle = current.descriptionParts.join(' ').replace(/\s+/g, ' ').trim();
       delete current.headerBuffer;
       delete current.headerResolved;
@@ -378,9 +373,8 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach(item => {
       const topologia = normalizeTopology(item.topologia);
       if (topologia.includes('SIN PERFIL DE SERIE')) {
-        if (item.serials.length) {
-          serialWarnings.push(item.codigo_sap + ': tiene seriales en el PDF pero el catálogo indica SIN PERFIL DE SERIE.');
-        }
+        // Regla SIGLO: seriales impresos en el PDF no afectan un SAP SIN PERFIL.
+        // La salida se contabiliza únicamente por código SAP, Dominion y cantidad.
         const key = `${item.codigo_sap}|${item.dominio}`;
         const current = noSerialMap.get(key) || {
           codigo_sap: item.codigo_sap,
