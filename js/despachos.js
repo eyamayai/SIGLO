@@ -287,9 +287,13 @@ document.addEventListener('DOMContentLoaded', () => {
         errors.push('Cantidad ausente o inválida en SAP ' +
           (current.codigo_sap || 'sin identificar') + ' (página ' + current.pagina + ').');
       }
-      // No validar seriales al extraer: la Maestra SAP decide primero
-      // si el artículo es CON PERFIL o SIN PERFIL.
-      // La validación de duplicados se hace solo para CON PERFIL en classify().
+      // Reconstruir los seriales de todas las líneas de Serie del mismo
+      // material. Un fragmento que termine en guion puede continuar
+      // en el siguiente renglón físico del PDF.
+      // Nunca unir fragmentos de materiales diferentes.
+      current.serials = serialTokens(current.seriesParts.join(' '));
+      delete current.seriesParts;
+      // SIN PERFIL ignora sus seriales impresos; classify() los descarta.
       current.detalle = current.descriptionParts.join(' ').replace(/\s+/g, ' ').trim();
       delete current.headerBuffer;
       delete current.headerResolved;
@@ -325,6 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
             headerResolved: false,
             descriptionParts: [],
             serials: [],
+            seriesParts: [],
             cantidad: null,
             dominio: '',
             codigo_sap: ''
@@ -346,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (cantidad !== null) current.cantidad = cantidad;
           else errors.push('Cantidad ilegible en página ' + page.page + ': ' + qty);
         }
-        if (serie) current.serials.push(...serialTokens(serie));
+        if (serie) current.seriesParts.push(serie);
       }
     }
     finalize();
@@ -388,6 +393,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (topologia.includes('CON PERFIL DE SERIE')) {
+        // No permitir un serial truncado aunque la cantidad coincida.
+        item.serials.filter(serial => /-$/.test(serial)).forEach(serial => {
+          serialWarnings.push(item.codigo_sap + ': serial incompleto (' + serial + '). Falta la continuación posterior al guion.');
+        });
         item.serials.forEach(serial => {
           if (seenSerials.has(serial)) {
             serialWarnings.push('Serial repetido en el despacho: ' + serial + '.');
