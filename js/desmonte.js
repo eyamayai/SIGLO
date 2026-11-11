@@ -348,6 +348,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cls=result==='LISTO'?'ready':result==='REVISAR'?'review':'error';
     return '<span class="result-pill '+cls+'">'+esc(result)+'</span>';
   }
+  const destinoEsperado=segmento=>upper(segmento)==='MINTIC'?'QMINTI':'QQ01Q1';
+  const detalleConDestino=row=>(
+    row.ubicacion_destino?'Destino: '+row.ubicacion_destino+' · '+(row.detalle||''):(row.detalle||'')
+  );
   function renderValidation(){
     const v=currentValidation||{},s=v.resumen||{};
     document.getElementById('countSerial').textContent=s.serializados||0;
@@ -356,13 +360,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('countErrors').textContent=s.errores||0;
 
     const sr=v.seriales||[];
+    const nr=v.no_serializados||[];
+    const destinosInvalidos=[...sr,...nr].filter(row=>
+      row.resultado==='LISTO'&&
+      (!row.ubicacion_destino||row.ubicacion_destino!==destinoEsperado(row.segmento))
+    );
+    document.getElementById('countErrors').textContent=Number(s.errores||0)+destinosInvalidos.length;
     document.getElementById('serialBody').innerHTML=sr.length?sr.map((r,i)=>{
       const serialCell=r.serial?'<strong>'+esc(r.serial)+'</strong>':'<input class="manual-serial" data-index="'+i+'" type="text" placeholder="Ingresar serial">';
-      return '<tr><td>'+serialCell+'</td><td>'+esc(r.codigo_sap)+'</td><td>'+esc(r.dominio||'—')+'</td><td>'+esc(r.descripcion||'—')+'</td><td>'+esc(r.tecnico||'—')+'</td><td>'+esc(r.cedula||'—')+'</td><td>'+segmentSelect(r,i,'serial')+'</td><td>'+pill(r.resultado)+'</td><td>'+esc(r.detalle)+'</td></tr>';
+      return '<tr><td>'+serialCell+'</td><td>'+esc(r.codigo_sap)+'</td><td>'+esc(r.dominio||'—')+'</td><td>'+esc(r.descripcion||'—')+'</td><td>'+esc(r.tecnico||'—')+'</td><td>'+esc(r.cedula||'—')+'</td><td>'+segmentSelect(r,i,'serial')+'</td><td>'+pill(r.resultado)+'</td><td>'+esc(detalleConDestino(r))+'</td></tr>';
     }).join(''):'<tr class="empty-row"><td colspan="9">Sin registros</td></tr>';
 
-    const nr=v.no_serializados||[];
-    document.getElementById('noSerialBody').innerHTML=nr.length?nr.map((r,i)=>'<tr><td><strong>'+esc(r.codigo_sap)+'</strong></td><td>'+esc(r.dominio||'—')+'</td><td>'+esc(r.descripcion||'—')+'</td><td>'+esc(r.cantidad)+'</td><td>'+segmentSelect(r,i,'no')+'</td><td>'+pill(r.resultado)+'</td><td>'+esc(r.detalle)+'</td></tr>').join(''):'<tr class="empty-row"><td colspan="7">Sin registros</td></tr>';
+    document.getElementById('noSerialBody').innerHTML=nr.length?nr.map((r,i)=>'<tr><td><strong>'+esc(r.codigo_sap)+'</strong></td><td>'+esc(r.dominio||'—')+'</td><td>'+esc(r.descripcion||'—')+'</td><td>'+esc(r.cantidad)+'</td><td>'+segmentSelect(r,i,'no')+'</td><td>'+pill(r.resultado)+'</td><td>'+esc(detalleConDestino(r))+'</td></tr>').join(''):'<tr class="empty-row"><td colspan="7">Sin registros</td></tr>';
     document.getElementById('noSerialCard').hidden=source==='EXCEL'&&!nr.length;
 
     const ge=v.errores_globales||[];
@@ -388,8 +397,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const bar=document.querySelector('.register-bar'),title=document.getElementById('registerTitle'),help=document.getElementById('registerHelp');
     if(registered){registerBtn.disabled=true;bar.className='register-bar ready';title.textContent='Desmonte registrado';help.textContent='Inventario e historial actualizados correctamente.';}
-    else if((s.errores||0)>0||(s.revisar||0)>0){registerBtn.disabled=true;bar.className='register-bar error';title.textContent='El Desmonte requiere revisión';help.textContent='Corrige los errores y completa todos los Segmentos pendientes.';}
-    else{registerBtn.disabled=false;bar.className='register-bar ready';title.textContent='Desmonte listo para registrar';help.textContent='SIGLO aplicará A221 · '+(source==='PDF'?'QMINTI':'QQ01Q1')+' · NOVALORADO · Stock 4 · DESMONTE · Inversa · Dañado.';}
+    else if(Number(s.errores||0)>0||Number(s.revisar||0)>0||destinosInvalidos.length){registerBtn.disabled=true;bar.className='register-bar error';title.textContent='El Desmonte requiere revisión';help.textContent=destinosInvalidos.length?'Ubicación de destino no corresponde al Segmento. No registrar.':'Corrige los errores y completa todos los Segmentos pendientes.';}
+    else{
+      const ubicaciones=[...new Set([...sr,...nr].filter(row=>row.resultado==='LISTO').map(row=>row.ubicacion_destino).filter(Boolean))];
+      const destinoTexto=ubicaciones.length===1?ubicaciones[0]:'según Segmento (MINTIC: QMINTI; demás: QQ01Q1)';
+      registerBtn.disabled=false;bar.className='register-bar ready';title.textContent='Desmonte listo para registrar';
+      help.textContent='SIGLO aplicará A221 · '+destinoTexto+' · NOVALORADO · Stock 4 · DESMONTE · Inversa · Dañado.';
+    }
     resultsSection.hidden=false;
   }
 
