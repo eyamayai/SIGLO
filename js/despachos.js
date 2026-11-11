@@ -253,7 +253,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (!/^[A-Z0-9-]{5,50}$/i.test(piece)) continue;
       const compact = piece.replace(/-/g, '');
-      if ((compact.match(/\d/g) || []).length < 2) continue;
+      // Los seriales pueden tener un único dígito (ej. HMS0BJMWCEF).
+      // La columna Serie ya está delimitada por coordenadas: no exigir dos.
+      if (!/\d/.test(compact)) continue;
       result.push(piece.toUpperCase());
     }
     return result;
