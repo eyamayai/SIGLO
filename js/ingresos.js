@@ -444,13 +444,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let descripcionPdf = descriptionParts.join(' ').replace(/\s+/g, ' ').trim();
 
-      // El PDF define el lote: "(NO VALORADO)" se almacena como NOVALORADO.
+      // El PDF puede usar "(NO VALORADO)" o "(NOVALORADO)": ambos se almacenan como NOVALORADO.
       // Si no aparece esa marca, el material se almacena como VALORADO.
-      const marcadoNoValorado = /\(\s*NO\s+VALORADO\s*\)/i.test(descripcionPdf);
+      const marcadoNoValorado = /\(\s*NO\s*VALORADO\s*\)/i.test(descripcionPdf);
       const lote = marcadoNoValorado ? 'NOVALORADO' : 'VALORADO';
 
       descripcionPdf = descripcionPdf
-        .replace(/\(\s*NO\s+VALORADO\s*\)/ig, '')
+        .replace(/\(\s*NO\s*VALORADO\s*\)/ig, '')
         .replace(/\s+/g, ' ')
         .trim();
 
